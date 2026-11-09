@@ -144,8 +144,7 @@ async function grantForAccount(name, apiKey, ids) {
 
   return {
     nombre: name,
-    autorizadas: successAssetIds.length,
-    fallidas: errors.length,
+    successAssetIds: [...new Set(successAssetIds.map(String))],
     totalBloques: chunks.length,
     errores: errors.slice(0, 60)
   };
@@ -206,10 +205,63 @@ export default {
         grantForAccount("Cuenta Secundaria (Otros DJs)", env.ROBLOX_API_KEY_DJS, ids)
       ]);
 
+      // Una ID queda autorizada si cualquiera de las dos cuentas consigue conceder Use.
+      // CannotManageAsset de la otra cuenta se considera un rechazo esperado, no un fallo real.
+      const successSets = accounts.map(account => new Set(account.successAssetIds));
+      const authorizedAnywhere = new Set(accounts.flatMap(account => account.successAssetIds));
+      const failedIds = ids.filter(id => !authorizedAnywhere.has(id));
+
+      function collectAssetIds(value, output = new Set(), seen = new Set()) {
+        if (!value || typeof value !== "object" || seen.has(value)) return output;
+        seen.add(value);
+        if (Array.isArray(value)) {
+          for (const item of value) collectAssetIds(item, output, seen);
+          return output;
+        }
+        if (value.assetId !== undefined && value.assetId !== null) output.add(String(value.assetId));
+        for (const [key, nested] of Object.entries(value)) {
+          if (key !== "assetId" && nested && typeof nested === "object") {
+            collectAssetIds(nested, output, seen);
+          }
+        }
+        return output;
+      }
+
+      const resultados = accounts.map((account, index) => {
+        const successSet = successSets[index];
+        const noGestiona = ids.filter(id => !successSet.has(id) && authorizedAnywhere.has(id)).length;
+        const accountErrors = account.errores.filter(error => {
+          const relatedIds = [...collectAssetIds(error)];
+          // Si el error solo afecta IDs autorizadas por la otra cuenta, no es un fallo del envío.
+          return relatedIds.length === 0 || relatedIds.some(id => failedIds.includes(id));
+        });
+
+        return {
+          nombre: account.nombre,
+          autorizadas: successSet.size,
+          noGestiona,
+          fallidasReales: failedIds.length,
+          totalBloques: account.totalBloques,
+          errores: accountErrors.slice(0, 60)
+        };
+      });
+
+      const detalleSinAcceso = failedIds.map(assetId => ({
+        assetId,
+        errores: accounts.map(account => ({
+          cuenta: account.nombre,
+          detalles: account.errores.filter(error => collectAssetIds(error).has(assetId))
+        }))
+      }));
+
       return json({
         universeId: UNIVERSE_ID,
         totalIds: ids.length,
-        resultados: accounts
+        autorizadasTotal: authorizedAnywhere.size,
+        fallidasTotal: failedIds.length,
+        idsSinAcceso: failedIds,
+        detalleSinAcceso: detalleSinAcceso.slice(0, 100),
+        resultados
       }, 200, origin);
     }
 
