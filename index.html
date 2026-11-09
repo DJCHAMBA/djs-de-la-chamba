@@ -188,7 +188,6 @@
     <div class="status" id="encStatus"></div>
     <div class="parts" id="parts"></div>
   </div>
-</div>
 
   </div>
 
@@ -230,6 +229,7 @@
       <div class="status" id="robloxHistoryStatus"></div>
     </div>
   </div>
+</div>
 
 <!-- MODAL NOMBRE -->
 <div class="ov hide" id="mName">
@@ -1203,7 +1203,14 @@
         copy.className = "ghost";
         copy.type = "button";
         copy.textContent = "Copiar ID";
-        copy.onclick = () => GenUI.copy(record.assetId);
+        copy.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(record.assetId);
+            $("robloxHistoryStatus").textContent = "ID copiada: " + record.assetId;
+          } catch (_) {
+            $("robloxHistoryStatus").textContent = "No pude copiar automáticamente. ID: " + record.assetId;
+          }
+        };
         actions.appendChild(copy);
       }
       const refresh = document.createElement("button");
@@ -1364,7 +1371,8 @@
         ? "✅ " + uploaded + " archivo(s) enviado(s) a Roblox. El estado de cada uno aparecerá en la lista de revisión."
         : "No se envió ningún archivo. Revisa los formatos, tamaño y duración.";
       selectedRobloxFiles = [];
-      updateSelectedRobloxFiles();
+      $("robloxUploadFileList").innerHTML = "";
+      $("robloxUploadFiles").value = "";
     } catch (err) {
       $("robloxUploadStatus").textContent = "❌ " + (err.message || "No se pudo subir el audio.");
     } finally {
