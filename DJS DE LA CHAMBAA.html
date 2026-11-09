@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DJS DE LA CHAMBA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#07050d; --panel:#120d1f; --panel2:#1a1230; --line:#2c2148;
+    --pink:#ff2bd6; --cyan:#22e7ff; --lime:#b6ff3b; --txt:#efeaff; --mut:#9a8fbf;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif}
+  body{min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 15% -10%, #ff2bd633, transparent 60%),
+      radial-gradient(800px 500px at 100% 10%, #22e7ff26, transparent 60%),
+      var(--bg);}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+  header{text-align:center;margin-bottom:22px}
+  h1{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;letter-spacing:3px;
+     font-size:clamp(48px,11vw,96px);line-height:.9;margin:0;
+     background:linear-gradient(90deg,var(--pink),#a95bff,var(--cyan));
+     -webkit-background-clip:text;background-clip:text;color:transparent;
+     filter:drop-shadow(0 0 18px #ff2bd655)}
+  .sub{color:var(--mut);margin-top:8px;font-size:15px}
+  .eq{display:flex;gap:4px;justify-content:center;height:26px;align-items:flex-end;margin:14px 0 0}
+  .eq i{width:6px;border-radius:3px;background:linear-gradient(var(--cyan),var(--pink));animation:b 1s ease-in-out infinite}
+  .eq i:nth-child(2n){animation-delay:-.3s}.eq i:nth-child(3n){animation-delay:-.6s}.eq i:nth-child(5n){animation-delay:-.8s}
+  @keyframes b{0%,100%{height:5px}50%{height:26px}}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+        border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 10px 40px #0007}
+  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-weight:800;font-size:17px}
+  .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:14px;
+       background:var(--pink);color:#12001a;box-shadow:0 0 14px var(--pink)}
+  .drop{border:2px dashed #4a3a75;border-radius:14px;padding:30px 16px;text-align:center;cursor:pointer;
+        transition:.2s;color:var(--mut)}
+  .drop:hover,.drop.over{border-color:var(--cyan);background:#22e7ff0d;color:var(--txt)}
+  .drop b{color:var(--cyan)}
+  .method{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .chip{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .chip small{display:block;color:var(--mut);font-size:12px}
+  .chip strong{font-size:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label.lbl{font-size:13px;color:var(--mut)}
+  select,input[type=text]{background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:10px;
+        padding:10px 12px;font:inherit;font-size:15px}
+  input[type=text]{width:100%}
+  select:focus,input:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;
+         background:linear-gradient(90deg,var(--pink),#a95bff);color:#fff;letter-spacing:.3px;
+         box-shadow:0 0 18px #ff2bd655;transition:transform .1s, opacity .2s}
+  button:hover{transform:translateY(-1px)}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  button.ghost{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--txt)}
+  button.cyan{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;box-shadow:0 0 18px #22e7ff55}
+  .bar{height:10px;border-radius:6px;background:#0c0816;border:1px solid var(--line);overflow:hidden;margin-top:12px}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .15s}
+  .status{color:var(--mut);font-size:14px;margin-top:8px;min-height:20px}
+  .info{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin:10px 0}
+  .info b{color:var(--txt)}
+  audio{width:100%;margin-top:6px}
+  .hide{display:none!important}
+  .tip{font-size:13px;color:var(--mut);line-height:1.5;margin-top:12px;padding:10px 12px;border-left:3px solid var(--lime);background:#b6ff3b0a;border-radius:0 10px 10px 0}
+  .tip code{color:var(--lime)}
+  .parts{display:grid;gap:8px;margin-top:12px}
+  .part{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0c0816;border:1px solid var(--line);
+        border-radius:12px;padding:10px 12px;font-size:14px}
+  .part .t{color:var(--mut);font-size:12px}
+  .part button{padding:8px 12px;font-size:13px}
+  /* modal */
+  .ov{position:fixed;inset:0;background:#000b;display:grid;place-items:center;padding:16px;z-index:10;backdrop-filter:blur(4px)}
+  .modal{width:min(460px,100%);background:linear-gradient(180deg,#22183d,var(--panel));border:1px solid #4a3a75;border-radius:20px;
+         padding:22px;box-shadow:0 0 50px #ff2bd633}
+  .modal h2{margin:0 0 6px;font-family:"Bebas Neue",sans-serif;font-weight:400;letter-spacing:1.5px;font-size:34px;color:var(--cyan)}
+  .modal p{color:var(--mut);margin:0 0 14px;font-size:14px;line-height:1.45}
+  .modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .err{color:#ff6b8a;font-size:13px;margin-top:6px;min-height:16px}
+  .opt{display:block;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;background:#0c0816}
+  .opt:has(input:checked){border-color:var(--pink);box-shadow:0 0 0 1px var(--pink) inset}
+  .opt input{accent-color:var(--pink);margin-right:8px}
+  .opt .sel{margin:10px 0 0 26px}
+  @media (max-width:520px){.method{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DJS DE LA CHAMBA</h1>
+    <div class="sub">Prepara tus audios para los conciertos de Roblox</div>
+    <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </header>
+
+  <!-- PASO 1 -->
+  <div class="card">
+    <div class="step"><span class="num">1</span>Sube tu canción</div>
+    <div class="drop" id="drop">
+      <div style="font-size:34px">🎧</div>
+      Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+      <small>MP3, WAV, OGG, M4A…</small>
+    </div>
+    <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+    <div class="method">
+      <div class="chip"><small>Velocidad y tono</small><strong>+150 % (2.5× más rápido)</strong></div>
+      <div class="chip"><small>Volumen (Amplify)</small><strong>× 0.708 (−3 dB)</strong></div>
+    </div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="status" id="status">Esperando tu audio…</div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="card hide" id="card2">
+    <div class="step"><span class="num">2</span>Escúchalo</div>
+    <div class="info">
+      <span>Original: <b id="durOrig">–</b></span>
+      <span>Ya editado: <b id="durNew">–</b></span>
+    </div>
+    <audio id="player" controls></audio>
+    <div class="row" style="margin-top:8px">
+      <button class="ghost" id="btnFast" type="button">▶ Como quedó (rápido)</button>
+      <button class="ghost" id="btnRoblox" type="button">▶ Como sonará en Roblox (0.4)</button>
+    </div>
+    <div class="tip">En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.</div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="card hide" id="card3">
+    <div class="step"><span class="num">3</span>Entregar</div>
+    <div class="row">
+      <label class="lbl" for="maxLen">Si dura más de</label>
+      <select id="maxLen">
+        <option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option>
+        <option value="240">4 min</option><option value="300" selected>5 min</option><option value="360">6 min</option>
+        <option value="420">7 min</option>
+      </select>
+      <span class="lbl">te pregunto si lo quieres en partes.</span>
+    </div>
+    <div style="margin-top:14px"><button id="btnDeliver" class="cyan" type="button">💾 Entregar mi audio</button></div>
+    <div class="bar hide" id="encBarWrap"><div id="encBar"></div></div>
+    <div class="status" id="encStatus"></div>
+    <div class="parts" id="parts"></div>
+  </div>
+</div>
+
+<!-- MODAL NOMBRE -->
+<div class="ov hide" id="mName">
+  <form class="modal" id="fName" autocomplete="off">
+    <h2>¿Cómo se llama tu audio?</h2>
+    <p>Escribe el nombre que quieres ponerle antes de entregártelo.</p>
+    <input type="text" id="inName" maxlength="80" placeholder="Ej: Peso Pluma - Concierto Arena">
+    <div class="err" id="nameErr"></div>
+    <div class="acts">
+      <button type="button" class="ghost" id="nameCancel">Cancelar</button>
+      <button type="submit">Siguiente</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL ENTREGA -->
+<div class="ov hide" id="mDeliv">
+  <form class="modal" id="fDeliv">
+    <h2>¿Cómo lo quieres?</h2>
+    <p id="delivMsg"></p>
+    <label class="opt"><input type="radio" name="dm" value="folder" checked>En una carpeta (con todos los MP3 adentro)</label>
+    <label class="opt"><input type="radio" name="dm" value="files">Solo los archivos MP3 sueltos</label>
+    <div class="acts">
+      <button type="button" class="ghost" id="delivCancel">Cancelar</button>
+      <button type="submit">Entregar</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL PARTES -->
+<div class="ov hide" id="mParts">
+  <form class="modal" id="fParts">
+    <h2>Tu audio es muy largo</h2>
+    <p id="partsMsg"></p>
+    <label class="opt"><input type="radio" name="mode" value="parts" checked>Dividirlo en partes
+      <div class="sel row"><select id="partsCount"></select><span class="lbl" id="partsEach"></span></div>
+    </label>
+    <label class="opt"><input type="radio" name="mode" value="whole">Entregarlo completo (1 solo archivo)</label>
+    <div class="acts">
+      <button type="button" class="ghost" id="partsCancel">Cancelar</button>
+      <button type="submit">Entregar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const FACTOR = 2.5;            // ChangeSpeedAndPitch Percentage=150  -> +150 % = 2.5x
+  const GAIN   = 0.70794578;     // Amplify Ratio
+  const SR     = 44100;
+  const KBPS   = 192;
+
+  const $ = id => document.getElementById(id);
+  const fmt = s => { s = Math.round(s); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+  // cede el control sin depender de setTimeout (los navegadores lo frenan mucho si cambias de pestaña)
+  const sleep = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); r(); }; c.port2.postMessage(0); });
+  const safeName = n => n.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g," ").trim();
+
+  let processed = null;   // {chans:[Int16Array], length, sampleRate}
+  let origName = "";
+  let previewUrl = null;
+  let downloads = null;
+  let lastPack = null;    // {name, files:[{name, blob, secs}]}
+
+  // capability de descargas
+  if (window.claude && claude.use) {
+    claude.use("downloads").then(d => { downloads = d; }).catch(() => {});
+  }
+
+  // ---------- subir ----------
+  const drop = $("drop"), file = $("file");
+  drop.onclick = () => file.click();
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); };
+  file.onchange = () => { if (file.files[0]) handle(file.files[0]); file.value = ""; };
+
+  function setBar(p){ $("bar").style.width = Math.round(p*100) + "%"; }
+  function status(t){ $("status").textContent = t; }
+
+  // ---------- lectura por pedazos (así aguantan audios de horas) ----------
+  // Un audio de 1 hora decodificado de golpe ocupa más de 1 GB de memoria y el navegador lo rechaza.
+  // Por eso se lee y se procesa en trozos de pocos minutos y solo se guarda el resultado ya editado.
+  const dctx = new OfflineAudioContext(2, 1, SR);
+  const decode = ab => dctx.decodeAudioData(ab);
+  const readBytes = async (f, a, b) => new Uint8Array(await f.slice(a, b).arrayBuffer());
+
+  // <<MP3-PURE
+  const MP3_BR = {
+    1: [0,32,40,48,56,64,80,96,112,128,160,192,224,256,320],
+    2: [0,8,16,24,32,40,48,56,64,80,96,112,128,144,160]
+  };
+  const MP3_SR = { 3: [44100,48000,32000], 2: [22050,24000,16000], 0: [11025,12000,8000] };
+  function mp3Header(b, i){
+    if (i + 4 > b.length || b[i] !== 0xFF || (b[i+1] & 0xE0) !== 0xE0) return null;
+    const ver = (b[i+1] >> 3) & 3, layer = (b[i+1] >> 1) & 3;
+    if (ver === 1 || layer !== 1) return null;                 // solo MPEG capa III
+    const bi = b[i+2] >> 4, si = (b[i+2] >> 2) & 3, pad = (b[i+2] >> 1) & 1;
+    if (bi === 0 || bi === 15 || si === 3) return null;
+    const v1 = ver === 3;
+    const br = MP3_BR[v1 ? 1 : 2][bi] * 1000, rate = MP3_SR[ver][si];
+    return { len: Math.floor((v1 ? 144 : 72) * br / rate) + pad, rate, spf: v1 ? 1152 : 576 };
+  }
+  // ¿hay una trama de verdad en i? (que la siguiente también lo parezca, para no confundirse con basura)
+  function mp3Valid(b, i){
+    const h = mp3Header(b, i); if (!h) return null;
+    const n = i + h.len;
+    return (n + 4 > b.length || mp3Header(b, n) || (b[n] === 0x54 && b[n+1] === 0x41 && b[n+2] === 0x47)) ? h : null;
+  }
+  // Recorre tramas desde 'from' hasta pasar de 'target' bytes. Devuelve inicios de trama y dónde termina.
+  function mp3Walk(b, from, target){
+    const starts = []; let i = from, h0 = null;
+    while (i + 4 <= b.length && i < target){
+      const h = mp3Valid(b, i);
+      if (!h){                                                   // perdió sincronía: buscar la siguiente trama
+        let j = i + 1; while (j + 4 <= b.length && !mp3Valid(b, j)) j++;
+        if (j + 4 > b.length) break;
+        i = j; continue;
+      }
+      if (i + h.len > b.length) break;                           // trama cortada al final de la ventana
+      if (!h0) h0 = h;
+      starts.push(i); i += h.len;
+    }
+    return { starts, end: i, h: h0 };
+  }
+  // MP3 en pedazos: cada pedazo repite 4 tramas del anterior (el decodificador las necesita para arrancar bien)
+  async function* mp3Chunks(f, prog){
+    const OVER = 4, WIN = 6 * 1024 * 1024;
+    let pos = 0;
+    const head = await readBytes(f, 0, 10);
+    if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33){
+      pos = 10 + (((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f));
+      if (head[5] & 0x10) pos += 10;
+    }
+    let first = true;
+    while (pos < f.size){
+      const b = await readBytes(f, pos, Math.min(f.size, pos + WIN + 16384));
+      const atEnd = pos + b.length >= f.size;                    // la ventana ya llega al final del archivo
+      const w = mp3Walk(b, 0, atEnd ? Infinity : WIN);
+      if (w.starts.length === 0) break;
+      const skip = first ? 0 : Math.round(OVER * w.h.spf * SR / w.h.rate);
+      yield { bytes: b.slice(0, w.end), skip };
+      first = false;
+      prog(Math.min(1, (pos + w.end) / f.size));
+      if (atEnd || w.starts.length <= OVER) break;
+      pos += w.starts[w.starts.length - OVER];                   // el siguiente pedazo arranca 4 tramas antes
+    }
+  }
+  // MP3-PURE>>
+
+  // WAV en pedazos de 4 minutos (cada uno se arma como un WAV chiquito y el navegador lo decodifica)
+  async function* wavChunks(f, prog){
+    let p = 12, fmt = null, dataPos = 0, dataLen = 0;
+    while (p + 8 <= f.size){
+      const hd = await readBytes(f, p, p + 8), dv = new DataView(hd.buffer);
+      const id = String.fromCharCode(hd[0], hd[1], hd[2], hd[3]); let sz = dv.getUint32(4, true);
+      if (id === "fmt ") fmt = await readBytes(f, p + 8, p + 8 + sz);
+      else if (id === "data"){ dataPos = p + 8; if (!sz || dataPos + sz > f.size) sz = f.size - dataPos; dataLen = sz; break; }
+      p += 8 + sz + (sz & 1);
+    }
+    if (!fmt || !dataLen) throw new Error("wav");
+    const fv = new DataView(fmt.buffer), rate = fv.getUint32(4, true), align = fv.getUint16(12, true);
+    const step = Math.floor(rate * 240) * align;
+    for (let o = 0; o < dataLen; o += step){
+      const n = Math.min(step, dataLen - o) - (Math.min(step, dataLen - o) % align);
+      if (n <= 0) break;
+      const raw = await readBytes(f, dataPos + o, dataPos + o + n);
+      const fl = fmt.length + (fmt.length & 1);
+      const out = new Uint8Array(12 + 8 + fl + 8 + n), v = new DataView(out.buffer);
+      out.set([82,73,70,70], 0); v.setUint32(4, out.length - 8, true); out.set([87,65,86,69], 8);
+      out.set([102,109,116,32], 12); v.setUint32(16, fmt.length, true); out.set(fmt, 20);
+      out.set([100,97,116,97], 20 + fl); v.setUint32(24 + fl, n, true); out.set(raw, 28 + fl);
+      yield { bytes: out, skip: 0 };
+      prog(Math.min(1, (o + n) / dataLen));
+    }
+  }
+
+  // Cualquier otro formato (M4A, OGG, FLAC…): se abre completo; si es larguísimo puede no caber en memoria.
+  async function* wholeChunks(f, prog){
+    yield { bytes: new Uint8Array(await f.arrayBuffer()), skip: 0 };
+    prog(1);
+  }
+
+  async function sniff(f){
+    const b = await readBytes(f, 0, 12);
+    if (String.fromCharCode(b[0],b[1],b[2],b[3]) === "RIFF" && String.fromCharCode(b[8],b[9],b[10],b[11]) === "WAVE") return "wav";
+    if ((b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33) || (b[0] === 0xFF && (b[1] & 0xE0) === 0xE0)) return "mp3";
+    return "other";
+  }
+
+  async function handle(f){
+    $("card2").classList.add("hide"); $("card3").classList.add("hide");
+    $("parts").innerHTML = ""; $("encStatus").textContent = "";
+    origName = f.name.replace(/\.[^.]+$/, "");
+    processed = null;
+    let kind = "other";
+    try{
+      status("Leyendo " + f.name + "…"); setBar(.02);
+      kind = await sniff(f);
+      let proc = null, srcSecs = 0;
+      const run = async gen => {
+        proc = makeProcessor(); srcSecs = 0;
+        const prog = p => { setBar(.02 + .96 * p); };
+        for await (const c of gen(f, prog)){
+          const buf = await decode(c.bytes.buffer.byteLength === c.bytes.length ? c.bytes.buffer : c.bytes.slice().buffer);
+          srcSecs += proc.push(buf, c.skip) / SR;
+          status("Procesando… llevo " + fmt(srcSecs) + " de audio original");
+          await sleep();
+        }
+      };
+      try{
+        await run(kind === "mp3" ? mp3Chunks : kind === "wav" ? wavChunks : wholeChunks);
+      }catch(e){
+        // si el método por pedazos no pudo con ese archivo, se intenta abrirlo completo
+        if (kind === "other" || f.size > 400 * 1048576) throw e;
+        console.warn("por pedazos falló, abro completo", e);
+        await run(wholeChunks);
+      }
+      processed = proc.finish();
+      if (!processed.length) throw new Error("vacio");
+      setBar(1); status("¡Listo! " + f.name + " ya está editado.");
+      $("durOrig").textContent = fmt(srcSecs);
+      $("durNew").textContent = fmt(processed.length / SR);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      try{
+        previewUrl = URL.createObjectURL(wavBlob(processed.chans, SR));
+        const p = $("player"); p.src = previewUrl; setRate(1);
+      }catch(e){ console.warn("sin vista previa", e); }
+      $("card2").classList.remove("hide"); $("card3").classList.remove("hide");
+    }catch(err){
+      console.error(err); setBar(0);
+      status(kind === "other" && f.size > 60 * 1048576
+        ? "Ese formato es muy pesado para abrirlo completo. Conviértelo a MP3 o WAV y vuelve a subirlo."
+        : "No pude abrir ese audio. Prueba con otro archivo (MP3 o WAV). [" + ((err && (err.message || err.name)) || "error desconocido") + "]");
+    }
+  }
+
+  // Igual que Audacity "Change Speed and Pitch" (+150 % = 2.5x) y Amplify (−3 dB), pero en streaming:
+  // las muestras se leen 2.5x más rápido, se filtra (anti-aliasing) y se baja a 44.1 kHz con interpolación.
+  function makeProcessor(){
+    const f0 = 18500, fs = SR * FACTOR, Qdb = 0.707;
+    const w0 = 2 * Math.PI * f0 / fs, cs = Math.cos(w0), al = Math.sin(w0) / (2 * Math.pow(10, Qdb / 20));
+    const a0 = 1 + al;
+    const B0 = (1 - cs) / 2 / a0, B1 = (1 - cs) / a0, B2 = B0, A1 = -2 * cs / a0, A2 = (1 - al) / a0;
+    const STAGES = 6;
+    let ch = 0, st = null, prev = null, out = null, g = 0, nextOut = 0, total = 0;
+    return {
+      push(buf, skip){
+        if (!ch){
+          ch = Math.min(2, buf.numberOfChannels);
+          st = Array.from({ length: ch }, () => Array.from({ length: STAGES }, () => new Float64Array(4)));
+          prev = new Float64Array(ch); out = Array.from({ length: ch }, () => []);
+        }
+        const n = buf.length - skip;
+        if (n <= 0) return 0;
+        const ys = [];
+        for (let c = 0; c < ch; c++){
+          const x = buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)), y = new Float32Array(n);
+          for (let s = 0; s < STAGES; s++){
+            const S = st[c][s]; let x1 = S[0], x2 = S[1], y1 = S[2], y2 = S[3];
+            const src = s === 0 ? x : y, off = s === 0 ? skip : 0;
+            for (let i = 0; i < n; i++){
+              const xi = src[i + off];
+              const yi = B0 * xi + B1 * x1 + B2 * x2 - A1 * y1 - A2 * y2;
+              x2 = x1; x1 = xi; y2 = y1; y1 = yi; y[i] = yi;
+            }
+            S[0] = x1; S[1] = x2; S[2] = y1; S[3] = y2;
+          }
+          ys.push(y);
+        }
+        // salidas posibles en este trozo: posición k*2.5 con i0+1 dentro de lo ya filtrado
+        let k = nextOut; const lastIdx = g + n - 1;
+        const cap = Math.ceil(n / FACTOR) + 4;
+        const pieces = ys.map(() => new Int16Array(cap)); let m = 0;
+        for (;; k++, m++){
+          const p = k * FACTOR, i0 = Math.floor(p);
+          if (i0 + 1 > lastIdx) break;
+          const fr = p - i0;
+          for (let c = 0; c < ch; c++){
+            const y = ys[c];
+            const s0 = i0 >= g ? y[i0 - g] : prev[c], s1 = y[i0 + 1 - g];
+            let v = (s0 + (s1 - s0) * fr) * GAIN;
+            v = v < -1 ? -1 : v > 1 ? 1 : v;
+            pieces[c][m] = Math.round(v < 0 ? v * 0x8000 : v * 0x7fff);
+          }
+        }
+        for (let c = 0; c < ch; c++){ out[c].push(pieces[c].slice(0, m)); prev[c] = ys[c][n - 1]; }
+        g += n; nextOut = k; total += m;
+        return n;
+      },
+      finish(){
+        const chans = out.map(list => {
+          const all = new Int16Array(total); let o = 0;
+          for (let i = 0; i < list.length; i++){ all.set(list[i], o); o += list[i].length; list[i] = null; }
+          return all;
+        });
+        out = null;
+        return { chans, length: total, sampleRate: SR };
+      }
+    };
+  }
+
+  // ---------- preview ----------
+  function setRate(r){
+    const p = $("player");
+    p.preservesPitch = false; p.mozPreservesPitch = false; p.webkitPreservesPitch = false;
+    p.playbackRate = r; p.defaultPlaybackRate = r;
+  }
+  $("btnFast").onclick = () => { setRate(1); $("player").play().catch(()=>{}); };
+  $("btnRoblox").onclick = () => { setRate(0.4); $("player").play().catch(()=>{}); };
+
+  // ---------- entregar ----------
+  $("btnDeliver").onclick = () => {
+    if (!processed) return;
+    $("inName").value = lastPack ? lastPack.name : origName;
+    $("nameErr").textContent = "";
+    $("mName").classList.remove("hide");
+    setTimeout(() => $("inName").focus(), 30);
+  };
+  $("nameCancel").onclick = () => $("mName").classList.add("hide");
+  $("fName").onsubmit = e => {
+    e.preventDefault();
+    const n = safeName($("inName").value);
+    if (!n){ $("nameErr").textContent = "Ponle un nombre a tu audio."; return; }
+    $("mName").classList.add("hide");
+    const secs = processed.length / SR, max = +$("maxLen").value;
+    if (secs > max) askParts(n, secs, max);
+    else build(n, 1);
+  };
+
+  function askParts(name, secs, max){
+    const min = Math.ceil(secs / max);
+    $("partsMsg").textContent = "Ya editado dura " + fmt(secs) + " (más de " + fmt(max) + "). ¿Lo quieres en partes? Parte 1, Parte 2, Parte 3…";
+    const sel = $("partsCount"); sel.innerHTML = "";
+    for (let k = Math.max(2, min); k <= Math.max(2, min) + 4; k++){
+      const o = document.createElement("option"); o.value = k; o.textContent = k + " partes"; sel.appendChild(o);
+    }
+    const each = () => $("partsEach").textContent = "≈ " + fmt(secs / +sel.value) + " cada una";
+    sel.onchange = each; each();
+    $("fParts").querySelector('input[value="parts"]').checked = true;
+    $("mParts").classList.remove("hide");
+    $("fParts").onsubmit = e => {
+      e.preventDefault();
+      $("mParts").classList.add("hide");
+      const mode = $("fParts").querySelector('input[name="mode"]:checked').value;
+      build(name, mode === "parts" ? +sel.value : 1);
+    };
+  }
+  $("partsCancel").onclick = () => $("mParts").classList.add("hide");
+
+  async function build(name, nParts){
+    const btn = $("btnDeliver"); btn.disabled = true;
+    $("encBarWrap").classList.remove("hide"); $("parts").innerHTML = "";
+    const total = processed.length;
+    const per = Math.ceil(total / nParts);
+    const files = [];
+    try{
+      if (typeof lamejs === "undefined") throw new Error("lamejs");
+      $("encBar").style.width = "0%";
+      const segs = [];
+      for (let k = 0; k < nParts; k++){
+        const a = k * per, b = Math.min(total, a + per);
+        segs.push({ a, b, label: nParts > 1 ? "Parte " + (k+1) + " - " + name : name });
+      }
+      $("encStatus").textContent = "Preparando…";
+      const blobs = await encodeAll(segs,
+        p => { $("encBar").style.width = Math.round(p * 100) + "%"; },
+        msg => { $("encStatus").textContent = msg; });
+      segs.forEach((s, k) => files.push({ name: s.label + ".mp3", blob: blobs[k], secs: (s.b - s.a) / SR }));
+      $("encBar").style.width = "100%";
+      lastPack = { name, files };
+      renderParts();
+      await saveZip(name + ".zip", files);
+    }catch(err){
+      console.error(err);
+      $("encStatus").textContent = err && err.message === "lamejs"
+        ? "No cargó el creador de MP3. Recarga la página e inténtalo de nuevo."
+        : "Algo falló al crear el audio (" + ((err && (err.message || err.name)) || "error desconocido") + "). Inténtalo de nuevo.";
+    }finally{ btn.disabled = false; }
+  }
+
+  function renderParts(){
+    const box = $("parts"); box.innerHTML = "";
+    lastPack.files.forEach(f => {
+      const d = document.createElement("div"); d.className = "part";
+      d.innerHTML = '<div><div></div><div class="t"></div></div>';
+      d.firstElementChild.firstElementChild.textContent = "🎵 " + f.name;
+      d.querySelector(".t").textContent = fmt(f.secs) + " editado · " + fmt(f.secs * FACTOR) + " en Roblox (0.4) · " + (f.blob.size/1048576).toFixed(1) + " MB";
+      if (lastPack.files.length > 1){
+        const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
+        b.onclick = () => saveZip(f.name.replace(/\.mp3$/,"") + ".zip", [f]);
+        d.appendChild(b);
+      }
+      box.appendChild(d);
+    });
+    if (lastPack.files.length > 1){
+      const all = document.createElement("button"); all.type = "button"; all.className = "cyan";
+      all.textContent = "💾 Bajar todas las partes (" + lastPack.files.length + ")";
+      all.onclick = () => saveZip(lastPack.name + ".zip", lastPack.files);
+      box.appendChild(all);
+    }
+  }
+
+  function askDelivery(files){
+    return new Promise(res => {
+      $("delivMsg").textContent = files.length > 1
+        ? "Son " + files.length + " archivos. ¿Los quieres dentro de una carpeta o cada MP3 por separado?"
+        : "¿Lo quieres dentro de una carpeta o solo el archivo MP3?";
+      $("fDeliv").querySelector('input[value="folder"]').checked = true;
+      $("mDeliv").classList.remove("hide");
+      $("delivCancel").onclick = () => { $("mDeliv").classList.add("hide"); res(null); };
+      $("fDeliv").onsubmit = e => {
+        e.preventDefault(); $("mDeliv").classList.add("hide");
+        res($("fDeliv").querySelector('input[name="dm"]:checked').value);
+      };
+    });
+  }
+
+  async function saveZip(zipName, files){
+    if (!downloads){
+      $("encStatus").textContent = "Tus MP3 están listos, pero esta vista no permite descargar. Abre la página directamente en claude.ai para bajarlos.";
+      return;
+    }
+    const mode = await askDelivery(files);
+    if (!mode){
+      $("encStatus").textContent = "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo.";
+      return;
+    }
+    if (mode === "files"){
+      let ok = 0;
+      for (const f of files){
+        $("encStatus").textContent = "Confirma la descarga de " + f.name + " (" + (ok + 1) + " de " + files.length + ")…";
+        try{
+          await downloads.save({ filename: f.name, data: f.blob });
+          ok++;
+        }catch(err){
+          const c = err && err.code;
+          $("encStatus").textContent =
+            c === "declined" ? "Cancelaste la descarga después de " + ok + " de " + files.length + " archivos. Puedes bajar el resto con los botones de abajo." :
+            c === "rate_limited" ? "Ya hay una descarga abierta (van " + ok + " de " + files.length + "). Espera un momento y vuelve a intentar." :
+            "No se pudo descargar aquí. Abre la página directamente en claude.ai.";
+          return;
+        }
+      }
+      $("encStatus").textContent = "✅ Entregado: " + ok + (ok === 1 ? " archivo MP3" : " archivos MP3") + " (súbelos a Roblox).";
+      return;
+    }
+    if (mode === "folder"){
+      try{
+        if (!window.showDirectoryPicker) throw new Error("nodir");
+        $("encStatus").textContent = "Elige dónde guardar la carpeta…";
+        const root = await window.showDirectoryPicker({ mode: "readwrite" });
+        const dir = await root.getDirectoryHandle(zipName.replace(/\.zip$/i, ""), { create: true });
+        let n = 0;
+        for (const f of files){
+          $("encStatus").textContent = "Guardando " + f.name + " (" + (++n) + " de " + files.length + ")…";
+          const fh = await dir.getFileHandle(f.name, { create: true });
+          const w = await fh.createWritable(); await w.write(f.blob); await w.close();
+        }
+        $("encStatus").textContent = "✅ Entregado en la carpeta «" + dir.name + "» (" + files.length + (files.length === 1 ? " archivo" : " archivos") + ").";
+        return;
+      }catch(err){
+        if (err && err.name === "AbortError"){
+          $("encStatus").textContent = "Cancelaste. Puedes volver a bajarla con los botones de abajo.";
+          return;
+        }
+        console.warn("carpeta directa no disponible", err);
+        $("encStatus").textContent = "Esta vista no deja crear carpetas directo; te la bajo comprimida (al abrirla queda la carpeta).";
+        await new Promise(r => setTimeout(r, 2500));
+      }
+    }
+    $("encStatus").textContent = "Empaquetando…";
+    const zip = new JSZip();
+    files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
+    const blob = await zip.generateAsync({ type: "blob" });
+    $("encStatus").textContent = "Confirma la descarga en la ventana que aparece…";
+    try{
+      await downloads.save({ filename: zipName, data: blob });
+      $("encStatus").textContent = "✅ Entregado: " + zipName + " (descomprímelo y sube los MP3 a Roblox).";
+    }catch(err){
+      const c = err && err.code;
+      $("encStatus").textContent =
+        c === "declined" ? "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo." :
+        c === "rate_limited" ? "Ya hay una descarga abierta. Espera un momento y vuelve a intentar." :
+        "No se pudo descargar aquí. Abre la página directamente en claude.ai.";
+    }
+  }
+
+  // ---------- MP3 en paralelo (Web Workers): varias partes a la vez y sin congelar la página ----------
+  function mp3WorkerMain(){
+    self.onmessage = function(e){
+      const m = e.data;
+      if (m.type === "init"){
+        try{ importScripts(m.url); self.postMessage({ type: "ready", ok: typeof lamejs !== "undefined" }); }
+        catch(err){ self.postMessage({ type: "ready", ok: false }); }
+        return;
+      }
+      try{
+        const ch = m.chans, nch = ch.length, len = ch[0].length;
+        const enc = new lamejs.Mp3Encoder(nch, m.sr, m.kbps);
+        const BLOCK = 1152 * 20, out = []; let last = 0;
+        for (let i = 0; i < len; i += BLOCK){
+          const e2 = Math.min(len, i + BLOCK), l = ch[0].subarray(i, e2);
+          const mp3 = nch > 1 ? enc.encodeBuffer(l, ch[1].subarray(i, e2)) : enc.encodeBuffer(l);
+          if (mp3.length) out.push(new Uint8Array(mp3));
+          if (i / len - last > 0.01){ last = i / len; self.postMessage({ type: "prog", id: m.id, p: last }); }
+        }
+        const end = enc.flush(); if (end.length) out.push(new Uint8Array(end));
+        self.postMessage({ type: "done", id: m.id, out: out }, out.map(function(o){ return o.buffer; }));
+      }catch(err){ self.postMessage({ type: "err", id: m.id, msg: String(err && err.message || err) }); }
+    };
+  }
+  async function startPool(n){
+    if (typeof Worker === "undefined") return null;
+    const tag = document.querySelector('script[src*="lame"]');
+    if (!tag) return null;
+    const ws = []; let url = null;
+    try{
+      url = URL.createObjectURL(new Blob(["(" + mp3WorkerMain.toString() + ")()"], { type: "text/javascript" }));
+      for (let i = 0; i < n; i++) ws.push(new Worker(url));
+      await Promise.all(ws.map(w => new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error("timeout")), 8000);
+        w.onerror = () => { clearTimeout(t); rej(new Error("worker")); };
+        w.onmessage = e => { clearTimeout(t); e.data.ok ? res() : rej(new Error("lame")); };
+        w.postMessage({ type: "init", url: tag.src });
+      })));
+      URL.revokeObjectURL(url);
+      return ws;
+    }catch(e){
+      console.warn("sin workers", e);
+      ws.forEach(w => w.terminate());
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    }
+  }
+  async function encodeAll(segs, onProg, onMsg){
+    const cores = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+    const prog = segs.map(() => 0), upd = () => onProg(prog.reduce((a, b) => a + b, 0) / segs.length);
+    const ws = await startPool(Math.min(segs.length, cores));
+    if (ws){
+      try{
+        onMsg("Creando MP3" + (ws.length > 1 ? " (" + ws.length + " partes a la vez)" : "") + "…");
+        const blobs = new Array(segs.length); let next = 0;
+        await Promise.all(ws.map(w => new Promise((res, rej) => {
+          const run = () => {
+            if (next >= segs.length){ res(); return; }
+            const k = next++, s = segs[k];
+            const chans = processed.chans.map(c => c.slice(s.a, s.b));
+            w.onmessage = e => {
+              const m = e.data;
+              if (m.type === "prog"){ prog[k] = m.p; upd(); }
+              else if (m.type === "done"){ prog[k] = 1; upd(); blobs[k] = new Blob(m.out, { type: "audio/mpeg" }); run(); }
+              else if (m.type === "err") rej(new Error(m.msg));
+            };
+            w.onerror = () => rej(new Error("worker"));
+            w.postMessage({ id: k, chans: chans, sr: SR, kbps: KBPS }, chans.map(c => c.buffer));
+          };
+          run();
+        })));
+        ws.forEach(w => w.terminate());
+        return blobs;
+      }catch(err){
+        console.warn("falló en paralelo, sigo sin workers", err);
+        ws.forEach(w => w.terminate());
+        prog.fill(0); upd();
+        onMsg("Sigo en modo normal (más lento)…");
+      }
+    }
+    const blobs = [];
+    for (let k = 0; k < segs.length; k++){
+      const s = segs[k];
+      onMsg("Creando MP3: " + s.label + "…");
+      blobs.push(await encodeMp3(processed.chans.map(c => c.subarray(s.a, s.b)), p => { prog[k] = p; upd(); }));
+      prog[k] = 1; upd();
+    }
+    return blobs;
+  }
+
+  // ---------- MP3 ----------
+  async function encodeMp3(chans, onProg){
+    const nch = chans.length, len = chans[0].length;
+    const enc = new lamejs.Mp3Encoder(nch, SR, KBPS);
+    const BLOCK = 1152 * 20, out = [];
+    let t = performance.now();
+    for (let i = 0; i < len; i += BLOCK){
+      const e = Math.min(len, i + BLOCK);
+      const l = chans[0].subarray(i, e);
+      const mp3 = nch > 1 ? enc.encodeBuffer(l, chans[1].subarray(i, e)) : enc.encodeBuffer(l);
+      if (mp3.length) out.push(new Uint8Array(mp3));
+      if (performance.now() - t > 120){ onProg(i / len); await sleep(); t = performance.now(); }
+    }
+    const end = enc.flush(); if (end.length) out.push(new Uint8Array(end));
+    onProg(1);
+    return new Blob(out, { type: "audio/mpeg" });
+  }
+  // ---------- WAV (solo para escuchar) ----------
+  function wavBlob(chans, sr){
+    const nch = chans.length, len = chans[0].length, bytes = len * nch * 2;
+    if (bytes > 0xFFFFFFF0 - 44) throw new Error("grande");
+    const hd = new ArrayBuffer(44), v = new DataView(hd);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0,"RIFF"); v.setUint32(4, 36 + bytes, true); w(8,"WAVE"); w(12,"fmt ");
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nch,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*nch*2,true); v.setUint16(32,nch*2,true); v.setUint16(34,16,true);
+    w(36,"data"); v.setUint32(40, bytes, true);
+    const parts = [hd], STEP = 1 << 20;
+    for (let i = 0; i < len; i += STEP){
+      const n = Math.min(STEP, len - i);
+      if (nch === 1){ parts.push(chans[0].slice(i, i + n)); continue; }
+      const p = new Int16Array(n * 2);
+      for (let j = 0; j < n; j++){ p[2*j] = chans[0][i + j]; p[2*j + 1] = chans[1][i + j]; }
+      parts.push(p);
+    }
+    return new Blob(parts, { type: "audio/wav" });
+  }
+})();
+</script>
+</body>
+</html>
