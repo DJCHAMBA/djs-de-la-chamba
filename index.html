@@ -874,11 +874,34 @@
     $("permissionCount").textContent = parsePermissionIds().length;
   }
 
-  $("openPermissions").onclick = () => {
+  let pendingPrivateDestination = "permissions";
+
+  function showPermissionLogin(destination){
+    pendingPrivateDestination = destination;
     $("permissionPassword").value = "";
     $("permissionLoginError").textContent = "";
     $("mPermissionLogin").classList.remove("hide");
     setTimeout(() => $("permissionPassword").focus(), 30);
+  }
+
+  function setMainTab(tab){
+    const upload = tab === "upload";
+    $("editorPanel").classList.toggle("hide", upload);
+    $("uploadPanel").classList.toggle("hide", !upload);
+    $("tabEditor").classList.toggle("active", !upload);
+    $("tabUpload").classList.toggle("active", upload);
+  }
+
+  $("tabEditor").onclick = () => setMainTab("editor");
+  $("tabUpload").onclick = () => {
+    setMainTab("upload");
+    if (!permissionsSession) showPermissionLogin("upload");
+    else renderRobloxUploadHistory();
+  };
+
+  $("openPermissions").onclick = () => {
+    setMainTab("editor");
+    showPermissionLogin("permissions");
   };
 
   $("cancelPermissionLogin").onclick = () => $("mPermissionLogin").classList.add("hide");
@@ -926,10 +949,18 @@
       if (!response.ok || !data.token) throw new Error(data.error || "No se pudo validar la contraseña.");
       permissionsSession = data.token;
       $("mPermissionLogin").classList.add("hide");
-      $("permissionsCard").classList.remove("hide");
-      $("permissionsStatus").textContent = "🔓 Acceso concedido. La sesión privada dura 30 minutos.";
-      updatePermissionCount();
-      $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (pendingPrivateDestination === "permissions") {
+        setMainTab("editor");
+        $("permissionsCard").classList.remove("hide");
+        $("permissionsStatus").textContent = "🔓 Acceso concedido. La sesión privada dura 30 minutos.";
+        updatePermissionCount();
+        $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        setMainTab("upload");
+        $("robloxUploadStatus").textContent = "🔓 Acceso concedido. Ya puedes subir audios y consultar su revisión.";
+        renderRobloxUploadHistory();
+        $("uploadPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     } catch (err) {
       $("permissionLoginError").textContent = err.message || "No se pudo conectar con el servidor privado.";
     } finally {
@@ -943,6 +974,8 @@
     $("permissionsCard").classList.add("hide");
     $("permissionsResults").innerHTML = "";
     $("permissionsStatus").textContent = "Sesión cerrada.";
+    $("robloxUploadStatus").textContent = "Sesión cerrada. Vuelve a entrar para subir audios o consultar estados.";
+    setMainTab("editor");
   };
 
   $("sendPermissions").onclick = async () => {
@@ -1026,6 +1059,335 @@
       button.disabled = false;
     }
   };
+
+
+  // ---------- SUBIR AUDIO A ROBLOX Y SEGUIR MODERACIÓN ----------
+  const UPLOAD_HISTORY_KEY = "djsChambaRobloxAudioHistoryV1";
+  let selectedRobloxFiles = [];
+
+  function loadRobloxUploadHistory(){
+    try {
+      const value = JSON.parse(localStorage.getItem(UPLOAD_HISTORY_KEY) || "[]");
+      return Array.isArray(value) ? value.slice(0, 100) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  let robloxUploadHistory = loadRobloxUploadHistory();
+
+  function saveRobloxUploadHistory(){
+    try {
+      localStorage.setItem(UPLOAD_HISTORY_KEY, JSON.stringify(robloxUploadHistory.slice(0, 100)));
+    } catch (err) {
+      $("robloxHistoryStatus").textContent = "No se pudo guardar el historial en este navegador.";
+    }
+  }
+
+  function formatFileSize(bytes){
+    return bytes >= 1048576
+      ? (bytes / 1048576).toFixed(1) + " MB"
+      : Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+
+  function updateSelectedRobloxFiles(){
+    const box = $("robloxUploadFileList");
+    box.innerHTML = "";
+    selectedRobloxFiles.forEach(fileItem => {
+      const item = document.createElement("div");
+      item.className = "upload-file-item";
+      const name = document.createElement("span");
+      name.textContent = fileItem.name;
+      const size = document.createElement("small");
+      size.textContent = formatFileSize(fileItem.size);
+      item.appendChild(name);
+      item.appendChild(size);
+      box.appendChild(item);
+    });
+    $("robloxUploadStatus").textContent = selectedRobloxFiles.length
+      ? selectedRobloxFiles.length + " archivo(s) seleccionado(s). Se subirán uno por uno."
+      : "Selecciona uno o varios audios para comenzar.";
+  }
+
+  function setRobloxUploadFiles(files){
+    selectedRobloxFiles = Array.from(files || []);
+    updateSelectedRobloxFiles();
+  }
+
+  const robloxUploadDrop = $("robloxUploadDrop");
+  const robloxUploadInput = $("robloxUploadFiles");
+  robloxUploadDrop.onclick = () => robloxUploadInput.click();
+  robloxUploadDrop.ondragover = event => {
+    event.preventDefault();
+    robloxUploadDrop.classList.add("over");
+  };
+  robloxUploadDrop.ondragleave = () => robloxUploadDrop.classList.remove("over");
+  robloxUploadDrop.ondrop = event => {
+    event.preventDefault();
+    robloxUploadDrop.classList.remove("over");
+    setRobloxUploadFiles(event.dataTransfer.files);
+  };
+  robloxUploadInput.onchange = () => {
+    setRobloxUploadFiles(robloxUploadInput.files);
+    robloxUploadInput.value = "";
+  };
+
+  $("clearRobloxUpload").onclick = () => setRobloxUploadFiles([]);
+
+  function getBrowserAudioDuration(fileItem){
+    return new Promise(resolve => {
+      const objectUrl = URL.createObjectURL(fileItem);
+      const audio = new Audio();
+      audio.preload = "metadata";
+      const finish = value => {
+        URL.revokeObjectURL(objectUrl);
+        audio.removeAttribute("src");
+        resolve(value);
+      };
+      audio.onloadedmetadata = () => finish(Number.isFinite(audio.duration) ? audio.duration : null);
+      audio.onerror = () => finish(null);
+      audio.src = objectUrl;
+    });
+  }
+
+  function moderationText(state){
+    if (state === "APPROVED") return "Aceptado";
+    if (state === "REJECTED") return "Rechazado";
+    if (state === "REVIEWING") return "En revisión";
+    if (state === "PROCESSING") return "Procesando en Roblox";
+    if (state === "FAILED") return "Error de subida";
+    return "Pendiente de revisión";
+  }
+
+  function moderationClass(state){
+    if (state === "APPROVED") return "approved";
+    if (state === "REJECTED" || state === "FAILED") return "rejected";
+    if (state === "REVIEWING" || state === "PROCESSING") return "reviewing";
+    return "";
+  }
+
+  function renderRobloxUploadHistory(){
+    const box = $("robloxUploadHistory");
+    box.innerHTML = "";
+    if (!robloxUploadHistory.length) {
+      const empty = document.createElement("div");
+      empty.className = "status";
+      empty.textContent = "Todavía no has subido audios desde este navegador.";
+      box.appendChild(empty);
+      return;
+    }
+
+    robloxUploadHistory.forEach(record => {
+      const item = document.createElement("div");
+      item.className = "part";
+      const left = document.createElement("div");
+      left.style.minWidth = "0";
+      const title = document.createElement("strong");
+      title.textContent = record.name || "Audio de Roblox";
+      const meta = document.createElement("div");
+      meta.className = "t";
+      meta.textContent = (record.assetId ? "ID: " + record.assetId : "Esperando ID de Roblox") +
+        (record.updatedAt ? " · " + new Date(record.updatedAt).toLocaleString() : "");
+      const badge = document.createElement("span");
+      badge.className = "status-pill " + moderationClass(record.state);
+      badge.textContent = moderationText(record.state);
+      left.appendChild(title);
+      left.appendChild(meta);
+      left.appendChild(badge);
+      item.appendChild(left);
+
+      const actions = document.createElement("div");
+      actions.className = "row";
+      if (record.assetId) {
+        const copy = document.createElement("button");
+        copy.className = "ghost";
+        copy.type = "button";
+        copy.textContent = "Copiar ID";
+        copy.onclick = () => GenUI.copy(record.assetId);
+        actions.appendChild(copy);
+      }
+      const refresh = document.createElement("button");
+      refresh.className = "ghost";
+      refresh.type = "button";
+      refresh.textContent = "Actualizar";
+      refresh.onclick = async () => {
+        refresh.disabled = true;
+        await refreshOneRobloxUpload(record);
+        refresh.disabled = false;
+      };
+      actions.appendChild(refresh);
+      item.appendChild(actions);
+      box.appendChild(item);
+    });
+  }
+
+  async function callAudioWorker(path, payload, isForm){
+    if (!permissionsSession) throw new Error("Tu sesión venció. Vuelve a entrar con tu contraseña.");
+    const headers = { "Authorization": "Bearer " + permissionsSession };
+    if (!isForm) headers["Content-Type"] = "application/json";
+    const response = await fetch(PERMISSIONS_API_URL + path, {
+      method: "POST",
+      headers,
+      body: isForm ? payload : JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      permissionsSession = null;
+      throw new Error(data.error || "Sesión vencida. Vuelve a ingresar.");
+    }
+    if (!response.ok) throw new Error(data.error || "Error del servidor (" + response.status + ").");
+    return data;
+  }
+
+  async function refreshOneRobloxUpload(record){
+    try {
+      if (!record.assetId) {
+        if (!record.operationId) throw new Error("No hay Operation ID para consultar.");
+        const operation = await callAudioWorker("/audio/operation", { operationId: record.operationId }, false);
+        if (!operation.done) {
+          record.state = "PROCESSING";
+          record.updatedAt = new Date().toISOString();
+          saveRobloxUploadHistory();
+          renderRobloxUploadHistory();
+          return false;
+        }
+        if (operation.error) {
+          record.state = "FAILED";
+          record.error = operation.error.message || "Roblox no pudo completar la subida.";
+          throw new Error(record.error);
+        }
+        if (operation.assetId) record.assetId = String(operation.assetId);
+        if (operation.moderationState && operation.moderationState !== "PENDING") {
+          record.state = operation.moderationState;
+        }
+      }
+
+      if (record.assetId) {
+        const status = await callAudioWorker("/audio/status", { assetId: record.assetId }, false);
+        record.state = status.moderationState || "PENDING";
+        record.rawModerationState = status.rawModerationState || "";
+        record.displayName = status.displayName || record.displayName || "";
+        record.updatedAt = new Date().toISOString();
+      }
+
+      saveRobloxUploadHistory();
+      renderRobloxUploadHistory();
+      return record.state === "APPROVED" || record.state === "REJECTED" || record.state === "FAILED";
+    } catch (err) {
+      record.error = err.message || "No se pudo consultar el estado.";
+      if (!record.assetId) record.state = "FAILED";
+      record.updatedAt = new Date().toISOString();
+      saveRobloxUploadHistory();
+      renderRobloxUploadHistory();
+      $("robloxHistoryStatus").textContent = record.error;
+      return record.state === "FAILED";
+    }
+  }
+
+  async function watchRobloxUpload(record){
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const finished = await refreshOneRobloxUpload(record);
+      if (finished) return;
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    $("robloxHistoryStatus").textContent = "La revisión puede tardar más. Puedes volver a pulsar «Actualizar» cuando quieras.";
+  }
+
+  $("startRobloxUpload").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    if (!selectedRobloxFiles.length) {
+      $("robloxUploadStatus").textContent = "Primero selecciona uno o varios archivos.";
+      return;
+    }
+
+    const files = selectedRobloxFiles.slice();
+    const button = $("startRobloxUpload");
+    button.disabled = true;
+    $("robloxUploadProgress").style.width = "0%";
+    let uploaded = 0;
+
+    try {
+      for (let index = 0; index < files.length; index++) {
+        const fileItem = files[index];
+        const extension = (fileItem.name.split(".").pop() || "").toLowerCase();
+        if (!["mp3", "ogg", "wav", "flac"].includes(extension)) {
+          $("robloxUploadStatus").textContent = "❌ Formato no admitido: " + fileItem.name + ". Usa MP3, OGG, WAV o FLAC.";
+          continue;
+        }
+        if (fileItem.size <= 0 || fileItem.size >= 20 * 1024 * 1024) {
+          $("robloxUploadStatus").textContent = "❌ " + fileItem.name + " debe pesar menos de 20 MB.";
+          continue;
+        }
+
+        $("robloxUploadStatus").textContent = "Revisando duración de " + fileItem.name + "…";
+        const duration = await getBrowserAudioDuration(fileItem);
+        if (duration !== null && duration > 420) {
+          $("robloxUploadStatus").textContent = "❌ " + fileItem.name + " dura más de 7 minutos. Roblox no lo admite.";
+          continue;
+        }
+
+        const defaultName = fileItem.name.replace(/\.[^.]+$/, "").slice(0, 50);
+        const displayName = files.length === 1 && $("robloxUploadName").value.trim()
+          ? $("robloxUploadName").value.trim()
+          : defaultName;
+        const description = $("robloxUploadDescription").value.trim() || "Audio subido mediante DJS DE LA CHAMBA.";
+        const form = new FormData();
+        form.append("file", fileItem, fileItem.name);
+        form.append("displayName", displayName);
+        form.append("description", description);
+        if (duration !== null) form.append("durationSeconds", String(duration));
+
+        $("robloxUploadStatus").textContent = "Subiendo " + fileItem.name + " a Roblox (" + (index + 1) + " de " + files.length + ")…";
+        const result = await callAudioWorker("/audio/upload", form, true);
+        const record = {
+          id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + index),
+          name: displayName,
+          fileName: fileItem.name,
+          operationId: result.operationId,
+          assetId: "",
+          state: "PROCESSING",
+          updatedAt: new Date().toISOString()
+        };
+        robloxUploadHistory.unshift(record);
+        robloxUploadHistory = robloxUploadHistory.slice(0, 100);
+        saveRobloxUploadHistory();
+        renderRobloxUploadHistory();
+        uploaded++;
+        $("robloxUploadProgress").style.width = Math.round(((index + 1) / files.length) * 100) + "%";
+        watchRobloxUpload(record);
+      }
+
+      $("robloxUploadStatus").textContent = uploaded
+        ? "✅ " + uploaded + " archivo(s) enviado(s) a Roblox. El estado de cada uno aparecerá en la lista de revisión."
+        : "No se envió ningún archivo. Revisa los formatos, tamaño y duración.";
+      selectedRobloxFiles = [];
+      updateSelectedRobloxFiles();
+    } catch (err) {
+      $("robloxUploadStatus").textContent = "❌ " + (err.message || "No se pudo subir el audio.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("refreshAllUploads").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const button = $("refreshAllUploads");
+    button.disabled = true;
+    $("robloxHistoryStatus").textContent = "Consultando estados con Roblox…";
+    for (const record of robloxUploadHistory) {
+      await refreshOneRobloxUpload(record);
+    }
+    $("robloxHistoryStatus").textContent = "Consulta terminada.";
+    button.disabled = false;
+  };
+
+  renderRobloxUploadHistory();
 
 })();
 </script>
