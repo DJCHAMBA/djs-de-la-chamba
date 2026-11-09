@@ -166,7 +166,7 @@
     <h2>¿Cómo quieres descargar?</h2>
     <p id="delivMsg">Elige cómo guardar todas las partes de tu audio.</p>
     <label class="opt"><input type="radio" name="dm" value="zip" checked>📦 Un solo archivo ZIP (todos los MP3 juntos)</label>
-    <label class="opt"><input type="radio" name="dm" value="folder">📁 Carpeta normal (cada MP3 por separado)</label>
+    <label class="opt"><input type="radio" name="dm" value="folder">📁 Carpeta normal (crea una carpeta con todos los MP3 separados)</label>
     <div class="acts">
       <button type="button" class="ghost" id="delivCancel">Cancelar</button>
       <button type="submit">Continuar</button>
@@ -612,17 +612,44 @@
       }
 
       if (choice.mode === "folder") {
-        $("encStatus").textContent = "Esperando que elijas la carpeta de destino…";
-        const dir = await choice.pickerPromise;
+        $("encStatus").textContent = "Esperando que elijas dónde guardar la carpeta…";
+        const parentDir = await choice.pickerPromise;
+
+        // Confirma que Chrome concedió permiso de escritura en la ubicación elegida.
+        if (typeof parentDir.queryPermission === "function") {
+          let permission = await parentDir.queryPermission({ mode: "readwrite" });
+          if (permission !== "granted" && typeof parentDir.requestPermission === "function") {
+            permission = await parentDir.requestPermission({ mode: "readwrite" });
+          }
+          if (permission !== "granted") throw new Error("folder-permission");
+        }
+
+        // Crea una carpeta propia para esta exportación y guarda todos los MP3 dentro.
+        const folderName = safeName(zipName.replace(/\\.zip$/i, "")) || "Audio exportado";
+        const outputDir = await parentDir.getDirectoryHandle(folderName, { create: true });
+        let saved = 0;
+
         for (let i = 0; i < files.length; i++) {
           const f = files[i];
           $("encStatus").textContent = "Guardando " + f.name + " (" + (i + 1) + " de " + files.length + ")…";
-          const handle = await dir.getFileHandle(f.name, { create: true });
+          const handle = await outputDir.getFileHandle(f.name, { create: true });
           const writable = await handle.createWritable();
-          await writable.write(f.blob);
-          await writable.close();
+          try {
+            await writable.write(f.blob);
+            await writable.close();
+          } catch (writeErr) {
+            try { await writable.abort(); } catch (_) {}
+            throw new Error("file-write:" + f.name);
+          }
+
+          // Comprueba que el archivo quedó escrito completo antes de pasar al siguiente.
+          const savedFile = await handle.getFile();
+          if (savedFile.size !== f.blob.size) throw new Error("file-size:" + f.name);
+          saved++;
+          $("encStatus").textContent = "Guardados " + saved + " de " + files.length + " MP3…";
         }
-        $("encStatus").textContent = "✅ ¡Listo! Se guardaron los " + files.length + " MP3 por separado en la carpeta «" + dir.name + "».";
+
+        $("encStatus").textContent = "✅ ¡Listo! Se guardaron los " + saved + " MP3 dentro de la carpeta «" + outputDir.name + "».";
         return;
       }
 
@@ -644,8 +671,14 @@
         $("encStatus").textContent = "Cancelaste la selección de carpeta. Puedes volver a intentarlo.";
       } else if (err && err.message === "jszip") {
         $("encStatus").textContent = "No cargó el creador ZIP. Recarga con Ctrl + F5 e inténtalo otra vez.";
+      } else if (err && err.message === "folder-permission") {
+        $("encStatus").textContent = "Chrome no concedió permiso para escribir en esa carpeta. Vuelve a intentarlo y permite el acceso.";
+      } else if (err && err.message && err.message.startsWith("file-write:")) {
+        $("encStatus").textContent = "No se pudo guardar " + err.message.slice(11) + ". Los archivos anteriores sí quedaron guardados en la carpeta.";
+      } else if (err && err.message && err.message.startsWith("file-size:")) {
+        $("encStatus").textContent = "El archivo " + err.message.slice(10) + " no se guardó completo. Inténtalo otra vez.";
       } else {
-        $("encStatus").textContent = "No se pudieron guardar los archivos. Revisa los permisos del navegador e inténtalo de nuevo.";
+        $("encStatus").textContent = "No se pudieron guardar todos los archivos. Revisa los permisos del navegador e inténtalo de nuevo.";
       }
     } finally {
       if (btn) btn.disabled = false;
