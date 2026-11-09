@@ -188,9 +188,9 @@
 <div class="ov hide" id="mDeliv">
   <form class="modal" id="fDeliv">
     <h2>¿Cómo quieres descargar?</h2>
-    <p id="delivMsg">Elige ZIP o carpeta normal. Para carpeta, selecciona una subcarpeta propia y acepta el permiso de escritura de Chrome.</p>
+    <p id="delivMsg">Elige un ZIP o descarga los MP3 sueltos. Los archivos separados se guardan en la ubicación de descargas configurada en Chrome.</p>
     <label class="opt"><input type="radio" name="dm" value="zip" checked>📦 Un solo archivo ZIP (todos los MP3 juntos)</label>
-    <label class="opt"><input type="radio" name="dm" value="folder">📁 Carpeta normal (crea una carpeta con todos los MP3 separados)</label>
+    <label class="opt"><input type="radio" name="dm" value="files">🎵 MP3 separados (sin ZIP, en la carpeta de Descargas de Chrome)</label>
     <div class="acts">
       <button type="button" class="ghost" id="delivCancel">Cancelar</button>
       <button type="submit">Continuar</button>
@@ -603,7 +603,7 @@
 
   function askDelivery(files){
     return new Promise(resolve => {
-      $("delivMsg").textContent = "Tienes " + files.length + " archivos MP3. Elige si prefieres un ZIP o una carpeta normal.";
+      $("delivMsg").textContent = "Tienes " + files.length + " archivos MP3. Elige un ZIP o descárgalos separados en la carpeta de Descargas de Chrome.";
       $("fDeliv").querySelector('input[value="zip"]').checked = true;
       $("mDeliv").classList.remove("hide");
 
@@ -615,29 +615,8 @@
       $("fDeliv").onsubmit = e => {
         e.preventDefault();
         const mode = $("fDeliv").querySelector('input[name="dm"]:checked').value;
-        let pickerPromise = null;
-
-        if (mode === "folder") {
-          if (!window.showDirectoryPicker) {
-            $("delivMsg").textContent = "Tu navegador no permite elegir carpetas. Usa Chrome o Edge en PC, o selecciona ZIP.";
-            return;
-          }
-          try {
-            // Debe llamarse directamente desde este clic del usuario y pedir lectura/escritura a la vez.
-            pickerPromise = window.showDirectoryPicker({
-              id: "djs-chamba-export",
-              mode: "readwrite",
-              startIn: "downloads"
-            });
-          } catch (err) {
-            console.error("No se pudo abrir el selector de carpeta:", err);
-            $("delivMsg").textContent = "No se pudo abrir el selector de carpetas. Usa ZIP o vuelve a intentarlo.";
-            return;
-          }
-        }
-
         $("mDeliv").classList.add("hide");
-        resolve({ mode, pickerPromise });
+        resolve({ mode });
       };
     });
   }
@@ -653,38 +632,15 @@
         return;
       }
 
-      if (choice.mode === "folder") {
-        $("encStatus").textContent = "Esperando que elijas dónde guardar la carpeta…";
-        // showDirectoryPicker({mode:"readwrite"}) ya solicita el acceso de escritura al elegir.
-        // Si el usuario no lo concede, Chrome rechaza la selección antes de llegar aquí.
-        const parentDir = await choice.pickerPromise;
-
-        // Crea una carpeta propia para esta exportación y guarda todos los MP3 dentro.
-        const folderName = safeName(zipName.replace(/\.zip$/i, "")) || "Audio exportado";
-        const outputDir = await parentDir.getDirectoryHandle(folderName, { create: true });
-        let saved = 0;
-
+      if (choice.mode === "files") {
         for (let i = 0; i < files.length; i++) {
           const f = files[i];
-          $("encStatus").textContent = "Guardando " + f.name + " (" + (i + 1) + " de " + files.length + ")…";
-          const handle = await outputDir.getFileHandle(f.name, { create: true });
-          const writable = await handle.createWritable();
-          try {
-            await writable.write(f.blob);
-            await writable.close();
-          } catch (writeErr) {
-            try { await writable.abort(); } catch (_) {}
-            throw new Error("file-write:" + f.name);
-          }
-
-          // Comprueba que el archivo quedó escrito completo antes de pasar al siguiente.
-          const savedFile = await handle.getFile();
-          if (savedFile.size !== f.blob.size) throw new Error("file-size:" + f.name);
-          saved++;
-          $("encStatus").textContent = "Guardados " + saved + " de " + files.length + " MP3…";
+          $("encStatus").textContent = "Descargando MP3 separado " + (i + 1) + " de " + files.length + ": " + f.name;
+          downloadBlob(f.blob, f.name);
+          // Espacia las descargas para que Chrome pueda pedir y registrar el permiso de descargas múltiples.
+          if (i < files.length - 1) await new Promise(resolve => setTimeout(resolve, 700));
         }
-
-        $("encStatus").textContent = "✅ ¡Listo! Se guardaron los " + saved + " MP3 dentro de la carpeta «" + outputDir.name + "».";
+        $("encStatus").textContent = "✅ Se iniciaron " + files.length + " descargas MP3 separadas. Revisa Descargas de Chrome. Si Chrome pregunta, permite las descargas múltiples de este sitio.";
         return;
       }
 
@@ -701,19 +657,11 @@
         $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + ". Revisa la carpeta Descargas de Chrome.";
       }
     } catch (err) {
-      console.error("Error al guardar las partes:", err);
-      if (err && err.name === "AbortError") {
-        $("encStatus").textContent = "Chrome no autorizó la carpeta seleccionada. Crea una subcarpeta normal (por ejemplo, dentro de Descargas crea «DJS MP3»), selecciónala y, cuando Chrome pregunte si permites editar archivos, pulsa «Permitir». Evita seleccionar la raíz de Descargas, Documentos o carpetas del sistema. También puedes elegir ZIP.";
-      } else if (err && err.message === "jszip") {
+      console.error("Error al descargar las partes:", err);
+      if (err && err.message === "jszip") {
         $("encStatus").textContent = "No cargó el creador ZIP. Recarga con Ctrl + F5 e inténtalo otra vez.";
-      } else if (err && err.message === "folder-permission") {
-        $("encStatus").textContent = "Chrome no concedió permiso para escribir en esa carpeta. Vuelve a intentarlo y permite el acceso.";
-      } else if (err && err.message && err.message.startsWith("file-write:")) {
-        $("encStatus").textContent = "No se pudo guardar " + err.message.slice(11) + ". Los archivos anteriores sí quedaron guardados en la carpeta.";
-      } else if (err && err.message && err.message.startsWith("file-size:")) {
-        $("encStatus").textContent = "El archivo " + err.message.slice(10) + " no se guardó completo. Inténtalo otra vez.";
       } else {
-        $("encStatus").textContent = "No se pudieron guardar todos los archivos. Revisa los permisos del navegador e inténtalo de nuevo.";
+        $("encStatus").textContent = "No se pudieron iniciar las descargas. Revisa los permisos de descargas de Chrome para este sitio.";
       }
     } finally {
       if (btn) btn.disabled = false;
