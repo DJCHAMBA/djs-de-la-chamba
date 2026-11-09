@@ -1491,6 +1491,222 @@
   renderRobloxUploadHistory();
 
 
+  // ---------- EDITOR NORMAL: VELOCIDAD 1x, RECORTE, VOLUMEN Y FUNDIDOS ----------
+  let normalDecodedBuffer = null;
+  let normalSourceFile = null;
+  let normalPreviewUrl = null;
+
+  function normalStatus(message){ $("normalStatus").textContent = message; }
+  function normalSeconds(value){ return Number.isFinite(value) ? Math.max(0, value) : 0; }
+
+  function normalSelection(){
+    if (!normalDecodedBuffer) throw new Error("Primero selecciona un audio.");
+    const duration = normalDecodedBuffer.duration;
+    const start = normalSeconds(Number($("normalStart").value));
+    const endRaw = Number($("normalEnd").value);
+    const end = Number.isFinite(endRaw) ? Math.min(duration, endRaw) : duration;
+    if (start >= end) throw new Error("El inicio debe ser menor que el final.");
+    if (start >= duration || end <= 0) throw new Error("El recorte está fuera de la duración del audio.");
+    const durationOut = end - start;
+    return {
+      start, end, durationOut,
+      fadeIn: Math.min(normalSeconds(Number($("normalFadeIn").value)), durationOut / 2),
+      fadeOut: Math.min(normalSeconds(Number($("normalFadeOut").value)), durationOut / 2),
+      volume: Math.min(200, Math.max(0, Number($("normalVolume").value) || 0)) / 100
+    };
+  }
+
+  function updateNormalSummary(){
+    $("normalVolumeValue").textContent = $("normalVolume").value + " %";
+    if (!normalDecodedBuffer) return;
+    try {
+      const selected = normalSelection();
+      $("normalFinalDuration").textContent = fmt(selected.durationOut);
+      normalStatus("Recorte listo · Velocidad 1× · Duración final " + fmt(selected.durationOut) + ".");
+    } catch (err) {
+      $("normalFinalDuration").textContent = "—";
+      normalStatus("⚠️ " + err.message);
+    }
+  }
+
+  function makeNormalEditedChannels(){
+    const selected = normalSelection();
+    const buffer = normalDecodedBuffer;
+    const firstFrame = Math.max(0, Math.floor(selected.start * SR));
+    const lastFrame = Math.min(buffer.length, Math.floor(selected.end * SR));
+    const frameCount = lastFrame - firstFrame;
+    if (frameCount <= 0) throw new Error("El recorte no contiene audio.");
+
+    const output = [];
+    const channelCount = Math.max(1, Math.min(2, buffer.numberOfChannels));
+    for (let channel = 0; channel < channelCount; channel++) {
+      const source = buffer.getChannelData(channel);
+      const samples = new Int16Array(frameCount);
+      for (let i = 0; i < frameCount; i++) {
+        const elapsed = i / SR;
+        const remaining = (frameCount - i) / SR;
+        let envelope = 1;
+        if (selected.fadeIn > 0) envelope = Math.min(envelope, elapsed / selected.fadeIn);
+        if (selected.fadeOut > 0) envelope = Math.min(envelope, remaining / selected.fadeOut);
+        const value = source[firstFrame + i] * selected.volume * envelope;
+        const clipped = Math.max(-1, Math.min(1, value));
+        samples[i] = clipped < 0 ? Math.round(clipped * 32768) : Math.round(clipped * 32767);
+      }
+      output.push(samples);
+    }
+    return { channels: output, duration: frameCount / SR };
+  }
+
+  function clearNormalPreview(){
+    if (normalPreviewUrl) {
+      URL.revokeObjectURL(normalPreviewUrl);
+      normalPreviewUrl = null;
+    }
+    $("normalPlayer").pause();
+    $("normalPlayer").removeAttribute("src");
+    $("normalPlayer").classList.add("hide");
+    $("normalPlayer").load();
+  }
+
+  async function loadNormalAudio(fileItem){
+    clearNormalPreview();
+    normalDecodedBuffer = null;
+    normalSourceFile = null;
+    $("normalPreviewButton").disabled = true;
+    $("normalExportButton").disabled = true;
+    $("normalResetButton").disabled = true;
+    $("normalProgressWrap").classList.add("hide");
+    $("normalProgress").style.width = "0%";
+    $("normalFileName").textContent = "Ninguno";
+    $("normalDuration").textContent = "–";
+    $("normalFinalDuration").textContent = "–";
+    if (!fileItem) return;
+
+    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
+      normalStatus("El archivo debe pesar entre 1 byte y 100 MB para este editor normal.");
+      return;
+    }
+
+    try {
+      normalStatus("Leyendo " + fileItem.name + "…");
+      $("normalProgressWrap").classList.remove("hide");
+      $("normalProgress").style.width = "12%";
+      const bytes = await fileItem.arrayBuffer();
+      $("normalProgress").style.width = "35%";
+      const decoded = await decode(bytes);
+      if (!decoded || !decoded.length || !decoded.duration) throw new Error("No se pudo decodificar el audio.");
+      if (decoded.duration > 1800) throw new Error("Este editor normal admite hasta 30 minutos por archivo.");
+
+      normalDecodedBuffer = decoded;
+      normalSourceFile = fileItem;
+      const baseName = fileItem.name.replace(/\.[^.]+$/, "");
+      $("normalFileName").textContent = fileItem.name;
+      $("normalDuration").textContent = fmt(decoded.duration);
+      $("normalStart").value = "0";
+      $("normalEnd").value = decoded.duration.toFixed(1);
+      $("normalVolume").value = "100";
+      $("normalFadeIn").value = "0";
+      $("normalFadeOut").value = "0";
+      $("normalOutputName").value = baseName.slice(0, 80);
+      $("normalPreviewButton").disabled = false;
+      $("normalExportButton").disabled = false;
+      $("normalResetButton").disabled = false;
+      $("normalProgress").style.width = "100%";
+      updateNormalSummary();
+      normalStatus("✅ Audio cargado. Velocidad y tono originales: 1×. Ajusta el recorte o volumen y previsualiza.");
+    } catch (err) {
+      console.error("Editor normal:", err);
+      normalDecodedBuffer = null;
+      normalSourceFile = null;
+      $("normalProgress").style.width = "0%";
+      normalStatus("❌ " + (err.message || "No pude abrir el audio."));
+    }
+  }
+
+  const normalDrop = $("normalDrop");
+  const normalFileInput = $("normalFile");
+  normalDrop.onclick = () => normalFileInput.click();
+  normalDrop.ondragover = event => {
+    event.preventDefault();
+    normalDrop.classList.add("over");
+  };
+  normalDrop.ondragleave = () => normalDrop.classList.remove("over");
+  normalDrop.ondrop = event => {
+    event.preventDefault();
+    normalDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) loadNormalAudio(event.dataTransfer.files[0]);
+  };
+  normalFileInput.onchange = () => {
+    if (normalFileInput.files[0]) loadNormalAudio(normalFileInput.files[0]);
+    normalFileInput.value = "";
+  };
+
+  ["normalStart","normalEnd","normalVolume","normalFadeIn","normalFadeOut"].forEach(id => {
+    $(id).addEventListener("input", updateNormalSummary);
+    $(id).addEventListener("change", updateNormalSummary);
+  });
+
+  $("normalResetButton").onclick = () => {
+    if (!normalDecodedBuffer || !normalSourceFile) return;
+    $("normalStart").value = "0";
+    $("normalEnd").value = normalDecodedBuffer.duration.toFixed(1);
+    $("normalVolume").value = "100";
+    $("normalFadeIn").value = "0";
+    $("normalFadeOut").value = "0";
+    $("normalOutputName").value = normalSourceFile.name.replace(/\.[^.]+$/, "").slice(0, 80);
+    clearNormalPreview();
+    updateNormalSummary();
+    normalStatus("Ajustes restablecidos. Velocidad 1×.");
+  };
+
+  $("normalPreviewButton").onclick = async () => {
+    const button = $("normalPreviewButton");
+    button.disabled = true;
+    try {
+      normalStatus("Preparando previsualización a velocidad normal…");
+      const edited = makeNormalEditedChannels();
+      const wav = wavBlob(edited.channels, SR);
+      clearNormalPreview();
+      normalPreviewUrl = URL.createObjectURL(wav);
+      $("normalPlayer").src = normalPreviewUrl;
+      $("normalPlayer").classList.remove("hide");
+      $("normalPlayer").playbackRate = 1;
+      await $("normalPlayer").play();
+      normalStatus("▶ Previsualizando a 1× · " + fmt(edited.duration) + ". El audio no se acelera.");
+    } catch (err) {
+      normalStatus("❌ " + (err.message || "No se pudo preparar la vista previa."));
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("normalExportButton").onclick = async () => {
+    const button = $("normalExportButton");
+    button.disabled = true;
+    $("normalPreviewButton").disabled = true;
+    $("normalProgressWrap").classList.remove("hide");
+    $("normalProgress").style.width = "0%";
+    try {
+      if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página e inténtalo de nuevo.");
+      normalStatus("Aplicando recorte, volumen y fundidos…");
+      const edited = makeNormalEditedChannels();
+      normalStatus("Exportando MP3 a velocidad normal (1×)…");
+      const blob = await encodeMp3(edited.channels, progress => {
+        $("normalProgress").style.width = Math.round(progress * 100) + "%";
+      });
+      const typedName = safeName($("normalOutputName").value || "Audio editado");
+      const outputName = (typedName || "Audio editado") + ".mp3";
+      downloadBlob(blob, outputName);
+      normalStatus("✅ MP3 exportado: " + outputName + " · " + fmt(edited.duration) + " · 1× · " + (blob.size / 1048576).toFixed(1) + " MB. Revisa Descargas.");
+    } catch (err) {
+      console.error("Exportar editor normal:", err);
+      normalStatus("❌ " + (err.message || "No se pudo exportar el MP3."));
+    } finally {
+      button.disabled = false;
+      $("normalPreviewButton").disabled = !normalDecodedBuffer;
+    }
+  };
+
   // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
   function getManualAssetId(){
     return $("manualRobloxAssetId").value.trim();
