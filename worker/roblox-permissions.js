@@ -107,8 +107,8 @@ function creatorContext(env) {
   const userId = String(env.ROBLOX_AUDIO_CREATOR_USER_ID || "").trim();
   const groupId = String(env.ROBLOX_AUDIO_CREATOR_GROUP_ID || "").trim();
   if (userId && groupId) throw new Error("Configura solo ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID, no ambos.");
-  if (userId && /^\d+$/.test(userId)) return { userId: Number(userId) };
-  if (groupId && /^\d+$/.test(groupId)) return { groupId: Number(groupId) };
+  if (userId && /^\d+$/.test(userId)) return { userId };
+  if (groupId && /^\d+$/.test(groupId)) return { groupId };
   throw new Error("Falta configurar ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID en Cloudflare.");
 }
 
