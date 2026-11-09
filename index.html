@@ -68,6 +68,19 @@
   .permission-ids{display:block;width:100%;min-height:170px;resize:vertical;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:13px/1.5 ui-monospace,monospace}
   .permission-ids:focus,input[type=password]:focus{outline:2px solid var(--cyan);outline-offset:1px}
   .admin-entry{display:flex;justify-content:center;margin-top:14px}
+  .tabs{display:flex;gap:8px;justify-content:center;margin:0 0 18px;flex-wrap:wrap}
+  .tab-button{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--mut)}
+  .tab-button.active{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;border:0;box-shadow:0 0 18px #22e7ff55}
+  .upload-file-list{display:grid;gap:7px;margin-top:10px}
+  .upload-file-item{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0c0816;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px}
+  .upload-file-item small{color:var(--mut)}
+  .upload-progress{height:8px;background:#0c0816;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:10px}
+  .upload-progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .2s}
+  .upload-status-card{display:grid;gap:8px;margin-top:12px}
+  .status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;background:#2b2440;color:var(--mut)}
+  .status-pill.approved{background:#123d2c;color:#8dffc2}
+  .status-pill.reviewing{background:#493915;color:#ffe09a}
+  .status-pill.rejected,.status-pill.failed{background:#4b1824;color:#ff9aaa}
   .hide{display:none!important}
   .tip{font-size:13px;color:var(--mut);line-height:1.5;margin-top:12px;padding:10px 12px;border-left:3px solid var(--lime);background:#b6ff3b0a;border-radius:0 10px 10px 0}
   .tip code{color:var(--lime)}
@@ -99,6 +112,13 @@
     <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="admin-entry"><button class="ghost" id="openPermissions" type="button">🔐 Permisos Roblox (Admin)</button></div>
   </header>
+
+  <nav class="tabs" aria-label="Secciones de DJS DE LA CHAMBA">
+    <button class="tab-button active" id="tabEditor" type="button">🎚️ Editor de audio</button>
+    <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
+  </nav>
+
+  <div id="editorPanel">
 
   <!-- PANEL PRIVADO DE PERMISOS -->
   <div class="card hide" id="permissionsCard">
@@ -169,6 +189,47 @@
     <div class="parts" id="parts"></div>
   </div>
 </div>
+
+  </div>
+
+  <!-- PESTAÑA: SUBIR AUDIOS A ROBLOX -->
+  <div id="uploadPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">☁️</span>Subir archivos a Roblox</div>
+      <p class="tip">Los audios se suben mediante el servidor privado y tu API key permanece en Cloudflare. Debes tener derechos para usar el audio y cumplir las reglas de Roblox.</p>
+      <div class="drop" id="robloxUploadDrop">
+        <div style="font-size:34px">☁️🎵</div>
+        Arrastra tus audios aquí o <b>toca para elegirlos</b><br>
+        <small>MP3, OGG, WAV o FLAC · Menos de 20 MB · Máximo 7 minutos cada uno</small>
+      </div>
+      <input type="file" id="robloxUploadFiles" accept=".mp3,.ogg,.wav,.flac,audio/mpeg,audio/ogg,audio/wav,audio/flac" multiple class="hide">
+      <div id="robloxUploadFileList" class="upload-file-list"></div>
+      <div style="margin-top:14px">
+        <label class="lbl" for="robloxUploadName">Nombre del audio (se usa si seleccionas un solo archivo)</label>
+        <input type="text" id="robloxUploadName" maxlength="50" placeholder="Se tomará del nombre del archivo">
+      </div>
+      <div style="margin-top:12px">
+        <label class="lbl" for="robloxUploadDescription">Descripción</label>
+        <input type="text" id="robloxUploadDescription" maxlength="1000" placeholder="Audio para DJS DE LA CHAMBA">
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="cyan" id="startRobloxUpload" type="button">🚀 Subir a Roblox</button>
+        <button class="ghost" id="clearRobloxUpload" type="button">Limpiar selección</button>
+      </div>
+      <div class="upload-progress"><div id="robloxUploadProgress"></div></div>
+      <div class="status" id="robloxUploadStatus">Selecciona uno o varios audios para comenzar.</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="step" style="margin:0"><span class="num">📋</span>Mis subidas y revisión</div>
+        <button class="ghost" id="refreshAllUploads" type="button">↻ Actualizar estados</button>
+      </div>
+      <p class="tip">Roblox puede dejar un audio en revisión antes de aprobarlo. Aquí verás el estado que informe Roblox: En revisión, Aceptado o Rechazado. La lista se guarda en este navegador.</p>
+      <div id="robloxUploadHistory" class="upload-status-card"></div>
+      <div class="status" id="robloxHistoryStatus"></div>
+    </div>
+  </div>
 
 <!-- MODAL NOMBRE -->
 <div class="ov hide" id="mName">
