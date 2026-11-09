@@ -524,7 +524,9 @@
       $("encBar").style.width = "100%";
       lastPack = { name, files };
       renderParts();
-      await saveZip(name + ".zip", files);
+      $("encStatus").textContent = files.length > 1
+        ? "✅ Tus MP3 están listos. Pulsa «Bajar todas las partes» para descargarlos juntos en un ZIP."
+        : "✅ Tu MP3 está listo. Pulsa «Bajar solo esta» para descargarlo.";
     }catch(err){
       console.error(err);
       $("encStatus").textContent = err && err.message === "lamejs"
@@ -541,99 +543,49 @@
       d.firstElementChild.firstElementChild.textContent = "🎵 " + f.name;
       d.querySelector(".t").textContent = fmt(f.secs) + " editado · " + fmt(f.secs * FACTOR) + " en Roblox (0.4) · " + (f.blob.size/1048576).toFixed(1) + " MB";
       if (lastPack.files.length > 1){
-        const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
-        b.onclick = () => saveZip(f.name.replace(/\.mp3$/,"") + ".zip", [f]);
-        d.appendChild(b);
+      const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
+      b.onclick = () => {
+        try {
+          downloadBlob(f.blob, f.name);
+          $("encStatus").textContent = "✅ Descarga iniciada: " + f.name + ". Revisa Descargas de Chrome.";
+        } catch (err) {
+          console.error(err);
+          $("encStatus").textContent = "No se pudo iniciar la descarga. Revisa los permisos de Chrome.";
+        }
+      };
+      d.appendChild(b);
       }
       box.appendChild(d);
     });
     if (lastPack.files.length > 1){
       const all = document.createElement("button"); all.type = "button"; all.className = "cyan";
       all.textContent = "💾 Bajar todas las partes (" + lastPack.files.length + ")";
-      all.onclick = () => saveZip(lastPack.name + ".zip", lastPack.files);
+      all.onclick = () => downloadAllZip(lastPack.name + ".zip", lastPack.files);
       box.appendChild(all);
     }
   }
 
-  function askDelivery(files){
-    return new Promise(res => {
-      $("delivMsg").textContent = files.length > 1
-        ? "Son " + files.length + " archivos. ¿Los quieres dentro de una carpeta o cada MP3 por separado?"
-        : "¿Lo quieres dentro de una carpeta o solo el archivo MP3?";
-      $("fDeliv").querySelector('input[value="folder"]').checked = true;
-      $("mDeliv").classList.remove("hide");
-      $("delivCancel").onclick = () => { $("mDeliv").classList.add("hide"); res(null); };
-      $("fDeliv").onsubmit = e => {
-        e.preventDefault(); $("mDeliv").classList.add("hide");
-        res($("fDeliv").querySelector('input[name="dm"]:checked').value);
-      };
-    });
-  }
-
-  async function saveZip(zipName, files){
-    const mode = await askDelivery(files);
-    if (!mode){
-      $("encStatus").textContent = "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo.";
-      return;
-    }
-    if (mode === "files"){
-      let ok = 0;
-      for (const f of files){
-        $("encStatus").textContent = "Confirma la descarga de " + f.name + " (" + (ok + 1) + " de " + files.length + ")…";
-        try{
-          downloadBlob(f.blob, f.name);
-          ok++;
-          if (ok < files.length) await new Promise(r => setTimeout(r, 350));
-        }catch(err){
-          const c = err && err.code;
-          $("encStatus").textContent =
-            c === "declined" ? "Cancelaste la descarga después de " + ok + " de " + files.length + " archivos. Puedes bajar el resto con los botones de abajo." :
-            c === "rate_limited" ? "Ya hay una descarga abierta (van " + ok + " de " + files.length + "). Espera un momento y vuelve a intentar." :
-            "No se pudo iniciar la descarga. Revisa los permisos de descarga de tu navegador.";
-          return;
-        }
-      }
-      $("encStatus").textContent = "✅ Entregado: " + ok + (ok === 1 ? " archivo MP3" : " archivos MP3") + " (súbelos a Roblox).";
-      return;
-    }
-    if (mode === "folder"){
-      try{
-        if (!window.showDirectoryPicker) throw new Error("nodir");
-        $("encStatus").textContent = "Elige dónde guardar la carpeta…";
-        const root = await window.showDirectoryPicker({ mode: "readwrite" });
-        const dir = await root.getDirectoryHandle(zipName.replace(/\.zip$/i, ""), { create: true });
-        let n = 0;
-        for (const f of files){
-          $("encStatus").textContent = "Guardando " + f.name + " (" + (++n) + " de " + files.length + ")…";
-          const fh = await dir.getFileHandle(f.name, { create: true });
-          const w = await fh.createWritable(); await w.write(f.blob); await w.close();
-        }
-        $("encStatus").textContent = "✅ Entregado en la carpeta «" + dir.name + "» (" + files.length + (files.length === 1 ? " archivo" : " archivos") + ").";
-        return;
-      }catch(err){
-        if (err && err.name === "AbortError"){
-          $("encStatus").textContent = "Cancelaste. Puedes volver a bajarla con los botones de abajo.";
-          return;
-        }
-        console.warn("carpeta directa no disponible", err);
-        $("encStatus").textContent = "Esta vista no deja crear carpetas directo; te la bajo comprimida (al abrirla queda la carpeta).";
-        await new Promise(r => setTimeout(r, 2500));
-      }
-    }
-    $("encStatus").textContent = "Empaquetando…";
-    const zip = new JSZip();
-    files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
-    const blob = await zip.generateAsync({ type: "blob" });
-    $("encStatus").textContent = "Confirma la descarga en la ventana que aparece…";
+  async function downloadAllZip(zipName, files){
+    const btn = $("parts").querySelector("button.cyan");
+    if (btn) btn.disabled = true;
     try{
+      if (typeof JSZip === "undefined") throw new Error("jszip");
+      $("encStatus").textContent = "Preparando ZIP con " + files.length + " MP3…";
+      const zip = new JSZip();
+      files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
+      const blob = await zip.generateAsync(
+        { type: "blob", compression: "STORE" },
+        meta => { $("encStatus").textContent = "Empaquetando ZIP: " + Math.round(meta.percent) + "%"; }
+      );
       downloadBlob(blob, zipName);
-      $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + " (descomprímelo y sube los MP3 a Roblox).";
+      $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + ". Revisa la carpeta Descargas de Chrome.";
     }catch(err){
-      const c = err && err.code;
-      $("encStatus").textContent =
-        c === "declined" ? "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo." :
-        c === "rate_limited" ? "Ya hay una descarga abierta. Espera un momento y vuelve a intentar." :
-        "No se pudo iniciar la descarga. Revisa los permisos de descarga de tu navegador.";
+      console.error("Error al crear o descargar el ZIP:", err);
+      $("encStatus").textContent = err && err.message === "jszip"
+        ? "No cargó el creador ZIP. Recarga la página con Ctrl + F5 e inténtalo otra vez."
+        : "No se pudo crear o descargar el ZIP. Revisa la consola del navegador y los permisos de descarga.";
+    }finally{
+      if (btn) btn.disabled = false;
     }
   }
 
