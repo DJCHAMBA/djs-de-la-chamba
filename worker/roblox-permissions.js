@@ -293,13 +293,21 @@ export default {
       try { creator = creatorContext(env); }
       catch (error) { return json({ error: error.message }, 503, origin); }
 
-      const robloxForm = new FormData();
-      robloxForm.set("request", JSON.stringify({
+      // Replica el multipart del bot original: request se envía como JSON,
+      // y fileContent lleva el nombre de archivo y su MIME real.
+      const metadata = {
         assetType: "Audio",
         displayName,
         description,
         creationContext: { creator }
-      }));
+      };
+
+      const robloxForm = new FormData();
+      const requestPart = new Blob(
+        [JSON.stringify(metadata)],
+        { type: "application/json" }
+      );
+      robloxForm.set("request", requestPart, "");
       const uploadFile = new File([audio], fileName, { type: contentTypes[extension] });
       robloxForm.set("fileContent", uploadFile, fileName);
 
@@ -355,17 +363,21 @@ export default {
         }, upstreamErrorStatus(robloxResponse), origin);
       }
 
-      const operationId = operationIdFromPath(data.path);
-      if (!operationId) {
+      const operationId = String(
+        data.operationId || operationIdFromPath(data.path)
+      );
+      if (!operationId || operationId === "undefined") {
         return json({ error: "Roblox recibió la solicitud, pero no devolvió un Operation ID reconocible.", roblox: data }, 502, origin);
       }
 
       return json({
         ok: true,
         operationId,
-        operationPath: data.path,
+        operationPath: data.path || ("operations/" + operationId),
         displayName,
-        fileName
+        fileName,
+        contentType: contentTypes[extension],
+        creator
       }, 200, origin);
     }
 
