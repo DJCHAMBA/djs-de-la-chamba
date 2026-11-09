@@ -275,7 +275,8 @@ export default {
         description,
         creationContext: { creator }
       }));
-      robloxForm.set("fileContent", audio, fileName);
+      const uploadFile = new File([audio], fileName, { type: contentTypes[extension] });
+      robloxForm.set("fileContent", uploadFile, fileName);
 
       let robloxResponse;
       try {
