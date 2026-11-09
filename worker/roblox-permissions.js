@@ -258,7 +258,7 @@ export default {
         return json({ error: "Roblox admite audios de hasta 7 minutos." }, 400, origin);
       }
 
-      const displayName = String(incoming.get("displayName") || fileName.replace(/\\.[^.]+$/, "")).trim().slice(0, 50);
+      const displayName = String(incoming.get("displayName") || fileName.replace(/\.[^.]+$/, "")).trim().slice(0, 50);
       const description = String(incoming.get("description") || "Audio subido mediante DJS DE LA CHAMBA.").trim().slice(0, 1000);
       if (!displayName || !description) {
         return json({ error: "El nombre y la descripción del audio son obligatorios." }, 400, origin);
