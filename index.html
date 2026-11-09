@@ -1242,7 +1242,17 @@
       permissionsSession = null;
       throw new Error(data.error || "Sesión vencida. Vuelve a ingresar.");
     }
-    if (!response.ok) throw new Error(data.error || "Error del servidor (" + response.status + ").");
+    if (!response.ok) {
+      let message = data.error || "Error del servidor (" + response.status + ").";
+      if (response.status === 429) {
+        const wait = Number(data.retryAfterSeconds || 0);
+        message += wait > 0
+          ? " Vuelve a probar dentro de aproximadamente " + wait + " segundos."
+          : " Espera un rato antes de volver a intentarlo; no repitas la carga varias veces seguidas.";
+        if (data.cfRay) message += " Referencia: " + data.cfRay + ".";
+      }
+      throw new Error(message);
+    }
     return data;
   }
 
