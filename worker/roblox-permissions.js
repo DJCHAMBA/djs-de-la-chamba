@@ -118,9 +118,34 @@ async function readRobloxJson(response) {
   catch { return { raw: text.slice(0, 1200) }; }
 }
 
+function robloxErrorDetail(data) {
+  if (!data || typeof data !== "object") return String(data || "");
+  const parts = [];
+  if (data.message) parts.push(String(data.message));
+  if (data.error) parts.push(String(data.error));
+  if (data.detail) parts.push(String(data.detail));
+  if (data.code !== undefined) parts.push("code=" + String(data.code));
+  if (Array.isArray(data.errors)) {
+    for (const entry of data.errors.slice(0, 4)) {
+      if (entry && typeof entry === "object") {
+        parts.push([entry.code !== undefined ? "code=" + entry.code : "", entry.message || entry.detail || ""].filter(Boolean).join(": "));
+      } else {
+        parts.push(String(entry));
+      }
+    }
+  }
+  if (data.raw) parts.push(String(data.raw).slice(0, 500));
+  return [...new Set(parts.filter(Boolean))].join(" | ").slice(0, 900);
+}
+
 async function robloxErrorMessage(response, data) {
-  const detail = data && (data.message || data.error || data.detail || data.raw);
-  return "Roblox respondió " + response.status + (detail ? ": " + String(detail).slice(0, 500) : ".");
+  const detail = robloxErrorDetail(data);
+  return "Roblox respondió HTTP " + response.status + (detail ? ": " + detail : ": Roblox no devolvió detalles adicionales.");
+}
+
+function upstreamErrorStatus(response) {
+  // Mantiene 401 reservado para una sesión inválida del panel.
+  return response.status === 401 ? 502 : response.status;
 }
 
 async function grantForAccount(name, apiKey, ids) {
@@ -318,6 +343,7 @@ export default {
           error: errorMessage,
           upstreamStatus: robloxResponse.status,
           upstreamCode: isCloudflare1015 ? "1015" : (data.code || null),
+          upstreamDetails: robloxErrorDetail(data),
           retryAfterSeconds,
           rateLimit: {
             limit: robloxResponse.headers.get("x-ratelimit-limit"),
@@ -326,7 +352,7 @@ export default {
           },
           cfRay: robloxResponse.headers.get("cf-ray"),
           roblox: data
-        }, robloxResponse.status, origin);
+        }, upstreamErrorStatus(robloxResponse), origin);
       }
 
       const operationId = operationIdFromPath(data.path);
@@ -361,7 +387,13 @@ export default {
       });
       const data = await readRobloxJson(response);
       if (!response.ok) {
-        return json({ error: await robloxErrorMessage(response, data), roblox: data }, response.status, origin);
+        return json({
+          error: await robloxErrorMessage(response, data),
+          upstreamStatus: response.status,
+          upstreamDetails: robloxErrorDetail(data),
+          cfRay: response.headers.get("cf-ray"),
+          roblox: data
+        }, upstreamErrorStatus(response), origin);
       }
 
       const asset = data.response || {};
@@ -393,7 +425,13 @@ export default {
       });
       const data = await readRobloxJson(response);
       if (!response.ok) {
-        return json({ error: await robloxErrorMessage(response, data), roblox: data }, response.status, origin);
+        return json({
+          error: await robloxErrorMessage(response, data),
+          upstreamStatus: response.status,
+          upstreamDetails: robloxErrorDetail(data),
+          cfRay: response.headers.get("cf-ray"),
+          roblox: data
+        }, upstreamErrorStatus(response), origin);
       }
 
       const rawState = data.moderationResult && data.moderationResult.moderationState || "";
