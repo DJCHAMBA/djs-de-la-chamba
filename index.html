@@ -206,12 +206,19 @@
   let processed = null;   // {chans:[Int16Array], length, sampleRate}
   let origName = "";
   let previewUrl = null;
-  let downloads = null;
   let lastPack = null;    // {name, files:[{name, blob, secs}]}
 
-  // capability de descargas
-  if (window.claude && claude.use) {
-    claude.use("downloads").then(d => { downloads = d; }).catch(() => {});
+  // Descargas nativas del navegador: no depende de Claude.
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   // ---------- subir ----------
@@ -564,10 +571,6 @@
   }
 
   async function saveZip(zipName, files){
-    if (!downloads){
-      $("encStatus").textContent = "Tus MP3 están listos, pero esta vista no permite descargar. Abre la página directamente en claude.ai para bajarlos.";
-      return;
-    }
     const mode = await askDelivery(files);
     if (!mode){
       $("encStatus").textContent = "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo.";
@@ -578,14 +581,15 @@
       for (const f of files){
         $("encStatus").textContent = "Confirma la descarga de " + f.name + " (" + (ok + 1) + " de " + files.length + ")…";
         try{
-          await downloads.save({ filename: f.name, data: f.blob });
+          downloadBlob(f.blob, f.name);
           ok++;
+          if (ok < files.length) await new Promise(r => setTimeout(r, 350));
         }catch(err){
           const c = err && err.code;
           $("encStatus").textContent =
             c === "declined" ? "Cancelaste la descarga después de " + ok + " de " + files.length + " archivos. Puedes bajar el resto con los botones de abajo." :
             c === "rate_limited" ? "Ya hay una descarga abierta (van " + ok + " de " + files.length + "). Espera un momento y vuelve a intentar." :
-            "No se pudo descargar aquí. Abre la página directamente en claude.ai.";
+            "No se pudo iniciar la descarga. Revisa los permisos de descarga de tu navegador.";
           return;
         }
       }
@@ -622,14 +626,14 @@
     const blob = await zip.generateAsync({ type: "blob" });
     $("encStatus").textContent = "Confirma la descarga en la ventana que aparece…";
     try{
-      await downloads.save({ filename: zipName, data: blob });
-      $("encStatus").textContent = "✅ Entregado: " + zipName + " (descomprímelo y sube los MP3 a Roblox).";
+      downloadBlob(blob, zipName);
+      $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + " (descomprímelo y sube los MP3 a Roblox).";
     }catch(err){
       const c = err && err.code;
       $("encStatus").textContent =
         c === "declined" ? "Cancelaste la descarga. Puedes volver a bajarla con los botones de abajo." :
         c === "rate_limited" ? "Ya hay una descarga abierta. Espera un momento y vuelve a intentar." :
-        "No se pudo descargar aquí. Abre la página directamente en claude.ai.";
+        "No se pudo iniciar la descarga. Revisa los permisos de descarga de tu navegador.";
     }
   }
 
