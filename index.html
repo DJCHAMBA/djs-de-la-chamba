@@ -188,7 +188,7 @@
 <div class="ov hide" id="mDeliv">
   <form class="modal" id="fDeliv">
     <h2>¿Cómo quieres descargar?</h2>
-    <p id="delivMsg">Elige cómo guardar todas las partes de tu audio.</p>
+    <p id="delivMsg">Elige ZIP o carpeta normal. Para carpeta, selecciona una subcarpeta propia y acepta el permiso de escritura de Chrome.</p>
     <label class="opt"><input type="radio" name="dm" value="zip" checked>📦 Un solo archivo ZIP (todos los MP3 juntos)</label>
     <label class="opt"><input type="radio" name="dm" value="folder">📁 Carpeta normal (crea una carpeta con todos los MP3 separados)</label>
     <div class="acts">
@@ -619,15 +619,19 @@
 
         if (mode === "folder") {
           if (!window.showDirectoryPicker) {
-            $("delivMsg").textContent = "Tu navegador no permite elegir carpetas directamente. Selecciona ZIP o abre esta página en Chrome o Edge para usar carpeta normal.";
+            $("delivMsg").textContent = "Tu navegador no permite elegir carpetas. Usa Chrome o Edge en PC, o selecciona ZIP.";
             return;
           }
           try {
-            // Se abre aquí, durante el clic del usuario, porque el navegador exige una acción directa.
-            pickerPromise = window.showDirectoryPicker({ mode: "readwrite" });
+            // Debe llamarse directamente desde este clic del usuario y pedir lectura/escritura a la vez.
+            pickerPromise = window.showDirectoryPicker({
+              id: "djs-chamba-export",
+              mode: "readwrite",
+              startIn: "downloads"
+            });
           } catch (err) {
             console.error("No se pudo abrir el selector de carpeta:", err);
-            $("delivMsg").textContent = "No se pudo abrir el selector de carpetas. Prueba la opción ZIP.";
+            $("delivMsg").textContent = "No se pudo abrir el selector de carpetas. Usa ZIP o vuelve a intentarlo.";
             return;
           }
         }
@@ -651,19 +655,12 @@
 
       if (choice.mode === "folder") {
         $("encStatus").textContent = "Esperando que elijas dónde guardar la carpeta…";
+        // showDirectoryPicker({mode:"readwrite"}) ya solicita el acceso de escritura al elegir.
+        // Si el usuario no lo concede, Chrome rechaza la selección antes de llegar aquí.
         const parentDir = await choice.pickerPromise;
 
-        // Confirma que Chrome concedió permiso de escritura en la ubicación elegida.
-        if (typeof parentDir.queryPermission === "function") {
-          let permission = await parentDir.queryPermission({ mode: "readwrite" });
-          if (permission !== "granted" && typeof parentDir.requestPermission === "function") {
-            permission = await parentDir.requestPermission({ mode: "readwrite" });
-          }
-          if (permission !== "granted") throw new Error("folder-permission");
-        }
-
         // Crea una carpeta propia para esta exportación y guarda todos los MP3 dentro.
-        const folderName = safeName(zipName.replace(/\\.zip$/i, "")) || "Audio exportado";
+        const folderName = safeName(zipName.replace(/\.zip$/i, "")) || "Audio exportado";
         const outputDir = await parentDir.getDirectoryHandle(folderName, { create: true });
         let saved = 0;
 
@@ -706,7 +703,7 @@
     } catch (err) {
       console.error("Error al guardar las partes:", err);
       if (err && err.name === "AbortError") {
-        $("encStatus").textContent = "Cancelaste la selección de carpeta. Puedes volver a intentarlo.";
+        $("encStatus").textContent = "Chrome no autorizó la carpeta seleccionada. Crea una subcarpeta normal (por ejemplo, dentro de Descargas crea «DJS MP3»), selecciónala y, cuando Chrome pregunte si permites editar archivos, pulsa «Permitir». Evita seleccionar la raíz de Descargas, Documentos o carpetas del sistema. También puedes elegir ZIP.";
       } else if (err && err.message === "jszip") {
         $("encStatus").textContent = "No cargó el creador ZIP. Recarga con Ctrl + F5 e inténtalo otra vez.";
       } else if (err && err.message === "folder-permission") {
