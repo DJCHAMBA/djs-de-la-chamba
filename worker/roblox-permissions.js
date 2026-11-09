@@ -79,6 +79,50 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function moderationStateLabel(raw) {
+  const state = String(raw || "").toUpperCase();
+  if (state.includes("APPROVED")) return "APPROVED";
+  if (state.includes("REJECTED")) return "REJECTED";
+  if (state.includes("REVIEWING")) return "REVIEWING";
+  return "PENDING";
+}
+
+function operationIdFromPath(path) {
+  const value = String(path || "");
+  const match = value.match(/(?:^|\\/)operations\\/([A-Za-z0-9._~-]+)$/);
+  return match ? match[1] : "";
+}
+
+async function requireAdmin(request, env) {
+  if (!env.SESSION_SECRET) return { ok: false, status: 503, error: "Falta configurar SESSION_SECRET." };
+  const auth = request.headers.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!token || !(await validSession(token, env.SESSION_SECRET))) {
+    return { ok: false, status: 401, error: "Sesión vencida o no autorizada. Vuelve a ingresar la contraseña." };
+  }
+  return { ok: true };
+}
+
+function creatorContext(env) {
+  const userId = String(env.ROBLOX_AUDIO_CREATOR_USER_ID || "").trim();
+  const groupId = String(env.ROBLOX_AUDIO_CREATOR_GROUP_ID || "").trim();
+  if (userId && groupId) throw new Error("Configura solo ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID, no ambos.");
+  if (userId && /^\\d+$/.test(userId)) return { userId: Number(userId) };
+  if (groupId && /^\\d+$/.test(groupId)) return { groupId: Number(groupId) };
+  throw new Error("Falta configurar ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID en Cloudflare.");
+}
+
+async function readRobloxJson(response) {
+  const text = await response.text();
+  try { return text ? JSON.parse(text) : {}; }
+  catch { return { raw: text.slice(0, 1200) }; }
+}
+
+async function robloxErrorMessage(response, data) {
+  const detail = data && (data.message || data.error || data.detail || data.raw);
+  return "Roblox respondió " + response.status + (detail ? ": " + String(detail).slice(0, 500) : ".");
+}
+
 async function grantForAccount(name, apiKey, ids) {
   const successAssetIds = [];
   const errors = [];
@@ -176,6 +220,154 @@ export default {
       if (!candidate || !matches) return json({ error: "Contraseña incorrecta." }, 401, origin);
 
       return json({ token: await makeSession(env.SESSION_SECRET), expiresIn: 1800 }, 200, origin);
+    }
+
+    if (url.pathname === "/audio/upload") {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
+      if (!env.ROBLOX_AUDIO_API_KEY) {
+        return json({ error: "Falta configurar ROBLOX_AUDIO_API_KEY como Secret en Cloudflare." }, 503, origin);
+      }
+
+      let incoming;
+      try { incoming = await request.formData(); }
+      catch { return json({ error: "No pude leer el archivo enviado." }, 400, origin); }
+
+      const audio = incoming.get("file");
+      if (!audio || typeof audio.arrayBuffer !== "function") {
+        return json({ error: "Selecciona un archivo de audio." }, 400, origin);
+      }
+      if (audio.size <= 0 || audio.size >= 20 * 1024 * 1024) {
+        return json({ error: "El audio debe pesar menos de 20 MB." }, 400, origin);
+      }
+
+      const fileName = String(audio.name || "audio").trim();
+      const extension = (fileName.split(".").pop() || "").toLowerCase();
+      const contentTypes = {
+        mp3: "audio/mpeg",
+        ogg: "audio/ogg",
+        wav: "audio/wav",
+        flac: "audio/flac"
+      };
+      if (!contentTypes[extension]) {
+        return json({ error: "Formato no admitido. Usa MP3, OGG, WAV o FLAC." }, 400, origin);
+      }
+
+      const durationSeconds = Number(incoming.get("durationSeconds") || 0);
+      if (Number.isFinite(durationSeconds) && durationSeconds > 420) {
+        return json({ error: "Roblox admite audios de hasta 7 minutos." }, 400, origin);
+      }
+
+      const displayName = String(incoming.get("displayName") || fileName.replace(/\\.[^.]+$/, "")).trim().slice(0, 50);
+      const description = String(incoming.get("description") || "Audio subido mediante DJS DE LA CHAMBA.").trim().slice(0, 1000);
+      if (!displayName || !description) {
+        return json({ error: "El nombre y la descripción del audio son obligatorios." }, 400, origin);
+      }
+
+      let creator;
+      try { creator = creatorContext(env); }
+      catch (error) { return json({ error: error.message }, 503, origin); }
+
+      const robloxForm = new FormData();
+      robloxForm.set("request", JSON.stringify({
+        assetType: "Audio",
+        displayName,
+        description,
+        creationContext: { creator }
+      }));
+      robloxForm.set("fileContent", audio, fileName);
+
+      let robloxResponse;
+      try {
+        robloxResponse = await fetch("https://apis.roblox.com/assets/v1/assets", {
+          method: "POST",
+          headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY },
+          body: robloxForm
+        });
+      } catch (error) {
+        return json({ error: "No se pudo conectar con Roblox: " + String(error.message || error) }, 502, origin);
+      }
+
+      const data = await readRobloxJson(robloxResponse);
+      if (!robloxResponse.ok) {
+        return json({ error: await robloxErrorMessage(robloxResponse, data), roblox: data }, robloxResponse.status, origin);
+      }
+
+      const operationId = operationIdFromPath(data.path);
+      if (!operationId) {
+        return json({ error: "Roblox recibió la solicitud, pero no devolvió un Operation ID reconocible.", roblox: data }, 502, origin);
+      }
+
+      return json({
+        ok: true,
+        operationId,
+        operationPath: data.path,
+        displayName,
+        fileName
+      }, 200, origin);
+    }
+
+    if (url.pathname === "/audio/operation") {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
+      if (!env.ROBLOX_AUDIO_API_KEY) return json({ error: "Falta ROBLOX_AUDIO_API_KEY en Cloudflare." }, 503, origin);
+
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ error: "Solicitud inválida." }, 400, origin); }
+      const operationId = String(body.operationId || "");
+      if (!/^[A-Za-z0-9._~-]+$/.test(operationId)) {
+        return json({ error: "Operation ID inválido." }, 400, origin);
+      }
+
+      const response = await fetch("https://apis.roblox.com/assets/v1/operations/" + encodeURIComponent(operationId), {
+        headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY }
+      });
+      const data = await readRobloxJson(response);
+      if (!response.ok) {
+        return json({ error: await robloxErrorMessage(response, data), roblox: data }, response.status, origin);
+      }
+
+      const asset = data.response || {};
+      const assetId = asset.assetId ? String(asset.assetId) : String(asset.path || "").match(/assets\\/(\\d+)/)?.[1] || "";
+      return json({
+        done: Boolean(data.done),
+        assetId,
+        displayName: asset.displayName || "",
+        moderationState: moderationStateLabel(asset.moderationResult && asset.moderationResult.moderationState),
+        rawModerationState: asset.moderationResult && asset.moderationResult.moderationState || "",
+        error: data.error || null
+      }, 200, origin);
+    }
+
+    if (url.pathname === "/audio/status") {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
+      if (!env.ROBLOX_AUDIO_API_KEY) return json({ error: "Falta ROBLOX_AUDIO_API_KEY en Cloudflare." }, 503, origin);
+
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ error: "Solicitud inválida." }, 400, origin); }
+      const assetId = String(body.assetId || "");
+      if (!/^\\d+$/.test(assetId)) return json({ error: "Asset ID inválido." }, 400, origin);
+
+      const readMask = encodeURIComponent("moderationResult,displayName,description");
+      const response = await fetch("https://apis.roblox.com/assets/v1/assets/" + encodeURIComponent(assetId) + "?readMask=" + readMask, {
+        headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY }
+      });
+      const data = await readRobloxJson(response);
+      if (!response.ok) {
+        return json({ error: await robloxErrorMessage(response, data), roblox: data }, response.status, origin);
+      }
+
+      const rawState = data.moderationResult && data.moderationResult.moderationState || "";
+      return json({
+        assetId,
+        displayName: data.displayName || "",
+        moderationState: moderationStateLabel(rawState),
+        rawModerationState: rawState,
+        state: data.state || "Unspecified"
+      }, 200, origin);
     }
 
     if (url.pathname === "/permissions") {
