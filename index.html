@@ -76,6 +76,13 @@
   .normal-control strong{display:block;margin-top:6px}
   .normal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
   @media(max-width:520px){.normal-controls{grid-template-columns:1fr}}
+  .effects-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+  .effects-control{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .effects-control label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px;margin-bottom:9px}
+  .effects-control input[type=range]{width:100%;accent-color:var(--cyan)}
+  .effects-control output{color:var(--txt);font-weight:800;white-space:nowrap}
+  .effects-group-title{margin:18px 0 8px;color:var(--cyan);font-weight:800}
+  @media(max-width:520px){.effects-grid{grid-template-columns:1fr}}
   .tabs{display:flex;gap:8px;justify-content:center;margin:0 0 18px;flex-wrap:wrap}
   .tab-button{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--mut)}
   .tab-button.active{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;border:0;box-shadow:0 0 18px #22e7ff55}
@@ -124,6 +131,7 @@
   <nav class="tabs" aria-label="Secciones de DJS DE LA CHAMBA">
     <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
     <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
+    <button class="tab-button" id="tabEffects" type="button">🎚️ Editor de efectos</button>
     <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
   </nav>
 
@@ -306,6 +314,102 @@
       <audio id="normalPlayer" controls class="hide"></audio>
       <div class="bar hide" id="normalProgressWrap"><div id="normalProgress"></div></div>
       <div class="status" id="normalStatus">Selecciona un audio para comenzar. La velocidad siempre será 1×.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: EDITOR DE EFECTOS -->
+  <div id="effectsPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎚️</span>Editor de efectos de audio</div>
+      <p class="tip">Dale tu propio estilo al audio: cambia velocidad y tono, añade reverberación, eco, ecualización, distorsión o ruido blanco. La exportación se procesa en tu navegador.</p>
+
+      <div class="drop" id="effectsDrop">
+        <div style="font-size:34px">🎛️</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3, WAV, OGG, M4A, FLAC y formatos compatibles con tu navegador · Máximo 15 minutos</small>
+      </div>
+      <input type="file" id="effectsFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="effectsFileName">Ninguno</b></span>
+        <span>Duración original: <b id="effectsOriginalDuration">–</b></span>
+        <span>Duración procesada: <b id="effectsOutputDuration">–</b></span>
+      </div>
+
+      <div class="effects-group-title">⏩ Velocidad y tono</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsSpeed">Velocidad <output id="effectsSpeedValue">1.00×</output></label>
+          <input type="range" id="effectsSpeed" min="0.5" max="2" step="0.05" value="1">
+        </div>
+        <div class="effects-control">
+          <label for="effectsPitch">Tono <output id="effectsPitchValue">0 semitonos</output></label>
+          <input type="range" id="effectsPitch" min="-12" max="12" step="1" value="0">
+        </div>
+      </div>
+      <p class="tip">Velocidad y tono se combinan y pueden cambiar la duración. Para conservar el audio original usa velocidad 1× y tono 0.</p>
+
+      <div class="effects-group-title">🌌 Ambiente y espacio</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsReverb">Reverberación <output id="effectsReverbValue">25 %</output></label>
+          <input type="range" id="effectsReverb" min="0" max="100" step="1" value="25">
+        </div>
+        <div class="effects-control">
+          <label for="effectsDecay">Cola de reverb <output id="effectsDecayValue">1.8 s</output></label>
+          <input type="range" id="effectsDecay" min="0.2" max="4" step="0.1" value="1.8">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEcho">Eco / Delay <output id="effectsEchoValue">0 %</output></label>
+          <input type="range" id="effectsEcho" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEchoTime">Tiempo del eco <output id="effectsEchoTimeValue">300 ms</output></label>
+          <input type="range" id="effectsEchoTime" min="50" max="800" step="10" value="300">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEchoFeedback">Repeticiones <output id="effectsEchoFeedbackValue">35 %</output></label>
+          <input type="range" id="effectsEchoFeedback" min="0" max="80" step="1" value="35">
+        </div>
+      </div>
+
+      <div class="effects-group-title">🎚️ Ecualizador y carácter</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsBass">Graves <output id="effectsBassValue">0 dB</output></label>
+          <input type="range" id="effectsBass" min="-12" max="12" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsTreble">Agudos <output id="effectsTrebleValue">0 dB</output></label>
+          <input type="range" id="effectsTreble" min="-12" max="12" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsDistortion">Distorsión <output id="effectsDistortionValue">0 %</output></label>
+          <input type="range" id="effectsDistortion" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsVolume">Volumen final <output id="effectsVolumeValue">100 %</output></label>
+          <input type="range" id="effectsVolume" min="0" max="200" step="1" value="100">
+        </div>
+        <div class="effects-control">
+          <label for="effectsWhiteNoise">Ruido blanco <output id="effectsWhiteNoiseValue">0 %</output></label>
+          <input type="range" id="effectsWhiteNoise" min="0" max="40" step="1" value="0">
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label class="lbl" for="effectsOutputName">Nombre del archivo final</label>
+        <input type="text" id="effectsOutputName" maxlength="80" placeholder="Audio con efectos">
+      </div>
+
+      <div class="normal-actions">
+        <button class="ghost" id="effectsPreview" type="button" disabled>▶ Escuchar efectos</button>
+        <button class="cyan" id="effectsExport" type="button" disabled>💾 Exportar MP3</button>
+        <button class="ghost" id="effectsReset" type="button" disabled>↺ Restablecer efectos</button>
+      </div>
+      <audio id="effectsPlayer" controls class="hide"></audio>
+      <div class="bar hide" id="effectsProgressWrap"><div id="effectsProgress"></div></div>
+      <div class="status" id="effectsStatus">Selecciona un audio para comenzar. Los efectos se aplicarán al exportar.</div>
     </div>
   </div>
 </div>
@@ -966,16 +1070,20 @@
   function setMainTab(tab){
     const upload = tab === "upload";
     const normal = tab === "normal";
-    $("editorPanel").classList.toggle("hide", upload || normal);
+    const effects = tab === "effects";
+    $("editorPanel").classList.toggle("hide", upload || normal || effects);
     $("uploadPanel").classList.toggle("hide", !upload);
     $("normalPanel").classList.toggle("hide", !normal);
-    $("tabEditor").classList.toggle("active", !upload && !normal);
+    $("effectsPanel").classList.toggle("hide", !effects);
+    $("tabEditor").classList.toggle("active", !upload && !normal && !effects);
     $("tabNormal").classList.toggle("active", normal);
+    $("tabEffects").classList.toggle("active", effects);
     $("tabUpload").classList.toggle("active", upload);
   }
 
   $("tabEditor").onclick = () => setMainTab("editor");
   $("tabNormal").onclick = () => setMainTab("normal");
+  $("tabEffects").onclick = () => setMainTab("effects");
   $("tabUpload").onclick = () => {
     setMainTab("upload");
     if (!permissionsSession) showPermissionLogin("upload");
