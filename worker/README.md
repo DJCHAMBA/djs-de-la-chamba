@@ -1,47 +1,83 @@
-# Servidor privado de permisos Roblox
+# DJS DE LA CHAMBA — servidor privado de Roblox
 
-Este Worker permite que la página GitHub Pages de DJS DE LA CHAMBA valide una contraseña de administrador y autorice IDs de assets en el universo Roblox configurado.
+Este Cloudflare Worker protege la contraseña y las API keys. La página GitHub Pages nunca recibe las claves de Roblox.
 
-## 1. Publicar el Worker
+## 1. Secretos del Worker
 
-1. Entra al panel de Cloudflare: https://dash.cloudflare.com/
-2. Abre **Workers & Pages** y crea un Worker nuevo.
-3. Ponle un nombre, por ejemplo `djs-chamba-permissions`.
-4. Abre **Edit code** y sustituye el código de ejemplo por todo el contenido de `roblox-permissions.js` de esta carpeta.
-5. Pulsa **Deploy** y copia la URL `https://NOMBRE.SUBDOMINIO.workers.dev`.
+En Cloudflare abre **Workers & Pages → djs-chamba-permissions → Settings → Variables and Secrets**.
 
-## 2. Configurar secretos (no ponerlos en GitHub)
+Mantén estos secretos:
 
-En el Worker abre **Settings → Variables and Secrets → Add → Secret**. Añade estos cuatro secretos:
+- `ADMIN_PASSWORD`: contraseña privada del panel.
+- `SESSION_SECRET`: cadena aleatoria larga (32 caracteres o más).
+- `ROBLOX_API_KEY_MAIN`: clave usada por la cuenta principal para conceder permisos de assets.
+- `ROBLOX_API_KEY_DJS`: clave usada por la segunda cuenta para conceder permisos de assets.
 
-- `ADMIN_PASSWORD`: contraseña privada que solo tú debes conocer. Usa una contraseña larga y única.
-- `SESSION_SECRET`: una cadena aleatoria larga (al menos 32 caracteres).
-- `ROBLOX_API_KEY_MAIN`: API key nueva de tu cuenta principal de Roblox.
-- `ROBLOX_API_KEY_DJS`: API key nueva de tu segunda cuenta de Roblox.
+Añade este secreto para subir y consultar audios:
 
-Después de añadirlos, pulsa **Deploy** para publicar la configuración.
+- `ROBLOX_AUDIO_API_KEY`: API key de Roblox con permisos **Assets Read** y **Assets Write**. La misma clave se usa para subir el audio y consultar su estado de moderación.
 
-**Seguridad:** las dos API keys del archivo original `enviar.js` deben revocarse y reemplazarse por claves nuevas. No reutilices las que estaban dentro del archivo. Nunca pegues las claves ni tu contraseña en el HTML, en GitHub o en el chat.
+Puedes reutilizar una clave existente solamente si tiene ambos permisos `asset:read` y `asset:write` y acceso a los assets del creador. En caso contrario, crea una clave específica para subidas de audio.
 
-Las API keys deben tener los permisos necesarios para actualizar permisos de assets en el universo Roblox `6475547874`.
+### Variables normales (no secretas)
 
-## 3. Conectar la página
+Añade **una sola** de estas variables, según dónde quieras que Roblox cree los audios:
 
-Después de desplegar el Worker, copia su URL. En `index.html`, busca:
+- `ROBLOX_AUDIO_CREATOR_USER_ID`: tu User ID numérico, si los audios serán tuyos.
+- `ROBLOX_AUDIO_CREATOR_GROUP_ID`: Group ID numérico, si los audios serán del grupo.
 
-```js
-const PERMISSIONS_API_URL = "https://REEMPLAZA-CON-TU-WORKER.workers.dev";
-```
+No configures las dos al mismo tiempo. Puedes obtener el User ID desde la URL de tu perfil Roblox; el Group ID está en la URL del grupo.
 
-Sustituye el texto de ejemplo por tu URL real, sin añadir `/login` al final. Guarda el cambio en la rama `main`.
+Después de cambiar secretos o variables, pulsa **Deploy**.
 
-El Worker solo acepta peticiones desde `https://djchamba.github.io`. El panel envía únicamente la lista de IDs al Worker; las API keys permanecen como secretos en Cloudflare.
+## 2. Crear la API key de audio en Roblox
 
-## 4. Uso
+En el Creator Dashboard crea una API key que pueda acceder a los assets que administrará:
 
-1. Abre la página y pulsa **Permisos Roblox (Admin)**.
-2. Introduce la contraseña configurada como `ADMIN_PASSWORD`.
-3. Importa tu archivo `enviar.js` o pega las IDs.
-4. Pulsa **Enviar IDs a permisos** y confirma la operación.
+1. Añade **Assets** a Access Permissions.
+2. Habilita las operaciones **Read** y **Write** para los assets del creador.
+3. La clave debe cubrir los scopes `asset:read` y `asset:write`.
 
-El servidor elimina duplicados, procesa en bloques de 25 y devuelve el resumen de ambas cuentas.
+Guarda la clave como secreto `ROBLOX_AUDIO_API_KEY` en Cloudflare. No la pongas en `index.html`, en GitHub ni en chats.
+
+## 3. Publicar el Worker
+
+1. Entra en https://dash.cloudflare.com/
+2. Abre **Workers & Pages → djs-chamba-permissions**.
+3. Pulsa **Edit code**.
+4. Sustituye todo el código por el contenido actual de `roblox-permissions.js`.
+5. Pulsa **Deploy**.
+
+La URL configurada en `index.html` es:
+`https://djs-chamba-permissions.jnew123gta5.workers.dev`
+
+## 4. Usar la pestaña de subida
+
+1. Abre la página DJS DE LA CHAMBA.
+2. Entra a **Subir audios a Roblox** e inicia sesión con la contraseña privada.
+3. Selecciona uno o varios audios y pulsa **Subir a Roblox**.
+4. El panel registra el Operation ID y después el Asset ID que devuelve Roblox.
+5. Pulsa **Actualizar** junto a cada audio o **Actualizar estados** para consultar la moderación.
+
+Estados que muestra la página:
+
+- **Procesando en Roblox**: Roblox todavía no termina la operación de carga.
+- **En revisión**: Roblox está moderando el audio.
+- **Aceptado**: Roblox devuelve `MODERATION_STATE_APPROVED`.
+- **Rechazado**: Roblox devuelve `MODERATION_STATE_REJECTED`.
+- **Pendiente de revisión**: todavía no hay estado de moderación disponible.
+
+El historial se guarda localmente en el navegador y no contiene API keys.
+
+## 5. Requisitos de los audios
+
+Roblox admite MP3, OGG, WAV y FLAC. El archivo debe pesar menos de 20 MB, durar como máximo 7 minutos y tener una frecuencia de muestreo de 48 kHz o menos. El audio debe ser una sola pista y debes tener los derechos para subirlo y usarlo.
+
+Los límites de importación dependen de la verificación de la cuenta y de las cuotas vigentes de Roblox. Consulta Creator Dashboard si el servicio rechaza una carga por cuota.
+
+## 6. Seguridad
+
+- No publiques API keys en GitHub.
+- No compartas `enviar.js` si contiene claves.
+- Protege `ADMIN_PASSWORD` y `SESSION_SECRET`.
+- El Worker solo acepta solicitudes del origen `https://djchamba.github.io` y requiere una sesión válida para subir audios o consultar permisos.
