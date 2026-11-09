@@ -1815,6 +1815,358 @@
     }
   };
 
+  // ---------- EDITOR DE EFECTOS: VELOCIDAD, TONO, REVERB, ECO Y RUIDO ----------
+  let effectsDecodedBuffer = null;
+  let effectsSourceFile = null;
+  let effectsPreviewUrl = null;
+
+  const EFFECT_IDS = [
+    "effectsSpeed","effectsPitch","effectsReverb","effectsDecay",
+    "effectsEcho","effectsEchoTime","effectsEchoFeedback",
+    "effectsBass","effectsTreble","effectsDistortion",
+    "effectsVolume","effectsWhiteNoise"
+  ];
+
+  function effectsStatus(message){
+    $("effectsStatus").textContent = message;
+  }
+
+  function effectsSettings(){
+    return {
+      speed: Number($("effectsSpeed").value),
+      pitch: Number($("effectsPitch").value),
+      reverb: Number($("effectsReverb").value) / 100,
+      decay: Number($("effectsDecay").value),
+      echo: Number($("effectsEcho").value) / 100,
+      echoTime: Number($("effectsEchoTime").value) / 1000,
+      echoFeedback: Number($("effectsEchoFeedback").value) / 100,
+      bass: Number($("effectsBass").value),
+      treble: Number($("effectsTreble").value),
+      distortion: Number($("effectsDistortion").value),
+      volume: Number($("effectsVolume").value) / 100,
+      whiteNoise: Number($("effectsWhiteNoise").value) / 100
+    };
+  }
+
+  function updateEffectsLabels(){
+    $("effectsSpeedValue").textContent = Number($("effectsSpeed").value).toFixed(2) + "×";
+    const pitch = Number($("effectsPitch").value);
+    $("effectsPitchValue").textContent = (pitch > 0 ? "+" : "") + pitch + " semitonos";
+    $("effectsReverbValue").textContent = $("effectsReverb").value + " %";
+    $("effectsDecayValue").textContent = Number($("effectsDecay").value).toFixed(1) + " s";
+    $("effectsEchoValue").textContent = $("effectsEcho").value + " %";
+    $("effectsEchoTimeValue").textContent = $("effectsEchoTime").value + " ms";
+    $("effectsEchoFeedbackValue").textContent = $("effectsEchoFeedback").value + " %";
+    $("effectsBassValue").textContent = (Number($("effectsBass").value) > 0 ? "+" : "") + $("effectsBass").value + " dB";
+    $("effectsTrebleValue").textContent = (Number($("effectsTreble").value) > 0 ? "+" : "") + $("effectsTreble").value + " dB";
+    $("effectsDistortionValue").textContent = $("effectsDistortion").value + " %";
+    $("effectsVolumeValue").textContent = $("effectsVolume").value + " %";
+    $("effectsWhiteNoiseValue").textContent = $("effectsWhiteNoise").value + " %";
+
+    if (effectsDecodedBuffer) {
+      const settings = effectsSettings();
+      const rate = settings.speed * Math.pow(2, settings.pitch / 12);
+      $("effectsOutputDuration").textContent = fmt(effectsDecodedBuffer.duration / rate);
+    }
+  }
+
+  function clearEffectsPreview(){
+    if (effectsPreviewUrl) {
+      URL.revokeObjectURL(effectsPreviewUrl);
+      effectsPreviewUrl = null;
+    }
+    $("effectsPlayer").pause();
+    $("effectsPlayer").removeAttribute("src");
+    $("effectsPlayer").classList.add("hide");
+    $("effectsPlayer").load();
+  }
+
+  async function loadEffectsAudio(fileItem){
+    clearEffectsPreview();
+    effectsDecodedBuffer = null;
+    effectsSourceFile = null;
+    $("effectsPreview").disabled = true;
+    $("effectsExport").disabled = true;
+    $("effectsReset").disabled = true;
+    $("effectsProgressWrap").classList.add("hide");
+    $("effectsProgress").style.width = "0%";
+    $("effectsFileName").textContent = "Ninguno";
+    $("effectsOriginalDuration").textContent = "–";
+    $("effectsOutputDuration").textContent = "–";
+    if (!fileItem) return;
+
+    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
+      effectsStatus("El archivo debe pesar entre 1 byte y 100 MB.");
+      return;
+    }
+
+    try {
+      effectsStatus("Leyendo " + fileItem.name + "…");
+      $("effectsProgressWrap").classList.remove("hide");
+      $("effectsProgress").style.width = "15%";
+      const bytes = await fileItem.arrayBuffer();
+      $("effectsProgress").style.width = "35%";
+      const decoded = await decode(bytes);
+      if (!decoded || !decoded.length || !decoded.duration) throw new Error("No se pudo decodificar el audio.");
+      if (decoded.duration > 900) throw new Error("El editor de efectos admite hasta 15 minutos por audio.");
+
+      effectsDecodedBuffer = decoded;
+      effectsSourceFile = fileItem;
+      $("effectsFileName").textContent = fileItem.name;
+      $("effectsOriginalDuration").textContent = fmt(decoded.duration);
+      $("effectsOutputName").value = fileItem.name.replace(/\.[^.]+$/, "").slice(0, 80);
+      $("effectsProgress").style.width = "100%";
+      $("effectsPreview").disabled = false;
+      $("effectsExport").disabled = false;
+      $("effectsReset").disabled = false;
+      updateEffectsLabels();
+      effectsStatus("✅ Audio cargado. Elige los efectos y pulsa «Escuchar efectos» para previsualizar.");
+    } catch (err) {
+      console.error("Editor de efectos:", err);
+      effectsDecodedBuffer = null;
+      effectsSourceFile = null;
+      $("effectsProgress").style.width = "0%";
+      effectsStatus("❌ " + (err.message || "No pude abrir el audio."));
+    }
+  }
+
+  function makeDistortionCurve(amount){
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const k = Math.max(0, amount) * 3;
+    if (k <= 0) {
+      for (let i = 0; i < samples; i++) curve[i] = (i * 2 / (samples - 1)) - 1;
+      return curve;
+    }
+    const norm = Math.tanh(1 + k);
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2 / (samples - 1)) - 1;
+      curve[i] = Math.tanh((1 + k) * x) / norm;
+    }
+    return curve;
+  }
+
+  function makeReverbImpulse(context, channelCount, seconds){
+    const length = Math.max(1, Math.floor(context.sampleRate * seconds));
+    const impulse = context.createBuffer(channelCount, length, context.sampleRate);
+    for (let channel = 0; channel < channelCount; channel++) {
+      const data = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        const remaining = 1 - i / length;
+        data[i] = (Math.random() * 2 - 1) * remaining * remaining;
+      }
+    }
+    return impulse;
+  }
+
+  function floatBufferToInt16(buffer){
+    const channels = [];
+    for (let channel = 0; channel < Math.min(2, buffer.numberOfChannels); channel++) {
+      const source = buffer.getChannelData(channel);
+      const output = new Int16Array(source.length);
+      for (let i = 0; i < source.length; i++) {
+        const sample = Math.max(-1, Math.min(1, source[i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return channels;
+  }
+
+  async function renderEffectsAudio(){
+    if (!effectsDecodedBuffer) throw new Error("Primero selecciona un audio.");
+    const settings = effectsSettings();
+    const effectiveRate = settings.speed * Math.pow(2, settings.pitch / 12);
+    if (!Number.isFinite(effectiveRate) || effectiveRate <= 0) throw new Error("La velocidad o el tono no son válidos.");
+
+    const baseDuration = effectsDecodedBuffer.duration / effectiveRate;
+    const tailSeconds = Math.max(settings.reverb > 0 ? settings.decay : 0, settings.echo > 0 ? settings.echoTime * 4 : 0);
+    const outputDuration = baseDuration + tailSeconds;
+    if (outputDuration > 900) {
+      throw new Error("La combinación de velocidad y tono genera un audio de más de 15 minutos. Sube la velocidad o reduce el cambio de tono.");
+    }
+    const frameCount = Math.ceil(outputDuration * SR);
+    const channelCount = Math.max(1, Math.min(2, effectsDecodedBuffer.numberOfChannels));
+    const context = new OfflineAudioContext(channelCount, frameCount, SR);
+
+    const source = context.createBufferSource();
+    source.buffer = effectsDecodedBuffer;
+    source.playbackRate.value = settings.speed;
+    source.detune.value = settings.pitch * 100;
+
+    const bass = context.createBiquadFilter();
+    bass.type = "lowshelf";
+    bass.frequency.value = 120;
+    bass.gain.value = settings.bass;
+
+    const treble = context.createBiquadFilter();
+    treble.type = "highshelf";
+    treble.frequency.value = 8000;
+    treble.gain.value = settings.treble;
+
+    let postEq = treble;
+    const chainNodes = [bass, treble];
+    if (settings.distortion > 0) {
+      const shaper = context.createWaveShaper();
+      shaper.curve = makeDistortionCurve(settings.distortion / 100);
+      shaper.oversample = "4x";
+      treble.connect(shaper);
+      postEq = shaper;
+      chainNodes.push(shaper);
+    }
+
+    const master = context.createGain();
+    master.gain.value = settings.volume;
+
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = -3;
+    compressor.knee.value = 5;
+    compressor.ratio.value = 10;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.16;
+    master.connect(compressor);
+    compressor.connect(context.destination);
+
+    source.connect(bass);
+    postEq.connect(master);
+
+    if (settings.reverb > 0) {
+      const convolver = context.createConvolver();
+      convolver.normalize = true;
+      convolver.buffer = makeReverbImpulse(context, channelCount, settings.decay);
+      const reverbGain = context.createGain();
+      reverbGain.gain.value = settings.reverb * 0.75;
+      postEq.connect(convolver);
+      convolver.connect(reverbGain);
+      reverbGain.connect(master);
+    }
+
+    if (settings.echo > 0) {
+      const delay = context.createDelay(1);
+      delay.delayTime.value = settings.echoTime;
+      const feedback = context.createGain();
+      feedback.gain.value = Math.min(0.8, settings.echoFeedback);
+      const echoGain = context.createGain();
+      echoGain.gain.value = settings.echo * 0.7;
+      postEq.connect(delay);
+      delay.connect(feedback);
+      feedback.connect(delay);
+      delay.connect(echoGain);
+      echoGain.connect(master);
+    }
+
+    if (settings.whiteNoise > 0) {
+      const noiseBuffer = context.createBuffer(1, frameCount, SR);
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+      const noiseSource = context.createBufferSource();
+      const noiseGain = context.createGain();
+      noiseGain.gain.value = settings.whiteNoise * 0.35;
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.connect(noiseGain);
+      noiseGain.connect(master);
+      noiseSource.start(0);
+    }
+
+    source.start(0);
+    effectsStatus("Procesando audio y aplicando efectos…");
+    const rendered = await context.startRendering();
+    return {
+      channels: floatBufferToInt16(rendered),
+      duration: rendered.duration
+    };
+  }
+
+  const effectsDrop = $("effectsDrop");
+  const effectsFileInput = $("effectsFile");
+  effectsDrop.onclick = () => effectsFileInput.click();
+  effectsDrop.ondragover = event => {
+    event.preventDefault();
+    effectsDrop.classList.add("over");
+  };
+  effectsDrop.ondragleave = () => effectsDrop.classList.remove("over");
+  effectsDrop.ondrop = event => {
+    event.preventDefault();
+    effectsDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) loadEffectsAudio(event.dataTransfer.files[0]);
+  };
+  effectsFileInput.onchange = () => {
+    if (effectsFileInput.files[0]) loadEffectsAudio(effectsFileInput.files[0]);
+    effectsFileInput.value = "";
+  };
+
+  EFFECT_IDS.forEach(id => {
+    $(id).addEventListener("input", updateEffectsLabels);
+    $(id).addEventListener("change", updateEffectsLabels);
+  });
+
+  $("effectsReset").onclick = () => {
+    const defaults = {
+      effectsSpeed:1,effectsPitch:0,effectsReverb:25,effectsDecay:1.8,
+      effectsEcho:0,effectsEchoTime:300,effectsEchoFeedback:35,
+      effectsBass:0,effectsTreble:0,effectsDistortion:0,
+      effectsVolume:100,effectsWhiteNoise:0
+    };
+    Object.entries(defaults).forEach(([id,value]) => $(id).value = String(value));
+    clearEffectsPreview();
+    updateEffectsLabels();
+    effectsStatus("Efectos restablecidos a sus valores iniciales.");
+  };
+
+  $("effectsPreview").onclick = async () => {
+    const button = $("effectsPreview");
+    button.disabled = true;
+    try {
+      $("effectsProgressWrap").classList.remove("hide");
+      $("effectsProgress").style.width = "15%";
+      const rendered = await renderEffectsAudio();
+      $("effectsProgress").style.width = "85%";
+      const wav = wavBlob(rendered.channels, SR);
+      clearEffectsPreview();
+      effectsPreviewUrl = URL.createObjectURL(wav);
+      $("effectsPlayer").src = effectsPreviewUrl;
+      $("effectsPlayer").classList.remove("hide");
+      $("effectsPlayer").playbackRate = 1;
+      $("effectsProgress").style.width = "100%";
+      await $("effectsPlayer").play();
+      $("effectsOutputDuration").textContent = fmt(rendered.duration);
+      effectsStatus("▶ Vista previa lista · " + fmt(rendered.duration) + ". Si te gusta, exporta el MP3.");
+    } catch (err) {
+      console.error("Previsualización de efectos:", err);
+      effectsStatus("❌ " + (err.message || "No se pudieron aplicar los efectos."));
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("effectsExport").onclick = async () => {
+    const button = $("effectsExport");
+    button.disabled = true;
+    $("effectsPreview").disabled = true;
+    $("effectsProgressWrap").classList.remove("hide");
+    $("effectsProgress").style.width = "10%";
+    try {
+      if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página.");
+      const rendered = await renderEffectsAudio();
+      $("effectsProgress").style.width = "45%";
+      effectsStatus("Codificando MP3 con los efectos…");
+      const blob = await encodeMp3(rendered.channels, progress => {
+        $("effectsProgress").style.width = Math.round(45 + progress * 55) + "%";
+      });
+      const name = safeName($("effectsOutputName").value || "Audio con efectos") || "Audio con efectos";
+      const outputName = name + ".mp3";
+      downloadBlob(blob, outputName);
+      $("effectsOutputDuration").textContent = fmt(rendered.duration);
+      effectsStatus("✅ Exportado: " + outputName + " · " + fmt(rendered.duration) + " · MP3 · " + (blob.size / 1048576).toFixed(1) + " MB.");
+    } catch (err) {
+      console.error("Exportar efectos:", err);
+      effectsStatus("❌ " + (err.message || "No se pudo exportar el audio."));
+    } finally {
+      button.disabled = false;
+      $("effectsPreview").disabled = !effectsDecodedBuffer;
+    }
+  };
+
   // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
   function getManualAssetId(){
     return $("manualRobloxAssetId").value.trim();
