@@ -89,7 +89,7 @@ function moderationStateLabel(raw) {
 
 function operationIdFromPath(path) {
   const value = String(path || "");
-  const match = value.match(/(?:^|\\/)operations\\/([A-Za-z0-9._~-]+)$/);
+  const match = value.match(/(?:^|\/)operations\/([A-Za-z0-9._~-]+)$/);
   return match ? match[1] : "";
 }
 
@@ -107,8 +107,8 @@ function creatorContext(env) {
   const userId = String(env.ROBLOX_AUDIO_CREATOR_USER_ID || "").trim();
   const groupId = String(env.ROBLOX_AUDIO_CREATOR_GROUP_ID || "").trim();
   if (userId && groupId) throw new Error("Configura solo ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID, no ambos.");
-  if (userId && /^\\d+$/.test(userId)) return { userId: Number(userId) };
-  if (groupId && /^\\d+$/.test(groupId)) return { groupId: Number(groupId) };
+  if (userId && /^\d+$/.test(userId)) return { userId: Number(userId) };
+  if (groupId && /^\d+$/.test(groupId)) return { groupId: Number(groupId) };
   throw new Error("Falta configurar ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID en Cloudflare.");
 }
 
@@ -329,7 +329,7 @@ export default {
       }
 
       const asset = data.response || {};
-      const assetId = asset.assetId ? String(asset.assetId) : String(asset.path || "").match(/assets\\/(\\d+)/)?.[1] || "";
+      const assetId = asset.assetId ? String(asset.assetId) : String(asset.path || "").match(/assets\/(\d+)/)?.[1] || "";
       return json({
         done: Boolean(data.done),
         assetId,
@@ -349,7 +349,7 @@ export default {
       try { body = await request.json(); }
       catch { return json({ error: "Solicitud inválida." }, 400, origin); }
       const assetId = String(body.assetId || "");
-      if (!/^\\d+$/.test(assetId)) return json({ error: "Asset ID inválido." }, 400, origin);
+      if (!/^\d+$/.test(assetId)) return json({ error: "Asset ID inválido." }, 400, origin);
 
       const readMask = encodeURIComponent("moderationResult,displayName,description");
       const response = await fetch("https://apis.roblox.com/assets/v1/assets/" + encodeURIComponent(assetId) + "?readMask=" + readMask, {
