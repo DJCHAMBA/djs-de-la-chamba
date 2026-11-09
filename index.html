@@ -64,6 +64,10 @@
   .info{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin:10px 0}
   .info b{color:var(--txt)}
   audio{width:100%;margin-top:6px}
+  input[type=password]{background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;width:100%}
+  .permission-ids{display:block;width:100%;min-height:170px;resize:vertical;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:13px/1.5 ui-monospace,monospace}
+  .permission-ids:focus,input[type=password]:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  .admin-entry{display:flex;justify-content:center;margin-top:14px}
   .hide{display:none!important}
   .tip{font-size:13px;color:var(--mut);line-height:1.5;margin-top:12px;padding:10px 12px;border-left:3px solid var(--lime);background:#b6ff3b0a;border-radius:0 10px 10px 0}
   .tip code{color:var(--lime)}
@@ -93,7 +97,27 @@
     <h1>DJS DE LA CHAMBA</h1>
     <div class="sub">Prepara tus audios para los conciertos de Roblox</div>
     <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="admin-entry"><button class="ghost" id="openPermissions" type="button">🔐 Permisos Roblox (Admin)</button></div>
   </header>
+
+  <!-- PANEL PRIVADO DE PERMISOS -->
+  <div class="card hide" id="permissionsCard">
+    <div class="step"><span class="num">🔐</span>Administrar permisos de Roblox</div>
+    <p class="tip">Experiencia destino: <code>6475547874</code>. Importa tu archivo enviar.js para cargar sus IDs o pégalos en el cuadro. Las API keys nunca se envían al navegador.</p>
+    <div class="row" style="margin:12px 0">
+      <label class="lbl" for="permissionJsFile">Importar IDs desde enviar.js</label>
+      <input type="file" id="permissionJsFile" accept=".js,text/javascript">
+    </div>
+    <label class="lbl" for="permissionIds">IDs de audio (separadas por comas, espacios o saltos de línea)</label>
+    <textarea id="permissionIds" class="permission-ids" rows="7" placeholder="Pega aquí tus IDs de Roblox…"></textarea>
+    <div class="info"><span>IDs válidas y únicas: <b id="permissionCount">0</b></span><span>Máximo por envío: <b>500</b></span></div>
+    <div class="row">
+      <button class="cyan" id="sendPermissions" type="button">🚀 Enviar IDs a permisos</button>
+      <button class="ghost" id="logoutPermissions" type="button">Cerrar sesión</button>
+    </div>
+    <div class="status" id="permissionsStatus">Zona privada de administración.</div>
+    <div class="parts" id="permissionsResults"></div>
+  </div>
 
   <!-- PASO 1 -->
   <div class="card">
@@ -170,6 +194,20 @@
     <div class="acts">
       <button type="button" class="ghost" id="delivCancel">Cancelar</button>
       <button type="submit">Continuar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ACCESO PRIVADO A PERMISOS -->
+<div class="ov hide" id="mPermissionLogin">
+  <form class="modal" id="fPermissionLogin" autocomplete="off">
+    <h2>Zona privada</h2>
+    <p>Introduce la contraseña de administrador para abrir el panel de permisos de Roblox.</p>
+    <input type="password" id="permissionPassword" maxlength="200" autocomplete="current-password" placeholder="Contraseña de administrador" required>
+    <div class="err" id="permissionLoginError"></div>
+    <div class="acts">
+      <button type="button" class="ghost" id="cancelPermissionLogin">Cancelar</button>
+      <button type="submit" id="permissionLoginButton">Entrar</button>
     </div>
   </form>
 </div>
@@ -812,6 +850,160 @@
     }
     return new Blob(parts, { type: "audio/wav" });
   }
+
+  // ---------- PERMISOS ROBLOX: panel privado ----------
+  // Cambia esta dirección cuando publiques el Worker privado de Cloudflare.
+  const PERMISSIONS_API_URL = "https://REEMPLAZA-CON-TU-WORKER.workers.dev";
+  let permissionsSession = null;
+
+  function parsePermissionIds(){
+    const values = $("permissionIds").value
+      .split(/[,\s;]+/)
+      .map(value => value.trim())
+      .filter(value => /^\d+$/.test(value));
+    return [...new Set(values)];
+  }
+
+  function updatePermissionCount(){
+    $("permissionCount").textContent = parsePermissionIds().length;
+  }
+
+  $("openPermissions").onclick = () => {
+    $("permissionPassword").value = "";
+    $("permissionLoginError").textContent = "";
+    $("mPermissionLogin").classList.remove("hide");
+    setTimeout(() => $("permissionPassword").focus(), 30);
+  };
+
+  $("cancelPermissionLogin").onclick = () => $("mPermissionLogin").classList.add("hide");
+
+  $("permissionIds").addEventListener("input", updatePermissionCount);
+
+  $("permissionJsFile").onchange = async () => {
+    const selected = $("permissionJsFile").files[0];
+    if (!selected) return;
+    try {
+      const source = await selected.text();
+      const match = source.match(/const\s+textoConIds\s*=\s*\x60([\s\S]*?)\x60\s*;/);
+      if (!match) throw new Error("No encontré la sección textoConIds dentro del archivo.");
+      const ids = [...new Set((match[1].match(/\b\d+\b/g) || []))];
+      $("permissionIds").value = ids.join(", ");
+      updatePermissionCount();
+      $("permissionsStatus").textContent = "✅ Se importaron " + ids.length + " IDs. Las API keys del archivo no se han leído ni enviado.";
+    } catch (err) {
+      $("permissionsStatus").textContent = "No pude leer las IDs: " + (err.message || "archivo inválido");
+    } finally {
+      $("permissionJsFile").value = "";
+    }
+  };
+
+  $("fPermissionLogin").onsubmit = async e => {
+    e.preventDefault();
+    const button = $("permissionLoginButton");
+    const password = $("permissionPassword").value;
+    $("permissionLoginError").textContent = "";
+
+    if (PERMISSIONS_API_URL.includes("REEMPLAZA-CON-TU-WORKER")) {
+      $("permissionLoginError").textContent = "Falta publicar y conectar el servidor privado de permisos. La contraseña todavía no se puede validar.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Verificando…";
+    try {
+      const response = await fetch(PERMISSIONS_API_URL + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.token) throw new Error(data.error || "No se pudo validar la contraseña.");
+      permissionsSession = data.token;
+      $("mPermissionLogin").classList.add("hide");
+      $("permissionsCard").classList.remove("hide");
+      $("permissionsStatus").textContent = "🔓 Acceso concedido. La sesión privada dura 30 minutos.";
+      updatePermissionCount();
+      $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      $("permissionLoginError").textContent = err.message || "No se pudo conectar con el servidor privado.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Entrar";
+    }
+  };
+
+  $("logoutPermissions").onclick = () => {
+    permissionsSession = null;
+    $("permissionsCard").classList.add("hide");
+    $("permissionsResults").innerHTML = "";
+    $("permissionsStatus").textContent = "Sesión cerrada.";
+  };
+
+  $("sendPermissions").onclick = async () => {
+    if (!permissionsSession) {
+      $("permissionsStatus").textContent = "Tu sesión venció. Vuelve a entrar con tu contraseña.";
+      return;
+    }
+    const ids = parsePermissionIds();
+    if (!ids.length) {
+      $("permissionsStatus").textContent = "Pega o importa al menos una ID válida.";
+      return;
+    }
+    if (ids.length > 500) {
+      $("permissionsStatus").textContent = "Hay " + ids.length + " IDs. Divide la lista en envíos de máximo 500.";
+      return;
+    }
+    if (!confirm("¿Autorizar " + ids.length + " IDs de audio para la experiencia 6475547874 en las dos cuentas configuradas?")) return;
+
+    const button = $("sendPermissions");
+    button.disabled = true;
+    $("permissionsResults").innerHTML = "";
+    $("permissionsStatus").textContent = "⏳ Enviando " + ids.length + " IDs a Roblox en bloques de 25. No cierres esta pestaña…";
+
+    try {
+      const response = await fetch(PERMISSIONS_API_URL + "/permissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + permissionsSession
+        },
+        body: JSON.stringify({ ids })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        permissionsSession = null;
+        throw new Error(data.error || "La sesión venció. Vuelve a ingresar la contraseña.");
+      }
+      if (!response.ok) throw new Error(data.error || "Roblox rechazó la solicitud.");
+      $("permissionsStatus").textContent = "✅ Proceso terminado para " + data.totalIds + " IDs. Experiencia: " + data.universeId + ".";
+      (data.resultados || []).forEach(result => {
+        const item = document.createElement("div");
+        item.className = "part";
+        const label = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = result.nombre;
+        const detail = document.createElement("div");
+        detail.className = "t";
+        detail.textContent = "Autorizadas: " + result.autorizadas + " · Fallidas: " + result.fallidas + " · Bloques: " + result.totalBloques;
+        label.appendChild(title);
+        label.appendChild(detail);
+        item.appendChild(label);
+        $("permissionsResults").appendChild(item);
+
+        if (Array.isArray(result.errores) && result.errores.length) {
+          const errorBox = document.createElement("div");
+          errorBox.className = "tip";
+          errorBox.textContent = "Primeros errores: " + JSON.stringify(result.errores.slice(0, 3));
+          $("permissionsResults").appendChild(errorBox);
+        }
+      });
+    } catch (err) {
+      $("permissionsStatus").textContent = "❌ " + (err.message || "No se pudo completar el envío.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
 })();
 </script>
 </body>
