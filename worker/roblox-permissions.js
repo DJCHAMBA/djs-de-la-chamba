@@ -291,7 +291,42 @@ export default {
 
       const data = await readRobloxJson(robloxResponse);
       if (!robloxResponse.ok) {
-        return json({ error: await robloxErrorMessage(robloxResponse, data), roblox: data }, robloxResponse.status, origin);
+        const diagnosticText = typeof data.raw === "string"
+          ? data.raw
+          : JSON.stringify(data);
+        const isCloudflare1015 = /1015/.test(diagnosticText) || String(data.code || "") === "1015";
+        const retryAfterHeader = robloxResponse.headers.get("retry-after");
+        let retryAfterSeconds = null;
+        if (retryAfterHeader) {
+          const numericRetry = Number(retryAfterHeader);
+          retryAfterSeconds = Number.isFinite(numericRetry)
+            ? Math.max(1, Math.ceil(numericRetry))
+            : Math.max(1, Math.ceil((Date.parse(retryAfterHeader) - Date.now()) / 1000));
+        } else {
+          const resetHeader = robloxResponse.headers.get("x-ratelimit-reset");
+          const resetSeconds = Number(resetHeader);
+          if (Number.isFinite(resetSeconds) && resetSeconds > 0) retryAfterSeconds = Math.ceil(resetSeconds);
+        }
+
+        const errorMessage = robloxResponse.status === 429 && isCloudflare1015
+          ? "Roblox/Cloudflare devolvió 1015: limitó temporalmente las subidas. No vuelvas a pulsar varias veces; espera antes de intentar de nuevo."
+          : robloxResponse.status === 429
+            ? "Roblox limitó temporalmente las subidas (HTTP 429). Espera a que se restablezca el límite antes de reintentar."
+            : await robloxErrorMessage(robloxResponse, data);
+
+        return json({
+          error: errorMessage,
+          upstreamStatus: robloxResponse.status,
+          upstreamCode: isCloudflare1015 ? "1015" : (data.code || null),
+          retryAfterSeconds,
+          rateLimit: {
+            limit: robloxResponse.headers.get("x-ratelimit-limit"),
+            remaining: robloxResponse.headers.get("x-ratelimit-remaining"),
+            reset: robloxResponse.headers.get("x-ratelimit-reset")
+          },
+          cfRay: robloxResponse.headers.get("cf-ray"),
+          roblox: data
+        }, robloxResponse.status, origin);
       }
 
       const operationId = operationIdFromPath(data.path);
