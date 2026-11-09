@@ -195,7 +195,7 @@
   <div id="uploadPanel" class="hide">
     <div class="card">
       <div class="step"><span class="num">☁️</span>Subir archivos a Roblox</div>
-      <p class="tip">Los audios se suben mediante el servidor privado y tu API key permanece en Cloudflare. Requiere el secreto <code>ROBLOX_AUDIO_API_KEY</code> con permisos <code>asset:read</code> y <code>asset:write</code>, y configurar tu <code>ROBLOX_AUDIO_CREATOR_USER_ID</code> o <code>ROBLOX_AUDIO_CREATOR_GROUP_ID</code>. Sube solo audios que tengas derecho a usar.</p>
+      <p class="tip">La subida automática por API puede encontrar temporalmente un límite 1015. Mientras tanto, puedes subir desde <a href="https://create.roblox.com/dashboard/creations" target="_blank" rel="noopener">Creator Dashboard</a> y pegar aquí el ID para consultar su moderación y dar permiso a La Chamba. Para la subida automática, configura <code>ROBLOX_AUDIO_API_KEY</code>, <code>asset:read</code>, <code>asset:write</code> y tu variable de creador personal o de grupo.</p>
       <div class="drop" id="robloxUploadDrop">
         <div style="font-size:34px">☁️🎵</div>
         Arrastra tus audios aquí o <b>toca para elegirlos</b><br>
@@ -227,6 +227,18 @@
       <p class="tip">Roblox puede dejar un audio en revisión antes de aprobarlo. Aquí verás el estado que informe Roblox: En revisión, Aceptado o Rechazado. La lista se guarda en este navegador.</p>
       <div id="robloxUploadHistory" class="upload-status-card"></div>
       <div class="status" id="robloxHistoryStatus"></div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🔎</span>Ya subí el audio desde Roblox</div>
+      <p class="tip">Si Creator Dashboard sí te deja subir, pega aquí el Asset ID que te dio Roblox. Consultaremos su estado real y podrás conceder permiso a la experiencia La Chamba (6475547874).</p>
+      <label class="lbl" for="manualRobloxAssetId">Asset ID de Roblox</label>
+      <input type="text" id="manualRobloxAssetId" inputmode="numeric" placeholder="Ej. 123456789012345" autocomplete="off">
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="checkManualRobloxAsset" type="button">🔎 Consultar estado</button>
+        <button class="cyan" id="grantManualRobloxAsset" type="button">🔐 Dar permiso a La Chamba</button>
+      </div>
+      <div class="status" id="manualRobloxAssetStatus">Pega el ID después de subir el audio en Roblox.</div>
     </div>
   </div>
 </div>
@@ -1406,6 +1418,105 @@
   };
 
   renderRobloxUploadHistory();
+
+
+  // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
+  function getManualAssetId(){
+    return $("manualRobloxAssetId").value.trim();
+  }
+
+  function saveManualAssetToHistory(assetId, status){
+    let record = robloxUploadHistory.find(item => String(item.assetId || "") === String(assetId));
+    if (!record) {
+      record = {
+        id: "manual-" + assetId,
+        name: status.displayName || "Audio subido desde Creator Dashboard",
+        fileName: "",
+        operationId: "",
+        assetId: String(assetId),
+        state: status.moderationState || "PENDING",
+        updatedAt: new Date().toISOString(),
+        manual: true
+      };
+      robloxUploadHistory.unshift(record);
+    } else {
+      record.name = status.displayName || record.name;
+      record.state = status.moderationState || record.state;
+      record.updatedAt = new Date().toISOString();
+      record.manual = record.manual || true;
+    }
+    robloxUploadHistory = robloxUploadHistory.slice(0, 100);
+    saveRobloxUploadHistory();
+    renderRobloxUploadHistory();
+  }
+
+  $("checkManualRobloxAsset").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const assetId = getManualAssetId();
+    if (!/^\d+$/.test(assetId)) {
+      $("manualRobloxAssetStatus").textContent = "Escribe un Asset ID numérico válido.";
+      return;
+    }
+    const button = $("checkManualRobloxAsset");
+    button.disabled = true;
+    $("manualRobloxAssetStatus").textContent = "Consultando el estado en Roblox…";
+    try {
+      const status = await callAudioWorker("/audio/status", { assetId }, false);
+      saveManualAssetToHistory(assetId, status);
+      $("manualRobloxAssetStatus").textContent =
+        "✅ " + (status.displayName || "Audio " + assetId) +
+        " · Estado: " + moderationText(status.moderationState) +
+        " · ID: " + assetId;
+    } catch (err) {
+      $("manualRobloxAssetStatus").textContent = "❌ " + (err.message || "No se pudo consultar el audio.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("grantManualRobloxAsset").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const assetId = getManualAssetId();
+    if (!/^\d+$/.test(assetId)) {
+      $("manualRobloxAssetStatus").textContent = "Escribe un Asset ID numérico válido.";
+      return;
+    }
+    if (!confirm("¿Conceder permiso de uso del audio " + assetId + " a la experiencia La Chamba (6475547874)?")) return;
+
+    const button = $("grantManualRobloxAsset");
+    button.disabled = true;
+    $("manualRobloxAssetStatus").textContent = "Concediendo permiso con las dos cuentas…";
+    try {
+      const data = await callAudioWorker("/permissions", { ids: [assetId] }, false);
+      const authorized = Number(data.autorizadasTotal || 0);
+      const failed = Number(data.fallidasTotal || 0);
+      if (authorized > 0) {
+        $("manualRobloxAssetStatus").textContent =
+          "✅ Permiso concedido a La Chamba para el ID " + assetId +
+          ". " + authorized + " cuenta(s) lo autorizaron.";
+      } else {
+        $("manualRobloxAssetStatus").textContent =
+          "❌ Ninguna de las dos cuentas pudo conceder permiso a este audio. Revisa que la cuenta que lo subió tenga acceso de administración.";
+      }
+      const existing = robloxUploadHistory.find(item => String(item.assetId || "") === assetId);
+      if (existing) {
+        existing.permissionGranted = authorized > 0;
+        existing.permissionCheckAt = new Date().toISOString();
+        saveRobloxUploadHistory();
+        renderRobloxUploadHistory();
+      }
+    } catch (err) {
+      $("manualRobloxAssetStatus").textContent = "❌ " + (err.message || "No se pudo conceder el permiso.");
+    } finally {
+      button.disabled = false;
+    }
+  };
 
 })();
 </script>
