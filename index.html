@@ -68,6 +68,14 @@
   .permission-ids{display:block;width:100%;min-height:170px;resize:vertical;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:13px/1.5 ui-monospace,monospace}
   .permission-ids:focus,input[type=password]:focus{outline:2px solid var(--cyan);outline-offset:1px}
   .admin-entry{display:flex;justify-content:center;margin-top:14px}
+  .normal-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+  .normal-control{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .normal-control label{display:block;color:var(--mut);font-size:13px;margin-bottom:8px}
+  .normal-control input[type=number],.normal-control input[type=text]{width:100%;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px;font:inherit}
+  .normal-control input[type=range]{width:100%;accent-color:var(--cyan)}
+  .normal-control strong{display:block;margin-top:6px}
+  .normal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  @media(max-width:520px){.normal-controls{grid-template-columns:1fr}}
   .tabs{display:flex;gap:8px;justify-content:center;margin:0 0 18px;flex-wrap:wrap}
   .tab-button{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--mut)}
   .tab-button.active{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;border:0;box-shadow:0 0 18px #22e7ff55}
@@ -114,7 +122,8 @@
   </header>
 
   <nav class="tabs" aria-label="Secciones de DJS DE LA CHAMBA">
-    <button class="tab-button active" id="tabEditor" type="button">🎚️ Editor de audio</button>
+    <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
+    <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
     <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
   </nav>
 
@@ -239,6 +248,64 @@
         <button class="cyan" id="grantManualRobloxAsset" type="button">🔐 Dar permiso a La Chamba</button>
       </div>
       <div class="status" id="manualRobloxAssetStatus">Pega el ID después de subir el audio en Roblox.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: EDITOR NORMAL -->
+  <div id="normalPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎛️</span>Editor normal de audio</div>
+      <p class="tip">Este editor conserva la velocidad y el tono originales (1×). Puedes recortar el inicio y final, ajustar el volumen y aplicar fundidos. No aplica la aceleración del editor rápido de Roblox.</p>
+
+      <div class="drop" id="normalDrop">
+        <div style="font-size:34px">🎵</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3, WAV, OGG, M4A, FLAC y otros formatos compatibles con tu navegador</small>
+      </div>
+      <input type="file" id="normalFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="normalFileName">Ninguno</b></span>
+        <span>Duración original: <b id="normalDuration">–</b></span>
+        <span>Duración final: <b id="normalFinalDuration">–</b></span>
+      </div>
+
+      <div class="normal-controls">
+        <div class="normal-control">
+          <label for="normalStart">Recortar desde (segundos)</label>
+          <input type="number" id="normalStart" min="0" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalEnd">Terminar en (segundos)</label>
+          <input type="number" id="normalEnd" min="0" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalVolume">Volumen</label>
+          <input type="range" id="normalVolume" min="0" max="200" step="1" value="100">
+          <strong id="normalVolumeValue">100 %</strong>
+        </div>
+        <div class="normal-control">
+          <label for="normalFadeIn">Fundido de entrada (segundos)</label>
+          <input type="number" id="normalFadeIn" min="0" max="30" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalFadeOut">Fundido de salida (segundos)</label>
+          <input type="number" id="normalFadeOut" min="0" max="30" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalOutputName">Nombre del MP3 final</label>
+          <input type="text" id="normalOutputName" maxlength="80" placeholder="Mi audio editado">
+        </div>
+      </div>
+
+      <div class="normal-actions">
+        <button class="ghost" id="normalPreviewButton" type="button" disabled>▶ Previsualizar cambios</button>
+        <button class="cyan" id="normalExportButton" type="button" disabled>💾 Exportar MP3 normal</button>
+        <button class="ghost" id="normalResetButton" type="button" disabled>↺ Restablecer recorte y efectos</button>
+      </div>
+      <audio id="normalPlayer" controls class="hide"></audio>
+      <div class="bar hide" id="normalProgressWrap"><div id="normalProgress"></div></div>
+      <div class="status" id="normalStatus">Selecciona un audio para comenzar. La velocidad siempre será 1×.</div>
     </div>
   </div>
 </div>
@@ -898,13 +965,17 @@
 
   function setMainTab(tab){
     const upload = tab === "upload";
-    $("editorPanel").classList.toggle("hide", upload);
+    const normal = tab === "normal";
+    $("editorPanel").classList.toggle("hide", upload || normal);
     $("uploadPanel").classList.toggle("hide", !upload);
-    $("tabEditor").classList.toggle("active", !upload);
+    $("normalPanel").classList.toggle("hide", !normal);
+    $("tabEditor").classList.toggle("active", !upload && !normal);
+    $("tabNormal").classList.toggle("active", normal);
     $("tabUpload").classList.toggle("active", upload);
   }
 
   $("tabEditor").onclick = () => setMainTab("editor");
+  $("tabNormal").onclick = () => setMainTab("normal");
   $("tabUpload").onclick = () => {
     setMainTab("upload");
     if (!permissionsSession) showPermissionLogin("upload");
