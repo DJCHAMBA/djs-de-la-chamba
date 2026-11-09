@@ -975,7 +975,12 @@
         throw new Error(data.error || "La sesión venció. Vuelve a ingresar la contraseña.");
       }
       if (!response.ok) throw new Error(data.error || "Roblox rechazó la solicitud.");
-      $("permissionsStatus").textContent = "✅ Proceso terminado para " + data.totalIds + " IDs. Experiencia: " + data.universeId + ".";
+      const totalAuthorized = Number(data.autorizadasTotal ?? 0);
+      const totalFailed = Number(data.fallidasTotal ?? Math.max(0, data.totalIds - totalAuthorized));
+      $("permissionsStatus").textContent = totalFailed === 0
+        ? "✅ Las " + totalAuthorized + " de " + data.totalIds + " IDs quedaron autorizadas por al menos una cuenta. Experiencia: " + data.universeId + "."
+        : "⚠️ " + totalAuthorized + " de " + data.totalIds + " IDs autorizadas por alguna cuenta. " + totalFailed + " no pudieron ser autorizadas por ninguna. Experiencia: " + data.universeId + ".";
+
       (data.resultados || []).forEach(result => {
         const item = document.createElement("div");
         item.className = "part";
@@ -984,7 +989,11 @@
         title.textContent = result.nombre;
         const detail = document.createElement("div");
         detail.className = "t";
-        detail.textContent = "Autorizadas: " + result.autorizadas + " · Fallidas: " + result.fallidas + " · Bloques: " + result.totalBloques;
+        detail.textContent =
+          "Autorizó: " + result.autorizadas +
+          " · No administra (la otra cuenta sí): " + (result.noGestiona || 0) +
+          " · Sin acceso en ninguna: " + (result.fallidasReales || 0) +
+          " · Bloques: " + result.totalBloques;
         label.appendChild(title);
         label.appendChild(detail);
         item.appendChild(label);
@@ -993,10 +1002,18 @@
         if (Array.isArray(result.errores) && result.errores.length) {
           const errorBox = document.createElement("div");
           errorBox.className = "tip";
-          errorBox.textContent = "Primeros errores: " + JSON.stringify(result.errores.slice(0, 3));
+          errorBox.textContent = "Errores que requieren revisión: " + JSON.stringify(result.errores.slice(0, 3));
           $("permissionsResults").appendChild(errorBox);
         }
       });
+
+      if (Array.isArray(data.idsSinAcceso) && data.idsSinAcceso.length) {
+        const failedBox = document.createElement("div");
+        failedBox.className = "tip";
+        failedBox.textContent = "IDs que ninguna cuenta pudo autorizar: " + data.idsSinAcceso.slice(0, 50).join(", ") +
+          (data.idsSinAcceso.length > 50 ? " … y " + (data.idsSinAcceso.length - 50) + " más." : "");
+        $("permissionsResults").appendChild(failedBox);
+      }
     } catch (err) {
       $("permissionsStatus").textContent = "❌ " + (err.message || "No se pudo completar el envío.");
     } finally {
