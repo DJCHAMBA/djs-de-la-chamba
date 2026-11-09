@@ -542,7 +542,6 @@
       d.innerHTML = '<div><div></div><div class="t"></div></div>';
       d.firstElementChild.firstElementChild.textContent = "🎵 " + f.name;
       d.querySelector(".t").textContent = fmt(f.secs) + " editado · " + fmt(f.secs * FACTOR) + " en Roblox (0.4) · " + (f.blob.size/1048576).toFixed(1) + " MB";
-      if (lastPack.files.length > 1){
       const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
       b.onclick = () => {
         try {
@@ -554,7 +553,6 @@
         }
       };
       d.appendChild(b);
-      }
       box.appendChild(d);
     });
     if (lastPack.files.length > 1){
