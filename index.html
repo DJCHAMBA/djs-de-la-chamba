@@ -163,13 +163,13 @@
 <!-- MODAL ENTREGA -->
 <div class="ov hide" id="mDeliv">
   <form class="modal" id="fDeliv">
-    <h2>¿Cómo lo quieres?</h2>
-    <p id="delivMsg"></p>
-    <label class="opt"><input type="radio" name="dm" value="folder" checked>En una carpeta (con todos los MP3 adentro)</label>
-    <label class="opt"><input type="radio" name="dm" value="files">Solo los archivos MP3 sueltos</label>
+    <h2>¿Cómo quieres descargar?</h2>
+    <p id="delivMsg">Elige cómo guardar todas las partes de tu audio.</p>
+    <label class="opt"><input type="radio" name="dm" value="zip" checked>📦 Un solo archivo ZIP (todos los MP3 juntos)</label>
+    <label class="opt"><input type="radio" name="dm" value="folder">📁 Carpeta normal (cada MP3 por separado)</label>
     <div class="acts">
       <button type="button" class="ghost" id="delivCancel">Cancelar</button>
-      <button type="submit">Entregar</button>
+      <button type="submit">Continuar</button>
     </div>
   </form>
 </div>
@@ -525,7 +525,7 @@
       lastPack = { name, files };
       renderParts();
       $("encStatus").textContent = files.length > 1
-        ? "✅ Tus MP3 están listos. Pulsa «Bajar todas las partes» para descargarlos juntos en un ZIP."
+        ? "✅ Tus " + files.length + " MP3 están listos. Pulsa «Bajar todas las partes» y elige ZIP o carpeta normal."
         : "✅ Tu MP3 está listo. Pulsa «Bajar solo esta» para descargarlo.";
     }catch(err){
       console.error(err);
@@ -558,31 +558,96 @@
     if (lastPack.files.length > 1){
       const all = document.createElement("button"); all.type = "button"; all.className = "cyan";
       all.textContent = "💾 Bajar todas las partes (" + lastPack.files.length + ")";
-      all.onclick = () => downloadAllZip(lastPack.name + ".zip", lastPack.files);
+      all.onclick = () => downloadAll(lastPack.name + ".zip", lastPack.files);
       box.appendChild(all);
     }
   }
 
-  async function downloadAllZip(zipName, files){
+  function askDelivery(files){
+    return new Promise(resolve => {
+      $("delivMsg").textContent = "Tienes " + files.length + " archivos MP3. Elige si prefieres un ZIP o una carpeta normal.";
+      $("fDeliv").querySelector('input[value="zip"]').checked = true;
+      $("mDeliv").classList.remove("hide");
+
+      $("delivCancel").onclick = () => {
+        $("mDeliv").classList.add("hide");
+        resolve(null);
+      };
+
+      $("fDeliv").onsubmit = e => {
+        e.preventDefault();
+        const mode = $("fDeliv").querySelector('input[name="dm"]:checked').value;
+        let pickerPromise = null;
+
+        if (mode === "folder") {
+          if (!window.showDirectoryPicker) {
+            $("delivMsg").textContent = "Tu navegador no permite elegir carpetas directamente. Selecciona ZIP o abre esta página en Chrome o Edge para usar carpeta normal.";
+            return;
+          }
+          try {
+            // Se abre aquí, durante el clic del usuario, porque el navegador exige una acción directa.
+            pickerPromise = window.showDirectoryPicker({ mode: "readwrite" });
+          } catch (err) {
+            console.error("No se pudo abrir el selector de carpeta:", err);
+            $("delivMsg").textContent = "No se pudo abrir el selector de carpetas. Prueba la opción ZIP.";
+            return;
+          }
+        }
+
+        $("mDeliv").classList.add("hide");
+        resolve({ mode, pickerPromise });
+      };
+    });
+  }
+
+  async function downloadAll(zipName, files){
     const btn = $("parts").querySelector("button.cyan");
     if (btn) btn.disabled = true;
-    try{
-      if (typeof JSZip === "undefined") throw new Error("jszip");
-      $("encStatus").textContent = "Preparando ZIP con " + files.length + " MP3…";
-      const zip = new JSZip();
-      files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
-      const blob = await zip.generateAsync(
-        { type: "blob", compression: "STORE" },
-        meta => { $("encStatus").textContent = "Empaquetando ZIP: " + Math.round(meta.percent) + "%"; }
-      );
-      downloadBlob(blob, zipName);
-      $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + ". Revisa la carpeta Descargas de Chrome.";
-    }catch(err){
-      console.error("Error al crear o descargar el ZIP:", err);
-      $("encStatus").textContent = err && err.message === "jszip"
-        ? "No cargó el creador ZIP. Recarga la página con Ctrl + F5 e inténtalo otra vez."
-        : "No se pudo crear o descargar el ZIP. Revisa la consola del navegador y los permisos de descarga.";
-    }finally{
+
+    try {
+      const choice = await askDelivery(files);
+      if (!choice) {
+        $("encStatus").textContent = "Descarga cancelada. Puedes volver a intentarlo cuando quieras.";
+        return;
+      }
+
+      if (choice.mode === "folder") {
+        $("encStatus").textContent = "Esperando que elijas la carpeta de destino…";
+        const dir = await choice.pickerPromise;
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          $("encStatus").textContent = "Guardando " + f.name + " (" + (i + 1) + " de " + files.length + ")…";
+          const handle = await dir.getFileHandle(f.name, { create: true });
+          const writable = await handle.createWritable();
+          await writable.write(f.blob);
+          await writable.close();
+        }
+        $("encStatus").textContent = "✅ ¡Listo! Se guardaron los " + files.length + " MP3 por separado en la carpeta «" + dir.name + "».";
+        return;
+      }
+
+      if (choice.mode === "zip") {
+        if (typeof JSZip === "undefined") throw new Error("jszip");
+        $("encStatus").textContent = "Preparando ZIP con " + files.length + " MP3…";
+        const zip = new JSZip();
+        files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
+        const blob = await zip.generateAsync(
+          { type: "blob", compression: "STORE" },
+          meta => { $("encStatus").textContent = "Empaquetando ZIP: " + Math.round(meta.percent) + "%"; }
+        );
+        downloadBlob(blob, zipName);
+        $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + ". Revisa la carpeta Descargas de Chrome.";
+      }
+    } catch (err) {
+      console.error("Error al guardar las partes:", err);
+      if (err && err.name === "AbortError") {
+        $("encStatus").textContent = "Cancelaste la selección de carpeta. Puedes volver a intentarlo.";
+      } else if (err && err.message === "jszip") {
+        $("encStatus").textContent = "No cargó el creador ZIP. Recarga con Ctrl + F5 e inténtalo otra vez.";
+      } else {
+        $("encStatus").textContent = "No se pudieron guardar los archivos. Revisa los permisos del navegador e inténtalo de nuevo.";
+      }
+    } finally {
       if (btn) btn.disabled = false;
     }
   }
