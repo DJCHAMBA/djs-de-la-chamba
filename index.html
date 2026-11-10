@@ -2015,6 +2015,10 @@
       chainNodes.push(shaper);
     }
 
+    // Ruta seca principal: fuente → graves → agudos → (distorsión opcional) → volumen.
+    // Sin esta conexión, el audio original no llegaba al destino y el MP3 exportado podía quedar silencioso.
+    bass.connect(treble);
+
     const master = context.createGain();
     master.gain.value = settings.volume;
 
