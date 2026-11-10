@@ -434,7 +434,7 @@
       <div class="drop" id="detectorDrop">
         <div style="font-size:34px">🎙️</div>
         Arrastra la grabación completa aquí o <b>toca para elegirla</b><br>
-        <small>MP3, WAV, OGG, M4A o FLAC · Hasta 100 MB y 30 minutos</small>
+        <small>MP3 o WAV · Hasta 500 MB y 2 horas (otros formatos: hasta 30 minutos y 100 MB)</small>
       </div>
       <input type="file" id="detectorFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
 
@@ -641,8 +641,9 @@
     return { starts, end: i, h: h0 };
   }
   // MP3 en pedazos: cada pedazo repite 4 tramas del anterior (el decodificador las necesita para arrancar bien)
-  async function* mp3Chunks(f, prog){
-    const OVER = 4, WIN = 6 * 1024 * 1024;
+  async function* mp3Chunks(f, prog, overlapSeconds = 0){
+    const DEFAULT_OVER = 4;
+    const WIN = overlapSeconds > 0 ? 2 * 1024 * 1024 : 6 * 1024 * 1024;
     let pos = 0;
     const head = await readBytes(f, 0, 10);
     if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33){
@@ -652,21 +653,24 @@
     let first = true;
     while (pos < f.size){
       const b = await readBytes(f, pos, Math.min(f.size, pos + WIN + 16384));
-      const atEnd = pos + b.length >= f.size;                    // la ventana ya llega al final del archivo
+      const atEnd = pos + b.length >= f.size;
       const w = mp3Walk(b, 0, atEnd ? Infinity : WIN);
       if (w.starts.length === 0) break;
-      const skip = first ? 0 : Math.round(OVER * w.h.spf * SR / w.h.rate);
+      const overlapFrames = overlapSeconds > 0 && w.h
+        ? Math.max(DEFAULT_OVER, Math.ceil(overlapSeconds * w.h.rate / w.h.spf))
+        : DEFAULT_OVER;
+      const skip = first ? 0 : Math.round(overlapFrames * w.h.spf * SR / w.h.rate);
       yield { bytes: b.slice(0, w.end), skip };
       first = false;
       prog(Math.min(1, (pos + w.end) / f.size));
-      if (atEnd || w.starts.length <= OVER) break;
-      pos += w.starts[w.starts.length - OVER];                   // el siguiente pedazo arranca 4 tramas antes
+      if (atEnd || w.starts.length <= overlapFrames) break;
+      pos += w.starts[w.starts.length - overlapFrames];
     }
   }
   // MP3-PURE>>
 
   // WAV en pedazos de 4 minutos (cada uno se arma como un WAV chiquito y el navegador lo decodifica)
-  async function* wavChunks(f, prog){
+  async function* wavChunks(f, prog, overlapSeconds = 0){
     let p = 12, fmt = null, dataPos = 0, dataLen = 0;
     while (p + 8 <= f.size){
       const hd = await readBytes(f, p, p + 8), dv = new DataView(hd.buffer);
@@ -677,9 +681,12 @@
     }
     if (!fmt || !dataLen) throw new Error("wav");
     const fv = new DataView(fmt.buffer), rate = fv.getUint32(4, true), align = fv.getUint16(12, true);
-    const step = Math.floor(rate * 240) * align;
+    const chunkSeconds = overlapSeconds > 0 ? 60 : 240;
+    const chunkBytes = Math.floor(rate * chunkSeconds) * align;
+    const overlapBytes = Math.floor(rate * overlapSeconds) * align;
+    const step = Math.max(align, chunkBytes - overlapBytes);
     for (let o = 0; o < dataLen; o += step){
-      const n = Math.min(step, dataLen - o) - (Math.min(step, dataLen - o) % align);
+      const n = Math.min(chunkBytes, dataLen - o) - (Math.min(chunkBytes, dataLen - o) % align);
       if (n <= 0) break;
       const raw = await readBytes(f, dataPos + o, dataPos + o + n);
       const fl = fmt.length + (fmt.length & 1);
@@ -687,7 +694,7 @@
       out.set([82,73,70,70], 0); v.setUint32(4, out.length - 8, true); out.set([87,65,86,69], 8);
       out.set([102,109,116,32], 12); v.setUint32(16, fmt.length, true); out.set(fmt, 20);
       out.set([100,97,116,97], 20 + fl); v.setUint32(24 + fl, n, true); out.set(raw, 28 + fl);
-      yield { bytes: out, skip: 0 };
+      yield { bytes: out, skip: o === 0 ? 0 : Math.round(overlapSeconds * SR) };
       prog(Math.min(1, (o + n) / dataLen));
     }
   }
@@ -2272,6 +2279,7 @@
   // ---------- DETECTOR DE CONCIERTOS ----------
   let detectorFileObject = null;
   let detectorBuffer = null;
+  let detectorStreamKind = null;
   let detectorObjectUrl = null;
   let detectorSongs = [];
   let detectorVoiceMarkers = [];
@@ -2385,13 +2393,13 @@
     if (offsets.length > 250) detectorStatus("Este análisis necesita " + offsets.length + " solicitudes. Elige un intervalo mayor (máximo 250 por análisis).");
   }
 
-  function detectorMakeClip(startSeconds) {
-    const first = Math.floor(startSeconds * SR);
-    const frames = Math.min(12 * SR, detectorBuffer.length - first);
+  function detectorMakeClipFromBuffer(buffer, startSeconds) {
+    const first = Math.max(0, Math.floor(startSeconds * SR));
+    const frames = Math.min(12 * SR, buffer.length - first);
     if (frames < 5 * SR) return null;
     const channels = [];
-    for (let channel = 0; channel < Math.min(2, detectorBuffer.numberOfChannels); channel++) {
-      const source = detectorBuffer.getChannelData(channel);
+    for (let channel = 0; channel < Math.min(2, buffer.numberOfChannels); channel++) {
+      const source = buffer.getChannelData(channel);
       const output = new Int16Array(frames);
       for (let i = 0; i < frames; i++) {
         const sample = Math.max(-1, Math.min(1, source[first + i]));
@@ -2402,9 +2410,36 @@
     return { channels, duration: frames / SR };
   }
 
+  function detectorMakeClip(startSeconds) {
+    return detectorBuffer && detectorBuffer.getChannelData
+      ? detectorMakeClipFromBuffer(detectorBuffer, startSeconds)
+      : null;
+  }
+
+  function detectorWaitForMetadata(player) {
+    if (player.readyState >= 1 && Number.isFinite(player.duration)) return Promise.resolve(player.duration);
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        player.removeEventListener("loadedmetadata", loaded);
+        player.removeEventListener("error", failed);
+      };
+      const loaded = () => {
+        cleanup();
+        if (!Number.isFinite(player.duration) || player.duration <= 0) {
+          reject(new Error("El navegador no pudo determinar la duración del archivo."));
+        } else resolve(player.duration);
+      };
+      const failed = () => { cleanup(); reject(new Error("El navegador no pudo abrir el audio. Prueba con MP3 o WAV.")); };
+      player.addEventListener("loadedmetadata", loaded, { once: true });
+      player.addEventListener("error", failed, { once: true });
+      player.load();
+    });
+  }
+
   async function detectorLoadFile(fileItem) {
     detectorFileObject = null;
     detectorBuffer = null;
+    detectorStreamKind = null;
     detectorSongs = [];
     detectorVoiceMarkers = [];
     detectorRenderSongs();
@@ -2416,32 +2451,101 @@
     $("detectorExport").disabled = true;
     $("detectorProgress").style.width = "0%";
     if (!fileItem) return;
-    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
-      detectorStatus("El archivo debe pesar entre 1 byte y 100 MB.");
+    if (fileItem.size <= 0 || fileItem.size > 500 * 1024 * 1024) {
+      detectorStatus("El archivo debe pesar entre 1 byte y 500 MB.");
       return;
     }
     try {
-      detectorStatus("Leyendo la grabación completa…");
-      const decoded = await decode(await fileItem.arrayBuffer());
-      if (!decoded || !decoded.duration) throw new Error("No se pudo decodificar el archivo.");
-      if (decoded.duration > 1800) throw new Error("Esta versión admite conciertos de hasta 30 minutos para proteger la memoria del navegador.");
-      detectorFileObject = fileItem;
-      detectorBuffer = decoded;
-      $("detectorFileName").textContent = fileItem.name;
-      $("detectorDuration").textContent = detectorFormatTime(decoded.duration);
+      detectorStatus("Preparando el reproductor y leyendo los datos del archivo…");
+      const kind = await sniff(fileItem);
+      if (kind === "other" && fileItem.size > 100 * 1024 * 1024) {
+        throw new Error("Para archivos OGG, M4A, FLAC o AAC se conserva el límite de 100 MB y 30 minutos. Convierte el concierto a MP3 o WAV para analizar hasta 2 horas.");
+      }
       if (detectorObjectUrl) URL.revokeObjectURL(detectorObjectUrl);
       detectorObjectUrl = URL.createObjectURL(fileItem);
-      $("detectorPlayer").src = detectorObjectUrl;
-      $("detectorPlayer").classList.remove("hide");
+      const player = $("detectorPlayer");
+      player.src = detectorObjectUrl;
+      player.classList.remove("hide");
+      const duration = await detectorWaitForMetadata(player);
+      if (duration > 7200) throw new Error("El límite es de 2 horas por concierto.");
+
+      if (kind === "other") {
+        if (duration > 1800) throw new Error("Para conciertos de más de 30 minutos, convierte el archivo a MP3 o WAV para procesarlo por bloques sin llenar la memoria.");
+        detectorStatus("Decodificando el archivo (formato corto)…");
+        const decoded = await decode(await fileItem.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No se pudo decodificar el archivo.");
+        detectorBuffer = decoded;
+      } else {
+        detectorStreamKind = kind;
+        detectorBuffer = { duration };
+      }
+
+      detectorFileObject = fileItem;
+      $("detectorFileName").textContent = fileItem.name;
+      $("detectorDuration").textContent = detectorFormatTime(duration);
       detectorUpdateEstimate();
       $("detectorClear").disabled = false;
       $("detectorMarkVoice").disabled = false;
       $("detectorMarkSong").disabled = false;
-      detectorStatus("✅ Concierto listo. Elige el intervalo y detecta las canciones.");
+      detectorStatus("✅ Concierto listo. Se leerá por bloques pequeños al iniciar el reconocimiento.");
     } catch (error) {
-      detectorStatus("❌ " + (error.message || "No pude leer el concierto."));
+      detectorFileObject = null;
+      detectorBuffer = null;
+      detectorStreamKind = null;
       $("detectorFileName").textContent = "Ninguno";
       $("detectorDuration").textContent = "–";
+      $("detectorPlayer").classList.add("hide");
+      detectorStatus("❌ " + (error.message || "No pude leer el concierto."));
+    }
+  }
+
+  async function* detectorAudioSamples(offsets) {
+    if (!detectorStreamKind) {
+      for (const offset of offsets) {
+        const clip = detectorMakeClip(offset);
+        if (clip) yield { offset, clip };
+      }
+      return;
+    }
+
+    let timelineEnd = 0;
+    let nextIndex = 0;
+    const report = progress => {
+      detectorStatus("Preparando bloques de audio… " + Math.round(progress * 100) + "%");
+    };
+    const chunks = detectorStreamKind === "mp3"
+      ? mp3Chunks(detectorFileObject, report, 12)
+      : wavChunks(detectorFileObject, report, 12);
+
+    for await (const chunk of chunks) {
+      const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+        ? chunk.bytes.buffer
+        : chunk.bytes.slice().buffer;
+      const decoded = await decode(bytes);
+      const chunkStart = timelineEnd - (Number(chunk.skip) || 0) / SR;
+      const chunkEnd = chunkStart + decoded.duration;
+
+      while (nextIndex < offsets.length) {
+        const offset = offsets[nextIndex];
+        let localSeconds = offset - chunkStart;
+        if (localSeconds < -0.05) {
+          nextIndex++;
+          continue;
+        }
+        if (localSeconds < 0) localSeconds = 0;
+        if (localSeconds + 5 > decoded.duration) break;
+        const clip = detectorMakeClipFromBuffer(decoded, localSeconds);
+        if (!clip) break;
+        yield { offset, clip };
+        nextIndex++;
+      }
+
+      timelineEnd = chunkEnd;
+      await sleep();
+    }
+
+    if (nextIndex < offsets.length) {
+      throw new Error("No pude extraer todas las muestras del archivo. Comprueba que sea un MP3 o WAV válido e inténtalo de nuevo.");
     }
   }
 
@@ -2495,6 +2599,7 @@
     $("detectorPlayer").load();
     detectorFileObject = null;
     detectorBuffer = null;
+    detectorStreamKind = null;
     detectorSongs = [];
     detectorVoiceMarkers = [];
     $("detectorFileName").textContent = "Ninguno";
@@ -2534,16 +2639,16 @@
     let failed = 0;
 
     try {
-      for (let i = 0; i < offsets.length; i++) {
-        const offset = offsets[i];
-        const clip = detectorMakeClip(offset);
-        if (!clip) continue;
+      let completed = 0;
+      for await (const sample of detectorAudioSamples(offsets)) {
+        const offset = sample.offset;
+        const clip = sample.clip;
         if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página.");
         const clipMp3 = await encodeMp3(clip.channels, () => {});
         const form = new FormData();
         form.append("file", new File([clipMp3], "concert-sample.mp3", { type: "audio/mpeg" }));
         form.append("durationSeconds", String(clip.duration));
-        detectorStatus("Reconociendo muestra " + (i + 1) + " de " + offsets.length + " · " + detectorFormatTime(offset) + "…");
+        detectorStatus("Reconociendo muestra " + (completed + 1) + " de " + offsets.length + " · " + detectorFormatTime(offset) + "…");
 
         try {
           const data = await callAudioWorker("/detector/recognize", form, true);
@@ -2580,15 +2685,18 @@
         } catch (error) {
           failed++;
           console.warn("Concert sample error", error);
-          // Detener el análisis ante un error de token, cuota, límite o servidor;
-          // así no consumimos más solicitudes con una configuración que ya falló.
           throw error;
         }
 
-        $("detectorProgress").style.width = Math.round((i + 1) / offsets.length * 100) + "%";
-        detectorStatus("Analizadas " + (i + 1) + " de " + offsets.length + " muestras · " +
+        completed++;
+        $("detectorProgress").style.width = Math.round(completed / offsets.length * 100) + "%";
+        detectorStatus("Analizadas " + completed + " de " + offsets.length + " muestras · " +
           detectorSongs.length + " segmentos reconocidos…");
         await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (completed !== offsets.length) {
+        throw new Error("El análisis solo pudo extraer " + completed + " de " + offsets.length + " muestras. Usa MP3 o WAV y vuelve a intentarlo.");
       }
 
       detectorStatus("✅ Análisis terminado: " + detectorSongs.length + " segmentos reconocidos, " +
