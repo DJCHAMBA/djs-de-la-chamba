@@ -2506,6 +2506,99 @@
     detectorStatus("Grabación eliminada. Selecciona otra para comenzar.");
   };
 
+  $("detectorStart").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("detector");
+      return;
+    }
+    if (!detectorBuffer || detectorBusy) return;
+    const offsets = detectorOffsets();
+    if (!offsets.length || offsets.length > 250) {
+      detectorStatus("El análisis debe tener entre 1 y 250 muestras. Elige un intervalo mayor.");
+      return;
+    }
+    const step = Number($("detectorInterval").value);
+    if (!confirm("Se enviarán " + offsets.length + " muestras de hasta 12 segundos a AudD. La prueba gratuita puede incluir 300 solicitudes totales. ¿Continuar?")) return;
+
+    detectorBusy = true;
+    detectorSongs = [];
+    detectorRenderSongs();
+    $("detectorStart").disabled = true;
+    $("detectorProgress").style.width = "0%";
+    let noMatch = 0;
+    let failed = 0;
+
+    try {
+      for (let i = 0; i < offsets.length; i++) {
+        const offset = offsets[i];
+        const clip = detectorMakeClip(offset);
+        if (!clip) continue;
+        const form = new FormData();
+        form.append("file", new File([clip], "concert-sample.wav", { type: "audio/wav" }));
+        form.append("durationSeconds", String(Math.min(12, detectorBuffer.duration - offset)));
+        detectorStatus("Reconociendo muestra " + (i + 1) + " de " + offsets.length + " · " + detectorFormatTime(offset) + "…");
+
+        try {
+          const data = await callAudioWorker("/detector/recognize", form, true);
+          if (data.matched && data.result) {
+            const result = data.result;
+            const title = result.title || "Canción desconocida";
+            const artist = result.artist || "Artista desconocido";
+            const previous = detectorSongs[detectorSongs.length - 1];
+            if (previous &&
+                previous.title.toLowerCase() === title.toLowerCase() &&
+                previous.artist.toLowerCase() === artist.toLowerCase() &&
+                offset - previous.lastSampleSeconds <= step * 2) {
+              previous.lastSampleSeconds = offset;
+              previous.samples++;
+              if (!previous.album && result.album) previous.album = result.album;
+              if (!previous.songLink && result.songLink) previous.songLink = result.songLink;
+            } else {
+              detectorSongs.push({
+                title,
+                artist,
+                album: result.album || "",
+                songLink: result.songLink || "",
+                startSeconds: offset,
+                lastSampleSeconds: offset,
+                samples: 1,
+                auddTimecode: result.timecode || ""
+              });
+            }
+            detectorRenderSongs();
+            $("detectorExport").disabled = false;
+          } else {
+            noMatch++;
+          }
+        } catch (error) {
+          failed++;
+          console.warn("Concert sample error", error);
+          if (/sesión vencida/i.test(error.message || "")) throw error;
+        }
+
+        $("detectorProgress").style.width = Math.round((i + 1) / offsets.length * 100) + "%";
+        detectorStatus("Analizadas " + (i + 1) + " de " + offsets.length + " muestras · " +
+          detectorSongs.length + " segmentos reconocidos…");
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      detectorStatus("✅ Análisis terminado: " + detectorSongs.length + " segmentos reconocidos, " +
+        noMatch + " muestras sin coincidencia y " + failed + " errores. Los tiempos son aproximados al primer reconocimiento.");
+    } catch (error) {
+      detectorStatus("❌ " + (error.message || "No se pudo terminar el análisis."));
+    } finally {
+      detectorBusy = false;
+      detectorUpdateEstimate();
+      $("detectorClear").disabled = !detectorFileObject;
+      $("detectorMarkVoice").disabled = !detectorFileObject;
+      $("detectorMarkSong").disabled = !detectorFileObject;
+      $("detectorExport").disabled = detectorSongs.length === 0 && detectorVoiceMarkers.length === 0;
+    }
+  };
+
+  detectorRenderSongs();
+  detectorRenderMarkers();
+
   // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
   function getManualAssetId(){
     return $("manualRobloxAssetId").value.trim();
