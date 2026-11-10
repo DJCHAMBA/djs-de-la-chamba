@@ -2399,7 +2399,7 @@
       }
       channels.push(output);
     }
-    return wavBlob(channels, SR);
+    return { channels, duration: frames / SR };
   }
 
   async function detectorLoadFile(fileItem) {
@@ -2538,9 +2538,11 @@
         const offset = offsets[i];
         const clip = detectorMakeClip(offset);
         if (!clip) continue;
+        if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página.");
+        const clipMp3 = await encodeMp3(clip.channels, () => {});
         const form = new FormData();
-        form.append("file", new File([clip], "concert-sample.wav", { type: "audio/wav" }));
-        form.append("durationSeconds", String(Math.min(12, detectorBuffer.duration - offset)));
+        form.append("file", new File([clipMp3], "concert-sample.mp3", { type: "audio/mpeg" }));
+        form.append("durationSeconds", String(clip.duration));
         detectorStatus("Reconociendo muestra " + (i + 1) + " de " + offsets.length + " · " + detectorFormatTime(offset) + "…");
 
         try {
