@@ -2264,6 +2264,139 @@
     }
   };
 
+  // ---------- DETECTOR DE CONCIERTOS ----------
+  let detectorFileObject = null;
+  let detectorBuffer = null;
+  let detectorObjectUrl = null;
+  let detectorSongs = [];
+  let detectorVoiceMarkers = [];
+  let detectorBusy = false;
+
+  function detectorFormatTime(seconds) {
+    const value = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(value / 3600);
+    const minutes = Math.floor((value % 3600) / 60);
+    const secs = value % 60;
+    return hours > 0 ? hours + ":" + String(minutes).padStart(2,"0") + ":" + String(secs).padStart(2,"0")
+      : minutes + ":" + String(secs).padStart(2,"0");
+  }
+
+  function detectorOffsets() {
+    if (!detectorBuffer) return [];
+    const step = Number($("detectorInterval").value);
+    const offsets = [];
+    for (let seconds = 0; seconds < detectorBuffer.duration; seconds += step) {
+      if (detectorBuffer.duration - seconds >= 5) offsets.push(seconds);
+    }
+    return offsets;
+  }
+
+  function detectorStatus(message) {
+    $("detectorStatus").textContent = message;
+  }
+
+  function detectorRenderSongs() {
+    const box = $("detectorResults");
+    box.innerHTML = "";
+    if (!detectorSongs.length) {
+      box.textContent = "Todavía no hay canciones detectadas.";
+      return;
+    }
+    detectorSongs.forEach(song => {
+      const row = document.createElement("div");
+      row.className = "detector-result";
+      const time = document.createElement("strong");
+      time.className = "detector-time";
+      time.textContent = detectorFormatTime(song.startSeconds);
+      const info = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = song.title;
+      const artist = document.createElement("div");
+      artist.className = "detector-meta";
+      artist.textContent = song.artist + (song.album ? " · " + song.album : "");
+      const count = document.createElement("div");
+      count.className = "detector-meta";
+      count.textContent = "Primera muestra reconocida · " + song.samples + " coincidencias";
+      info.append(title, artist, count);
+      if (song.songLink) {
+        const link = document.createElement("a");
+        link.href = song.songLink;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Abrir canción";
+        info.appendChild(link);
+      }
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "ghost";
+      jump.textContent = "▶ Ir al tiempo";
+      jump.onclick = () => {
+        $("detectorPlayer").currentTime = song.startSeconds;
+        $("detectorPlayer").play().catch(() => {});
+      };
+      row.append(time, info, jump);
+      box.appendChild(row);
+    });
+  }
+
+  function detectorRenderMarkers() {
+    const box = $("detectorMarkers");
+    box.innerHTML = "";
+    if (!detectorVoiceMarkers.length) {
+      box.textContent = "No hay marcas manuales todavía.";
+      return;
+    }
+    detectorVoiceMarkers.slice().sort((a,b) => a.seconds - b.seconds).forEach(marker => {
+      const row = document.createElement("div");
+      row.className = "detector-marker";
+      const time = document.createElement("strong");
+      time.className = "detector-time";
+      time.textContent = detectorFormatTime(marker.seconds);
+      const label = document.createElement("span");
+      label.className = "detector-meta";
+      label.textContent = (marker.type === "voice" ? "🎙️ Entrada de voz" : "🎵 Inicio de canción") + (marker.note ? " · " + marker.note : "");
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "ghost";
+      jump.textContent = "Ir";
+      jump.onclick = () => {
+        $("detectorPlayer").currentTime = marker.seconds;
+        $("detectorPlayer").play().catch(() => {});
+      };
+      row.append(time, label, jump);
+      box.appendChild(row);
+    });
+  }
+
+  function detectorUpdateEstimate() {
+    const offsets = detectorOffsets();
+    $("detectorRequestCount").textContent = detectorBuffer ? String(offsets.length) : "–";
+    if (!detectorBuffer) return;
+    const step = Number($("detectorInterval").value);
+    $("detectorEstimate").textContent = offsets.length + " solicitudes aproximadas para " +
+      (detectorBuffer.duration / 60).toFixed(1) + " minutos. Se analiza hasta 12 segundos cada " +
+      step + " segundos. La prueba de AudD puede incluir 300 solicitudes totales; comprueba el saldo de tu cuenta.";
+    $("detectorStart").disabled = !permissionsSession || detectorBusy || offsets.length === 0 || offsets.length > 250;
+    if (offsets.length > 250) detectorStatus("Este análisis necesita " + offsets.length + " solicitudes. Elige un intervalo mayor (máximo 250 por análisis).");
+  }
+
+  function detectorMakeClip(startSeconds) {
+    const first = Math.floor(startSeconds * SR);
+    const frames = Math.min(12 * SR, detectorBuffer.length - first);
+    if (frames < 5 * SR) return null;
+    const channels = [];
+    for (let channel = 0; channel < Math.min(2, detectorBuffer.numberOfChannels); channel++) {
+      const source = detectorBuffer.getChannelData(channel);
+      const output = new Int16Array(frames);
+      for (let i = 0; i < frames; i++) {
+        const sample = Math.max(-1, Math.min(1, source[first + i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return wavBlob(channels, SR);
+  }
+
   // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
   function getManualAssetId(){
     return $("manualRobloxAssetId").value.trim();
