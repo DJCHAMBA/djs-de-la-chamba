@@ -712,13 +712,13 @@
     const riffWave = b.length >= 12 &&
       String.fromCharCode(b[0],b[1],b[2],b[3]) === "RIFF" &&
       String.fromCharCode(b[8],b[9],b[10],b[11]) === "WAVE";
-    if (riffWave || /\\.wav$/.test(name) || type === "audio/wav" || type === "audio/x-wav") return "wav";
+    if (riffWave || /\.wav$/.test(name) || type === "audio/wav" || type === "audio/x-wav") return "wav";
 
     const id3 = b.length >= 3 && b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33;
     const mpegSync = b.length >= 2 && b[0] === 0xFF && (b[1] & 0xE0) === 0xE0;
     const mp3Mime = type === "audio/mpeg" || type === "audio/mp3" ||
       type === "audio/x-mpeg" || type === "audio/mpeg3" || type === "audio/x-mp3";
-    if (id3 || mpegSync || /\\.mp3$/.test(name) || mp3Mime) return "mp3";
+    if (id3 || mpegSync || /\.mp3$/.test(name) || mp3Mime) return "mp3";
 
     // Algunos MP3 incluyen etiquetas o bytes privados antes de la primera trama.
     // Busca una cabecera MPEG válida en el primer MiB antes de clasificarlos como otro formato.
