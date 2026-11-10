@@ -1237,6 +1237,7 @@
         $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (pendingPrivateDestination === "detector") {
         setMainTab("detector");
+        detectorUpdateEstimate();
         $("detectorStatus").textContent = "🔓 Acceso concedido. Ya puedes analizar conciertos.";
         $("detectorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
