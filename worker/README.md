@@ -96,18 +96,19 @@ No pongas el token en `index.html`, GitHub ni en el navegador. El Worker lo usa 
 ### Cómo usarlo
 
 1. Abre DJS DE LA CHAMBA y entra en **Detector** con la contraseña privada.
-2. Selecciona una grabación de concierto (primera versión: hasta 100 MB y 30 minutos).
-3. Elige tomar una muestra cada 15, 30 o 60 segundos.
+2. Para conciertos largos, selecciona MP3 o WAV (hasta 500 MB y 2 horas). Los formatos OGG, M4A, FLAC y AAC conservan el límite de 100 MB y 30 minutos.
+3. Elige tomar una muestra cada 15, 30 o 60 segundos. Para 2 horas, usa 30 segundos (aprox. 240 solicitudes) o 60 segundos (aprox. 120 solicitudes); 15 segundos superaría el máximo de 250 muestras por análisis.
 4. Revisa el número de solicitudes estimadas y confirma el análisis.
-5. Las muestras coincidentes se agrupan en segmentos y se muestran con el tiempo de la primera muestra reconocida.
-6. Reproduce el concierto y pulsa **Marcar entrada de voz** cuando empiece a cantar para registrar ese momento exacto.
-7. Exporta canciones reconocidas y marcas a CSV.
+5. MP3 se lee en bloques comprimidos y WAV en bloques PCM de un minuto con solapamiento. El navegador no necesita decodificar las dos horas completas en memoria.
+6. Las muestras coincidentes se agrupan en segmentos y se muestran con el tiempo de la primera muestra reconocida.
+7. Reproduce el concierto y pulsa **Marcar entrada de voz** cuando empiece a cantar para registrar ese momento exacto.
+8. Exporta canciones reconocidas y marcas a CSV.
 
 **Importante sobre precisión y consumo:**
 
 - AudD Standard analiza hasta unos 12 segundos por solicitud. La página toma muestras cada 15, 30 o 60 segundos, así que el momento mostrado es aproximado y puede aparecer después del inicio real de la canción.
 - Esta versión no detecta automáticamente la entrada de voz del cantante. Las entradas vocales son marcas manuales sincronizadas con el reproductor; no se deben presentar como análisis automático.
-- Las cuentas nuevas pueden recibir 300 solicitudes de prueba totales durante 14 días cuando la prueba está disponible. Cada muestra usa una solicitud. La página limita cada análisis a 250 muestras y pide confirmación antes de enviarlas.
+- Las cuentas nuevas pueden recibir 300 solicitudes de prueba totales durante 14 días cuando la prueba está disponible. Cada muestra usa una solicitud. La página limita cada análisis a 250 muestras y pide confirmación antes de enviarlas. Para dos horas, 30 segundos genera unas 240 muestras; 15 segundos genera unas 480 y no cabe en un solo análisis.
 - El servicio estándar puede reconocer canciones comerciales presentes en la base de datos; canciones propias, remixes, versiones en vivo o audio muy mezclado pueden no coincidir.
 - AudD tiene un endpoint Enterprise para archivos largos y resultados de múltiples canciones con marcas de tiempo; tiene acceso y tarifas distintas. Esta integración usa el endpoint estándar, no el Enterprise.
 - Para evitar uso accidental del token, el endpoint del detector exige la sesión privada del panel y el secreto queda únicamente en Cloudflare.
