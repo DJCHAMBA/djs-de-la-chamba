@@ -456,6 +456,80 @@ export default {
       }, 200, origin);
     }
 
+    if (url.pathname === "/detector/recognize") {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
+      if (!env.AUDD_API_TOKEN) {
+        return json({ error: "Falta configurar AUDD_API_TOKEN como Secret en Cloudflare." }, 503, origin);
+      }
+
+      let incoming;
+      try { incoming = await request.formData(); }
+      catch { return json({ error: "No pude leer el fragmento de audio." }, 400, origin); }
+
+      const audio = incoming.get("file");
+      if (!audio || typeof audio.arrayBuffer !== "function" || audio.size <= 0) {
+        return json({ error: "No se recibió un fragmento de audio válido." }, 400, origin);
+      }
+      if (audio.size > 10 * 1024 * 1024) {
+        return json({ error: "El fragmento supera el límite de 10 MB de AudD." }, 400, origin);
+      }
+
+      const durationSeconds = Number(incoming.get("durationSeconds") || 0);
+      if (durationSeconds > 12.5) {
+        return json({ error: "Cada muestra debe durar como máximo 12 segundos." }, 400, origin);
+      }
+
+      const form = new FormData();
+      form.set("api_token", env.AUDD_API_TOKEN);
+      form.set("return", "timecode,song_link");
+      const fileName = String(audio.name || "concert-sample.wav");
+      const mediaType = String(audio.type || "audio/wav");
+      const file = new File([audio], fileName, { type: mediaType });
+      form.set("file", file, fileName);
+
+      let auddResponse;
+      try {
+        auddResponse = await fetch("https://api.audd.io/", {
+          method: "POST",
+          body: form
+        });
+      } catch (error) {
+        return json({ error: "No se pudo conectar con AudD: " + String(error.message || error) }, 502, origin);
+      }
+
+      const result = await readRobloxJson(auddResponse);
+      if (!auddResponse.ok || result.status !== "success") {
+        const detail = result.error && (
+          result.error.error_message || result.error.message || result.error.error_code
+        );
+        return json({
+          error: detail
+            ? "AudD: " + String(detail).slice(0, 500)
+            : "AudD no pudo reconocer este fragmento.",
+          upstreamStatus: auddResponse.status,
+          auddCode: result.error && result.error.error_code || null
+        }, 502, origin);
+      }
+
+      const track = result.result;
+      if (!track) {
+        return json({ matched: false, result: null }, 200, origin);
+      }
+
+      return json({
+        matched: true,
+        result: {
+          title: String(track.title || "Canción desconocida").slice(0, 200),
+          artist: String(track.artist || "Artista desconocido").slice(0, 200),
+          album: String(track.album || "").slice(0, 200),
+          releaseDate: String(track.release_date || "").slice(0, 40),
+          timecode: String(track.timecode || "").slice(0, 20),
+          songLink: String(track.song_link || "").slice(0, 500)
+        }
+      }, 200, origin);
+    }
+
     if (url.pathname === "/permissions") {
       if (!env.SESSION_SECRET) return json({ error: "Falta configurar SESSION_SECRET." }, 503, origin);
 
