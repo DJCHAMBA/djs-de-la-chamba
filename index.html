@@ -83,6 +83,17 @@
   .effects-control output{color:var(--txt);font-weight:800;white-space:nowrap}
   .effects-group-title{margin:18px 0 8px;color:var(--cyan);font-weight:800}
   @media(max-width:520px){.effects-grid{grid-template-columns:1fr}}
+  .detector-result{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .detector-time{font-family:ui-monospace,monospace;color:var(--cyan);font-weight:800;font-size:14px}
+  .detector-meta{color:var(--mut);font-size:12px;line-height:1.45}
+  .detector-marker{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;background:#0c0816;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .detector-timeline{display:grid;gap:8px;margin-top:12px}
+  .detector-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .detector-actions button{flex:1}
+  .detector-range{height:9px;border-radius:6px;background:#0c0816;border:1px solid var(--line);overflow:hidden;margin-top:12px}
+  .detector-range>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+  .detector-small{font-size:12px;color:var(--mut);line-height:1.5}
+  @media(max-width:520px){.detector-marker{grid-template-columns:76px minmax(0,1fr)}.detector-marker button{grid-column:1/-1}}
   .tabs{display:flex;gap:8px;justify-content:center;margin:0 0 18px;flex-wrap:wrap}
   .tab-button{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--mut)}
   .tab-button.active{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;border:0;box-shadow:0 0 18px #22e7ff55}
@@ -132,6 +143,7 @@
     <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
     <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
     <button class="tab-button" id="tabEffects" type="button">🎚️ Editor de efectos</button>
+    <button class="tab-button" id="tabDetector" type="button">🎤 Detector</button>
     <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
   </nav>
 
@@ -410,6 +422,75 @@
       <audio id="effectsPlayer" controls class="hide"></audio>
       <div class="bar hide" id="effectsProgressWrap"><div id="effectsProgress"></div></div>
       <div class="status" id="effectsStatus">Selecciona un audio para comenzar. Los efectos se aplicarán al exportar.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: DETECTOR DE CONCIERTOS -->
+  <div id="detectorPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎤</span>Detector de conciertos</div>
+      <p class="tip">Carga una grabación y el detector tomará muestras de 12 segundos para reconocer canciones con AudD. El tiempo mostrado es el primer punto donde se reconoció cada canción, no necesariamente el primer compás exacto. Necesita el secreto <code>AUDD_API_TOKEN</code> en Cloudflare.</p>
+
+      <div class="drop" id="detectorDrop">
+        <div style="font-size:34px">🎙️</div>
+        Arrastra la grabación completa aquí o <b>toca para elegirla</b><br>
+        <small>MP3, WAV, OGG, M4A o FLAC · Hasta 100 MB y 30 minutos</small>
+      </div>
+      <input type="file" id="detectorFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="detectorFileName">Ninguno</b></span>
+        <span>Duración: <b id="detectorDuration">–</b></span>
+        <span>Muestras estimadas: <b id="detectorRequestCount">–</b></span>
+      </div>
+      <audio id="detectorPlayer" controls class="hide"></audio>
+
+      <div class="row" style="margin-top:14px">
+        <label class="lbl" for="detectorInterval">Reconocer una muestra cada</label>
+        <select id="detectorInterval">
+          <option value="15">15 segundos · Más preciso</option>
+          <option value="30" selected>30 segundos · Recomendado</option>
+          <option value="60">60 segundos · Menos solicitudes</option>
+        </select>
+      </div>
+      <div class="detector-small" id="detectorEstimate">Cada muestra usa una solicitud de reconocimiento de hasta 12 segundos. Elige un intervalo para calcular el consumo estimado.</div>
+
+      <div class="detector-actions">
+        <button class="cyan" id="detectorStart" type="button" disabled>🔎 Detectar canciones</button>
+        <button class="ghost" id="detectorClear" type="button" disabled>Limpiar</button>
+      </div>
+      <div class="detector-range"><div id="detectorProgress"></div></div>
+      <div class="status" id="detectorStatus">Selecciona una grabación para comenzar.</div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎵</span>Canciones detectadas</div>
+      <p class="detector-small">Los tiempos son aproximados: corresponden a la primera muestra en la que AudD reconoció la canción. Revisa y ajusta los momentos al escuchar la grabación.</p>
+      <div class="detector-timeline" id="detectorResults">
+        <div class="status">Todavía no hay canciones detectadas.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎙️</span>Entradas de voz del cantante</div>
+      <p class="detector-small">Reproduce la grabación y pulsa «Marcar entrada de voz» justo cuando el cantante empiece a cantar. Esta primera versión guarda marcas manuales precisas; no afirma detectar voces automáticamente sobre la música.</p>
+      <label class="lbl" for="detectorMarkerLabel">Nota opcional (ej. empieza el coro, primera estrofa)</label>
+      <input type="text" id="detectorMarkerLabel" maxlength="80" placeholder="Empieza a cantar…">
+      <div class="detector-actions">
+        <button class="cyan" id="detectorMarkVoice" type="button" disabled>🎙️ Marcar entrada de voz</button>
+        <button class="ghost" id="detectorMarkSong" type="button" disabled>🎵 Marcar inicio de canción</button>
+      </div>
+      <div class="detector-timeline" id="detectorMarkers">
+        <div class="status">No hay marcas manuales todavía.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">📤</span>Exportar reporte del concierto</div>
+      <p class="detector-small">Descarga las canciones reconocidas y tus marcas de entrada vocal en un CSV que puedes abrir con Excel.</p>
+      <div class="detector-actions">
+        <button class="cyan" id="detectorExport" type="button" disabled>📄 Descargar reporte CSV</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1071,19 +1152,27 @@
     const upload = tab === "upload";
     const normal = tab === "normal";
     const effects = tab === "effects";
-    $("editorPanel").classList.toggle("hide", upload || normal || effects);
+    const detector = tab === "detector";
+    $("editorPanel").classList.toggle("hide", upload || normal || effects || detector);
     $("uploadPanel").classList.toggle("hide", !upload);
     $("normalPanel").classList.toggle("hide", !normal);
     $("effectsPanel").classList.toggle("hide", !effects);
-    $("tabEditor").classList.toggle("active", !upload && !normal && !effects);
+    $("detectorPanel").classList.toggle("hide", !detector);
+    $("tabEditor").classList.toggle("active", !upload && !normal && !effects && !detector);
     $("tabNormal").classList.toggle("active", normal);
     $("tabEffects").classList.toggle("active", effects);
+    $("tabDetector").classList.toggle("active", detector);
     $("tabUpload").classList.toggle("active", upload);
   }
 
   $("tabEditor").onclick = () => setMainTab("editor");
   $("tabNormal").onclick = () => setMainTab("normal");
   $("tabEffects").onclick = () => setMainTab("effects");
+  $("tabDetector").onclick = () => {
+    setMainTab("detector");
+    if (!permissionsSession) showPermissionLogin("detector");
+    else renderDetectorResults();
+  };
   $("tabUpload").onclick = () => {
     setMainTab("upload");
     if (!permissionsSession) showPermissionLogin("upload");
