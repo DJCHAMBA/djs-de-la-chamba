@@ -2580,7 +2580,9 @@
         } catch (error) {
           failed++;
           console.warn("Concert sample error", error);
-          if (/sesión vencida/i.test(error.message || "")) throw error;
+          // Detener el análisis ante un error de token, cuota, límite o servidor;
+          // así no consumimos más solicitudes con una configuración que ya falló.
+          throw error;
         }
 
         $("detectorProgress").style.width = Math.round((i + 1) / offsets.length * 100) + "%";
