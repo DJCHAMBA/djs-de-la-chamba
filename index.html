@@ -1235,6 +1235,10 @@
         $("permissionsStatus").textContent = "🔓 Acceso concedido. La sesión privada dura 30 minutos.";
         updatePermissionCount();
         $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (pendingPrivateDestination === "detector") {
+        setMainTab("detector");
+        $("detectorStatus").textContent = "🔓 Acceso concedido. Ya puedes analizar conciertos.";
+        $("detectorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         setMainTab("upload");
         $("robloxUploadStatus").textContent = "🔓 Acceso concedido. Ya puedes subir audios y consultar su revisión.";
