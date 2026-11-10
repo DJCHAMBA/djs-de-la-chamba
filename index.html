@@ -2397,6 +2397,115 @@
     return wavBlob(channels, SR);
   }
 
+  async function detectorLoadFile(fileItem) {
+    detectorFileObject = null;
+    detectorBuffer = null;
+    detectorSongs = [];
+    detectorVoiceMarkers = [];
+    detectorRenderSongs();
+    detectorRenderMarkers();
+    $("detectorStart").disabled = true;
+    $("detectorClear").disabled = true;
+    $("detectorMarkVoice").disabled = true;
+    $("detectorMarkSong").disabled = true;
+    $("detectorExport").disabled = true;
+    $("detectorProgress").style.width = "0%";
+    if (!fileItem) return;
+    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
+      detectorStatus("El archivo debe pesar entre 1 byte y 100 MB.");
+      return;
+    }
+    try {
+      detectorStatus("Leyendo la grabación completa…");
+      const decoded = await decode(await fileItem.arrayBuffer());
+      if (!decoded || !decoded.duration) throw new Error("No se pudo decodificar el archivo.");
+      if (decoded.duration > 1800) throw new Error("Esta versión admite conciertos de hasta 30 minutos para proteger la memoria del navegador.");
+      detectorFileObject = fileItem;
+      detectorBuffer = decoded;
+      $("detectorFileName").textContent = fileItem.name;
+      $("detectorDuration").textContent = detectorFormatTime(decoded.duration);
+      if (detectorObjectUrl) URL.revokeObjectURL(detectorObjectUrl);
+      detectorObjectUrl = URL.createObjectURL(fileItem);
+      $("detectorPlayer").src = detectorObjectUrl;
+      $("detectorPlayer").classList.remove("hide");
+      detectorUpdateEstimate();
+      $("detectorClear").disabled = false;
+      $("detectorMarkVoice").disabled = false;
+      $("detectorMarkSong").disabled = false;
+      detectorStatus("✅ Concierto listo. Elige el intervalo y detecta las canciones.");
+    } catch (error) {
+      detectorStatus("❌ " + (error.message || "No pude leer el concierto."));
+      $("detectorFileName").textContent = "Ninguno";
+      $("detectorDuration").textContent = "–";
+    }
+  }
+
+  function detectorAddMarker(type) {
+    const seconds = $("detectorPlayer").currentTime;
+    const note = $("detectorMarkerLabel").value.trim();
+    detectorVoiceMarkers.push({ type, seconds, note });
+    detectorRenderMarkers();
+    $("detectorExport").disabled = false;
+    detectorStatus((type === "voice" ? "Entrada de voz" : "Inicio de canción") + " marcada en " + detectorFormatTime(seconds) + ".");
+  }
+
+  function detectorCsv() {
+    const quote = value => '"' + String(value || "").replace(/"/g, '""') + '"';
+    const rows = [["Tipo", "Tiempo", "Canción", "Artista", "Nota"]];
+    detectorSongs.forEach(song => rows.push(["Canción detectada", detectorFormatTime(song.startSeconds), song.title, song.artist, song.album]));
+    detectorVoiceMarkers.forEach(marker => rows.push([
+      marker.type === "voice" ? "Entrada de voz (manual)" : "Inicio de canción (manual)",
+      detectorFormatTime(marker.seconds), "", "", marker.note
+    ]));
+    const csv = "\uFEFF" + rows.map(row => row.map(quote).join(",")).join("\r\n");
+    const base = safeName(detectorFileObject ? detectorFileObject.name.replace(/\.[^.]+$/, "") : "Concierto");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), (base || "Concierto") + "_detector.csv");
+  }
+
+  const detectorDrop = $("detectorDrop");
+  const detectorFileInput = $("detectorFile");
+  detectorDrop.onclick = () => detectorFileInput.click();
+  detectorDrop.ondragover = event => { event.preventDefault(); detectorDrop.classList.add("over"); };
+  detectorDrop.ondragleave = () => detectorDrop.classList.remove("over");
+  detectorDrop.ondrop = event => {
+    event.preventDefault();
+    detectorDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) detectorLoadFile(event.dataTransfer.files[0]);
+  };
+  detectorFileInput.onchange = () => {
+    if (detectorFileInput.files[0]) detectorLoadFile(detectorFileInput.files[0]);
+    detectorFileInput.value = "";
+  };
+  $("detectorInterval").onchange = detectorUpdateEstimate;
+  $("detectorMarkVoice").onclick = () => detectorAddMarker("voice");
+  $("detectorMarkSong").onclick = () => detectorAddMarker("song");
+  $("detectorExport").onclick = detectorCsv;
+
+  $("detectorClear").onclick = () => {
+    if (detectorObjectUrl) URL.revokeObjectURL(detectorObjectUrl);
+    detectorObjectUrl = null;
+    $("detectorPlayer").pause();
+    $("detectorPlayer").removeAttribute("src");
+    $("detectorPlayer").classList.add("hide");
+    $("detectorPlayer").load();
+    detectorFileObject = null;
+    detectorBuffer = null;
+    detectorSongs = [];
+    detectorVoiceMarkers = [];
+    $("detectorFileName").textContent = "Ninguno";
+    $("detectorDuration").textContent = "–";
+    $("detectorRequestCount").textContent = "–";
+    $("detectorProgress").style.width = "0%";
+    $("detectorStart").disabled = true;
+    $("detectorClear").disabled = true;
+    $("detectorMarkVoice").disabled = true;
+    $("detectorMarkSong").disabled = true;
+    $("detectorExport").disabled = true;
+    detectorRenderSongs();
+    detectorRenderMarkers();
+    detectorStatus("Grabación eliminada. Selecciona otra para comenzar.");
+  };
+
   // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
   function getManualAssetId(){
     return $("manualRobloxAssetId").value.trim();
