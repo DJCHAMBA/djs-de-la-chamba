@@ -429,7 +429,7 @@
   <div id="detectorPanel" class="hide">
     <div class="card">
       <div class="step"><span class="num">🎤</span>Detector de conciertos</div>
-      <p class="tip">Carga una grabación y el detector tomará muestras de 12 segundos para reconocer canciones con AudD. El tiempo mostrado es el primer punto donde se reconoció cada canción, no necesariamente el primer compás exacto. Necesita el secreto <code>AUDD_API_TOKEN</code> en Cloudflare.</p>
+      <p class="tip">Carga una grabación y el detector enviará a AudD únicamente muestras de hasta 12 segundos, no el concierto completo. El tiempo mostrado es el primer punto donde se reconoció cada canción, no necesariamente el primer compás exacto. Necesita el secreto <code>AUDD_API_TOKEN</code> en Cloudflare. <a href="https://dashboard.audd.io/" target="_blank" rel="noopener noreferrer">Crear token de AudD</a>.</p>
 
       <div class="drop" id="detectorDrop">
         <div style="font-size:34px">🎙️</div>
