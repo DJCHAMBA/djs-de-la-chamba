@@ -1171,7 +1171,11 @@
   $("tabDetector").onclick = () => {
     setMainTab("detector");
     if (!permissionsSession) showPermissionLogin("detector");
-    else renderDetectorResults();
+    else {
+      detectorRenderSongs();
+      detectorRenderMarkers();
+      detectorUpdateEstimate();
+    }
   };
   $("tabUpload").onclick = () => {
     setMainTab("upload");
