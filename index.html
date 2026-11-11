@@ -898,6 +898,39 @@
 
   // Descargas nativas del navegador: no depende de Claude.
   function downloadBlob(blob, filename){
+    // En el APK Android guarda directamente en Descargas/DJS DE LA CHAMBA.
+    // En navegador conserva la descarga estándar.
+    if (window.DJSAndroid && typeof window.DJSAndroid.saveBase64 === "function" &&
+        blob.size <= 120 * 1024 * 1024 && typeof FileReader !== "undefined") {
+      const reader = new FileReader();
+      const fallback = () => downloadBlobInBrowser(blob, filename);
+      reader.onload = () => {
+        try {
+          const dataUrl = String(reader.result || "");
+          const comma = dataUrl.indexOf(",");
+          if (comma < 0) throw new Error("No se pudo preparar el archivo.");
+          window.DJSAndroid.saveBase64(
+            dataUrl.slice(comma + 1),
+            filename,
+            blob.type || "application/octet-stream"
+          );
+        } catch (error) {
+          console.warn("Descarga nativa no disponible; uso descarga del navegador.", error);
+          fallback();
+        }
+      };
+      reader.onerror = fallback;
+      try {
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        fallback();
+      }
+      return;
+    }
+    downloadBlobInBrowser(blob, filename);
+  }
+
+  function downloadBlobInBrowser(blob, filename){
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
