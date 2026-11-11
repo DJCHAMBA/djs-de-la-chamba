@@ -1020,8 +1020,11 @@
       if (!processed || !processed.length) throw new Error("El procesamiento no generó audio.");
       processedPrefixSegments = ["dj", "secondary"].map(kind => quickIntros[kind].pcm).filter(Boolean);
       const finalLength = getFinalAudioLength();
+      const introCount = processedPrefixSegments.length;
       setBar(1);
-      status("¡Listo! " + processedPrefixSegments.length + " intro(s) original(es) + canción procesada.");
+      status(introCount
+        ? "¡Listo! " + introCount + " intro(s) original(es) antes de la canción procesada."
+        : "¡Listo! Canción procesada sin intros.");
       $("durOrig").textContent = fmt(srcSecs);
       $("durNew").textContent = fmt(finalLength / SR);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
