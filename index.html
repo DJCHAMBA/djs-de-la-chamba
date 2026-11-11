@@ -141,6 +141,7 @@
 
   <nav class="tabs" aria-label="Secciones de DJS DE LA CHAMBA">
     <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
+    <button class="tab-button" id="tabAudacity" type="button">🎚️ Método Audacity</button>
     <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
     <button class="tab-button" id="tabEffects" type="button">🎚️ Editor de efectos</button>
     <button class="tab-button" id="tabSplit" type="button">✂️ Dividir audio</button>
@@ -1351,6 +1352,7 @@
     const normal = tab === "normal";
     const effects = tab === "effects";
     const split = tab === "split";
+    const audacity = tab === "audacity";
     const detector = tab === "detector";
     $("editorPanel").classList.toggle("hide", upload || normal || effects || split || detector);
     $("uploadPanel").classList.toggle("hide", !upload);
@@ -1358,7 +1360,8 @@
     $("effectsPanel").classList.toggle("hide", !effects);
     $("splitPanel").classList.toggle("hide", !split);
     $("detectorPanel").classList.toggle("hide", !detector);
-    $("tabEditor").classList.toggle("active", !upload && !normal && !effects && !split && !detector);
+    $("tabEditor").classList.toggle("active", !upload && !normal && !effects && !split && !audacity && !detector);
+    $("tabAudacity").classList.toggle("active", audacity);
     $("tabNormal").classList.toggle("active", normal);
     $("tabEffects").classList.toggle("active", effects);
     $("tabSplit").classList.toggle("active", split);
@@ -1385,6 +1388,13 @@
   updateQuickMethodLabels();
 
   $("tabEditor").onclick = () => setMainTab("editor");
+  $("tabAudacity").onclick = () => {
+    $("quickMethod").value = "tempoPitch";
+    updateQuickMethodLabels();
+    setMainTab("audacity");
+    status("🎚️ Método Audacity seleccionado: Tempo +8 % y tono −3 semitonos. Ahora sube tu audio.");
+    $("drop").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   $("tabNormal").onclick = () => setMainTab("normal");
   $("tabEffects").onclick = () => setMainTab("effects");
   $("tabSplit").onclick = () => setMainTab("split");
