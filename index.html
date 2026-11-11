@@ -179,6 +179,39 @@
       <small>MP3, WAV, OGG, M4A…</small>
     </div>
     <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+    <div class="card" style="margin-top:12px;background:rgba(7,5,18,.48)">
+      <div class="step"><span class="num">🎙️</span>Intros antes de la canción (opcionales)</div>
+      <p class="detector-small">Se reproducen en este orden: Intro DJ → Intro secundaria → canción procesada. Las intros conservan su tempo, tono y volumen originales; no reciben ningún efecto.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div>
+          <label class="lbl" for="quickIntroDjFile">🎧 Intro de DJ</label>
+          <div class="drop" id="quickIntroDjDrop" style="min-height:100px;padding:14px;margin:6px 0">
+            <div style="font-size:26px">🎤</div>
+            Toca para elegir la intro del DJ
+            <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
+          </div>
+          <input type="file" id="quickIntroDjFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+          <div class="info"><span id="quickIntroDjName">Ninguna seleccionada</span></div>
+          <audio id="quickIntroDjPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
+          <button class="ghost" id="quickIntroDjClear" type="button" disabled>Quitar intro DJ</button>
+        </div>
+        <div>
+          <label class="lbl" for="quickIntroSecondaryFile">🎶 Intro secundaria</label>
+          <div class="drop" id="quickIntroSecondaryDrop" style="min-height:100px;padding:14px;margin:6px 0">
+            <div style="font-size:26px">🔊</div>
+            Toca para elegir la intro secundaria
+            <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
+          </div>
+          <input type="file" id="quickIntroSecondaryFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+          <div class="info"><span id="quickIntroSecondaryName">Ninguna seleccionada</span></div>
+          <audio id="quickIntroSecondaryPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
+          <button class="ghost" id="quickIntroSecondaryClear" type="button" disabled>Quitar intro secundaria</button>
+        </div>
+      </div>
+      <div class="status" id="quickIntroStatus">Puedes agregar una, las dos o ninguna intro.</div>
+    </div>
+
     <div class="normal-control" style="margin-top:14px">
       <label for="quickMethod">Método de procesamiento</label>
       <select id="quickMethod" style="width:100%">
@@ -199,8 +232,8 @@
   <div class="card hide" id="card2">
     <div class="step"><span class="num">2</span>Escúchalo</div>
     <div class="info">
-      <span>Original: <b id="durOrig">–</b></span>
-      <span>Ya editado: <b id="durNew">–</b></span>
+      <span>Canción original: <b id="durOrig">–</b></span>
+      <span>Salida final con intros: <b id="durNew">–</b></span>
     </div>
     <audio id="player" controls></audio>
     <div class="row" style="margin-top:8px">
@@ -614,7 +647,13 @@
   const sleep = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); r(); }; c.port2.postMessage(0); });
   const safeName = n => n.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g," ").trim();
 
-  let processed = null;   // {chans:[Int16Array], length, sampleRate}
+  let processed = null;   // Audio principal ya procesado
+  let processedPrefixSegments = [];
+  let mainAudioFile = null;
+  const quickIntros = {
+    dj: { file: null, pcm: null, url: null },
+    secondary: { file: null, pcm: null, url: null }
+  };
   let origName = "";
   let previewUrl = null;
   let lastPack = null;    // {name, files:[{name, blob, secs}], method}
@@ -649,6 +688,156 @@
 
   function setBar(p){ $("bar").style.width = Math.round(p*100) + "%"; }
   function status(t){ $("status").textContent = t; }
+
+  function getFinalAudioSegments() {
+    const segments = processedPrefixSegments.slice();
+    if (processed) segments.push(processed);
+    return segments;
+  }
+
+  function getFinalAudioLength() {
+    return getFinalAudioSegments().reduce((total, segment) => total + segment.length, 0);
+  }
+
+  function getFinalAudioChannels() {
+    return Math.max(1, ...getFinalAudioSegments().map(segment => segment.chans.length));
+  }
+
+  function getFinalAudioSlice(start, end) {
+    const segments = getFinalAudioSegments();
+    const channelCount = getFinalAudioChannels();
+    const output = Array.from({ length: channelCount }, () => new Int16Array(end - start));
+    let cursor = 0;
+    for (const segment of segments) {
+      const segmentEnd = cursor + segment.length;
+      const overlapStart = Math.max(start, cursor);
+      const overlapEnd = Math.min(end, segmentEnd);
+      if (overlapEnd > overlapStart) {
+        const localStart = overlapStart - cursor;
+        const localEnd = overlapEnd - cursor;
+        for (let channel = 0; channel < channelCount; channel++) {
+          const source = segment.chans[Math.min(channel, segment.chans.length - 1)];
+          output[channel].set(source.subarray(localStart, localEnd), overlapStart - start);
+        }
+      }
+      cursor = segmentEnd;
+      if (cursor >= end) break;
+    }
+    return output;
+  }
+
+  function wavBlobFromSegments(segments, sr) {
+    const channelCount = Math.max(1, ...segments.map(segment => segment.chans.length));
+    const totalFrames = segments.reduce((sum, segment) => sum + segment.length, 0);
+    const bytes = totalFrames * channelCount * 2;
+    if (!totalFrames || bytes > 0xFFFFFFF0 - 44) throw new Error("grande");
+    const header = new ArrayBuffer(44), view = new DataView(header);
+    const write = (offset, value) => {
+      for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
+    };
+    write(0, "RIFF"); view.setUint32(4, 36 + bytes, true); write(8, "WAVE"); write(12, "fmt ");
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channelCount, true);
+    view.setUint32(24, sr, true); view.setUint32(28, sr * channelCount * 2, true);
+    view.setUint16(32, channelCount * 2, true); view.setUint16(34, 16, true);
+    write(36, "data"); view.setUint32(40, bytes, true);
+    const parts = [header], blockFrames = 1 << 18;
+    for (const segment of segments) {
+      for (let offset = 0; offset < segment.length; offset += blockFrames) {
+        const count = Math.min(blockFrames, segment.length - offset);
+        if (channelCount === 1) {
+          parts.push(segment.chans[0].subarray(offset, offset + count));
+        } else {
+          const interleaved = new Int16Array(count * channelCount);
+          for (let channel = 0; channel < channelCount; channel++) {
+            const source = segment.chans[Math.min(channel, segment.chans.length - 1)];
+            for (let i = 0; i < count; i++) interleaved[i * channelCount + channel] = source[offset + i];
+          }
+          parts.push(interleaved);
+        }
+      }
+    }
+    return new Blob(parts, { type: "audio/wav" });
+  }
+
+  function quickIntroUi(kind) {
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const item = quickIntros[kind];
+    $(prefix + "Name").textContent = item.file
+      ? item.file.name + " · " + fmt(item.pcm.length / SR)
+      : "Ninguna seleccionada";
+    $(prefix + "Clear").disabled = !item.file || $("quickMethod").disabled;
+    $(prefix + "Player").classList.toggle("hide", !item.file);
+  }
+
+  function setQuickIntroControlsDisabled(disabled) {
+    $("quickIntroDjFile").disabled = disabled;
+    $("quickIntroSecondaryFile").disabled = disabled;
+    $("quickIntroDjClear").disabled = disabled || !quickIntros.dj.file;
+    $("quickIntroSecondaryClear").disabled = disabled || !quickIntros.secondary.file;
+    $("quickIntroDjDrop").style.pointerEvents = disabled ? "none" : "";
+    $("quickIntroSecondaryDrop").style.pointerEvents = disabled ? "none" : "";
+  }
+
+  async function loadQuickIntro(kind, selectedFile) {
+    if ($("quickMethod").disabled) return;
+    const item = quickIntros[kind];
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const player = $(prefix + "Player");
+    try {
+      let nextPcm = null, nextUrl = null;
+      if (selectedFile) {
+        if (selectedFile.size <= 0 || selectedFile.size > 30 * 1024 * 1024) {
+          throw new Error("Cada intro debe pesar menos de 30 MB.");
+        }
+        const decoded = await decode(await selectedFile.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No pude leer esta intro.");
+        if (decoded.duration > 90) throw new Error("Cada intro puede durar máximo 90 segundos.");
+        nextPcm = { chans: floatBufferToInt16(decoded), length: decoded.length, sampleRate: SR };
+        nextUrl = URL.createObjectURL(selectedFile);
+      }
+      if (item.url) URL.revokeObjectURL(item.url);
+      item.file = selectedFile || null;
+      item.pcm = nextPcm;
+      item.url = nextUrl;
+      if (nextUrl) {
+        player.src = nextUrl;
+        player.classList.remove("hide");
+      } else {
+        player.pause(); player.removeAttribute("src"); player.load(); player.classList.add("hide");
+      }
+      quickIntroUi(kind);
+      $("quickIntroStatus").textContent = selectedFile
+        ? "✅ " + (kind === "dj" ? "Intro DJ" : "Intro secundaria") + " cargada sin editar."
+        : (kind === "dj" ? "Intro DJ eliminada." : "Intro secundaria eliminada.");
+      if (processed && mainAudioFile) {
+        $("quickIntroStatus").textContent += " Reprocesando la canción para actualizar la salida…";
+        await handle(mainAudioFile);
+      }
+    } catch (error) {
+      $(prefix + "Name").textContent = "No se pudo cargar la intro";
+      $("quickIntroStatus").textContent = "❌ " + (error.message || "No pude procesar la intro.");
+    }
+  }
+
+  function bindQuickIntro(kind) {
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const area = $(prefix + "Drop"), input = $(prefix + "File");
+    area.onclick = () => { if (!input.disabled) input.click(); };
+    area.ondragover = event => { event.preventDefault(); area.classList.add("over"); };
+    area.ondragleave = () => area.classList.remove("over");
+    area.ondrop = event => {
+      event.preventDefault(); area.classList.remove("over");
+      if (!input.disabled && event.dataTransfer.files[0]) loadQuickIntro(kind, event.dataTransfer.files[0]);
+    };
+    input.onchange = () => {
+      const selected = input.files[0]; input.value = "";
+      if (selected) loadQuickIntro(kind, selected);
+    };
+    $(prefix + "Clear").onclick = () => loadQuickIntro(kind, null);
+  }
+
+  bindQuickIntro("dj");
+  bindQuickIntro("secondary");
 
   // ---------- lectura por pedazos (así aguantan audios de horas) ----------
   // Un audio de 1 hora decodificado de golpe ocupa más de 1 GB de memoria y el navegador lo rechaza.
@@ -788,9 +977,13 @@
     $("card2").classList.add("hide"); $("card3").classList.add("hide");
     $("parts").innerHTML = ""; $("encStatus").textContent = "";
     origName = f.name.replace(/\.[^.]+$/, "");
+    mainAudioFile = f;
     processed = null;
+    processedPrefixSegments = [];
+    lastPack = null;
     processedMethod = $("quickMethod").value;
     $("quickMethod").disabled = true;
+    setQuickIntroControlsDisabled(true);
     let kind = "other";
     try{
       status("Leyendo " + f.name + "…"); setBar(.02);
@@ -825,12 +1018,15 @@
       }
 
       if (!processed || !processed.length) throw new Error("El procesamiento no generó audio.");
-      setBar(1); status("¡Listo! " + f.name + " ya está editado.");
+      processedPrefixSegments = ["dj", "secondary"].map(kind => quickIntros[kind].pcm).filter(Boolean);
+      const finalLength = getFinalAudioLength();
+      setBar(1);
+      status("¡Listo! " + processedPrefixSegments.length + " intro(s) original(es) + canción procesada.");
       $("durOrig").textContent = fmt(srcSecs);
-      $("durNew").textContent = fmt(processed.length / SR);
+      $("durNew").textContent = fmt(finalLength / SR);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       try{
-        previewUrl = URL.createObjectURL(wavBlob(processed.chans, SR));
+        previewUrl = URL.createObjectURL(wavBlobFromSegments(getFinalAudioSegments(), SR));
         const p = $("player"); p.src = previewUrl; setRate(1);
       }catch(e){ console.warn("sin vista previa", e); }
       $("btnFast").textContent = processedMethod === "tempoPitch" ? "▶ Escuchar resultado (1.0×)" : "▶ Como quedó (rápido)";
@@ -841,6 +1037,9 @@
       status("❌ " + ((err && (err.message || err.name)) || "No pude procesar el audio."));
     }finally{
       $("quickMethod").disabled = false;
+      setQuickIntroControlsDisabled(false);
+      quickIntroUi("dj");
+      quickIntroUi("secondary");
     }
   }
 
@@ -1030,7 +1229,7 @@
     const n = safeName($("inName").value);
     if (!n){ $("nameErr").textContent = "Ponle un nombre a tu audio."; return; }
     $("mName").classList.add("hide");
-    const secs = processed.length / SR, max = +$("maxLen").value;
+    const secs = getFinalAudioLength() / SR, max = +$("maxLen").value;
     if (secs > max) askParts(n, secs, max);
     else build(n, 1);
   };
@@ -1058,7 +1257,7 @@
   async function build(name, nParts){
     const btn = $("btnDeliver"); btn.disabled = true;
     $("encBarWrap").classList.remove("hide"); $("parts").innerHTML = "";
-    const total = processed.length;
+    const total = getFinalAudioLength();
     const per = Math.ceil(total / nParts);
     const files = [];
     try{
@@ -1251,7 +1450,7 @@
           const run = () => {
             if (next >= segs.length){ res(); return; }
             const k = next++, s = segs[k];
-            const chans = processed.chans.map(c => c.slice(s.a, s.b));
+            const chans = getFinalAudioSlice(s.a, s.b);
             w.onmessage = e => {
               const m = e.data;
               if (m.type === "prog"){ prog[k] = m.p; upd(); }
@@ -1276,7 +1475,7 @@
     for (let k = 0; k < segs.length; k++){
       const s = segs[k];
       onMsg("Creando MP3: " + s.label + "…");
-      blobs.push(await encodeMp3(processed.chans.map(c => c.subarray(s.a, s.b)), p => { prog[k] = p; upd(); }));
+      blobs.push(await encodeMp3(getFinalAudioSlice(s.a, s.b), p => { prog[k] = p; upd(); }));
       prog[k] = 1; upd();
     }
     return blobs;
