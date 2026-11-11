@@ -108,6 +108,7 @@
   .status-pill.reviewing{background:#493915;color:#ffe09a}
   .status-pill.rejected,.status-pill.failed{background:#4b1824;color:#ff9aaa}
   .hide{display:none!important}
+  .file-picker-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none!important;padding:0!important;border:0!important}
   .tip{font-size:13px;color:var(--mut);line-height:1.5;margin-top:12px;padding:10px 12px;border-left:3px solid var(--lime);background:#b6ff3b0a;border-radius:0 10px 10px 0}
   .tip code{color:var(--lime)}
   .parts{display:grid;gap:8px;margin-top:12px}
@@ -186,24 +187,24 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
         <div>
           <label class="lbl" for="quickIntroDjFile">🎧 Intro de DJ</label>
-          <div class="drop" id="quickIntroDjDrop" style="min-height:100px;padding:14px;margin:6px 0">
+          <label class="drop" id="quickIntroDjDrop" for="quickIntroDjFile" style="display:block;min-height:100px;padding:14px;margin:6px 0">
             <div style="font-size:26px">🎤</div>
             Toca para elegir la intro del DJ
             <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
-          </div>
-          <input type="file" id="quickIntroDjFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+          </label>
+          <input type="file" id="quickIntroDjFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="file-picker-hidden">
           <div class="info"><span id="quickIntroDjName">Ninguna seleccionada</span></div>
           <audio id="quickIntroDjPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
           <button class="ghost" id="quickIntroDjClear" type="button" disabled>Quitar intro DJ</button>
         </div>
         <div>
           <label class="lbl" for="quickIntroSecondaryFile">🎶 Intro secundaria</label>
-          <div class="drop" id="quickIntroSecondaryDrop" style="min-height:100px;padding:14px;margin:6px 0">
+          <label class="drop" id="quickIntroSecondaryDrop" for="quickIntroSecondaryFile" style="display:block;min-height:100px;padding:14px;margin:6px 0">
             <div style="font-size:26px">🔊</div>
             Toca para elegir la intro secundaria
             <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
-          </div>
-          <input type="file" id="quickIntroSecondaryFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+          </label>
+          <input type="file" id="quickIntroSecondaryFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="file-picker-hidden">
           <div class="info"><span id="quickIntroSecondaryName">Ninguna seleccionada</span></div>
           <audio id="quickIntroSecondaryPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
           <button class="ghost" id="quickIntroSecondaryClear" type="button" disabled>Quitar intro secundaria</button>
@@ -822,7 +823,6 @@
   function bindQuickIntro(kind) {
     const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
     const area = $(prefix + "Drop"), input = $(prefix + "File");
-    area.onclick = () => { if (!input.disabled) input.click(); };
     area.ondragover = event => { event.preventDefault(); area.classList.add("over"); };
     area.ondragleave = () => area.classList.remove("over");
     area.ondrop = event => {
