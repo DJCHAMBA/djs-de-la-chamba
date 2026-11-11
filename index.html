@@ -143,6 +143,7 @@
     <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
     <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
     <button class="tab-button" id="tabEffects" type="button">🎚️ Editor de efectos</button>
+    <button class="tab-button" id="tabSplit" type="button">✂️ Dividir audio</button>
     <button class="tab-button" id="tabDetector" type="button">🎤 Detector</button>
     <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
   </nav>
@@ -422,6 +423,44 @@
       <audio id="effectsPlayer" controls class="hide"></audio>
       <div class="bar hide" id="effectsProgressWrap"><div id="effectsProgress"></div></div>
       <div class="status" id="effectsStatus">Selecciona un audio para comenzar. Los efectos se aplicarán al exportar.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: DIVIDIR AUDIO SIN EDITAR -->
+  <div id="splitPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">✂️</span>Dividir audio en partes</div>
+      <p class="tip">Esta herramienta solamente corta el audio en segmentos. No cambia velocidad, tono ni volumen, y no aplica efectos. Las partes se entregan en MP3 a 192 kbps dentro de un ZIP.</p>
+      <div class="drop" id="splitDrop">
+        <div style="font-size:34px">✂️🎵</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3 o WAV · Hasta 500 MB y 2 horas (otros formatos compatibles: hasta 100 MB y 15 minutos)</small>
+      </div>
+      <input type="file" id="splitFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+      <div class="info">
+        <span>Archivo: <b id="splitFileName">Ninguno</b></span>
+        <span>Duración: <b id="splitDuration">–</b></span>
+        <span>Partes estimadas: <b id="splitCount">–</b></span>
+      </div>
+      <audio id="splitPlayer" controls class="hide"></audio>
+      <div class="normal-control" style="margin-top:14px">
+        <label for="splitMinutes">Duración máxima de cada parte</label>
+        <select id="splitMinutes" style="width:100%">
+          <option value="1">1 minuto</option>
+          <option value="2">2 minutos</option>
+          <option value="3">3 minutos</option>
+          <option value="4">4 minutos</option>
+          <option value="5">5 minutos</option>
+          <option value="6">6 minutos</option>
+          <option value="7" selected>7 minutos · Límite habitual de Roblox</option>
+        </select>
+      </div>
+      <div class="detector-actions">
+        <button class="cyan" id="splitStart" type="button" disabled>✂️ Dividir y descargar ZIP</button>
+        <button class="ghost" id="splitClear" type="button" disabled>Limpiar</button>
+      </div>
+      <div class="detector-range"><div id="splitProgress"></div></div>
+      <div class="status" id="splitStatus">Selecciona un audio para comenzar.</div>
     </div>
   </div>
 
@@ -1176,15 +1215,18 @@
     const upload = tab === "upload";
     const normal = tab === "normal";
     const effects = tab === "effects";
+    const split = tab === "split";
     const detector = tab === "detector";
-    $("editorPanel").classList.toggle("hide", upload || normal || effects || detector);
+    $("editorPanel").classList.toggle("hide", upload || normal || effects || split || detector);
     $("uploadPanel").classList.toggle("hide", !upload);
     $("normalPanel").classList.toggle("hide", !normal);
     $("effectsPanel").classList.toggle("hide", !effects);
+    $("splitPanel").classList.toggle("hide", !split);
     $("detectorPanel").classList.toggle("hide", !detector);
     $("tabEditor").classList.toggle("active", !upload && !normal && !effects && !detector);
     $("tabNormal").classList.toggle("active", normal);
     $("tabEffects").classList.toggle("active", effects);
+    $("tabSplit").classList.toggle("active", split);
     $("tabDetector").classList.toggle("active", detector);
     $("tabUpload").classList.toggle("active", upload);
   }
@@ -1192,6 +1234,7 @@
   $("tabEditor").onclick = () => setMainTab("editor");
   $("tabNormal").onclick = () => setMainTab("normal");
   $("tabEffects").onclick = () => setMainTab("effects");
+  $("tabSplit").onclick = () => setMainTab("split");
   $("tabDetector").onclick = () => {
     setMainTab("detector");
     if (!permissionsSession) showPermissionLogin("detector");
@@ -2291,6 +2334,273 @@
       button.disabled = false;
       $("effectsPreview").disabled = !effectsDecodedBuffer;
     }
+  };
+
+  // ---------- DIVISOR DE AUDIO: SOLO CORTES, SIN EFECTOS ----------
+  let splitFileObject = null;
+  let splitBuffer = null;
+  let splitStreamKind = null;
+  let splitObjectUrl = null;
+  let splitBusy = false;
+
+  function splitStatus(message) {
+    $("splitStatus").textContent = message;
+  }
+
+  function splitFormatTime(seconds) {
+    const value = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(value / 3600);
+    const minutes = Math.floor((value % 3600) / 60);
+    const secs = value % 60;
+    return hours > 0 ? hours + ":" + String(minutes).padStart(2,"0") + ":" + String(secs).padStart(2,"0")
+      : minutes + ":" + String(secs).padStart(2,"0");
+  }
+
+  function splitWaitForMetadata(player) {
+    if (player.readyState >= 1 && Number.isFinite(player.duration)) return Promise.resolve(player.duration);
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        player.removeEventListener("loadedmetadata", loaded);
+        player.removeEventListener("error", failed);
+      };
+      const loaded = () => {
+        cleanup();
+        if (!Number.isFinite(player.duration) || player.duration <= 0) reject(new Error("No pude leer la duración del audio."));
+        else resolve(player.duration);
+      };
+      const failed = () => { cleanup(); reject(new Error("El navegador no pudo abrir este audio.")); };
+      player.addEventListener("loadedmetadata", loaded, { once: true });
+      player.addEventListener("error", failed, { once: true });
+      player.load();
+    });
+  }
+
+  function splitUpdatePlan() {
+    const duration = splitBuffer ? splitBuffer.duration : 0;
+    const minutes = Number($("splitMinutes").value) || 7;
+    const count = duration > 0 ? Math.ceil(duration / (minutes * 60)) : 0;
+    $("splitCount").textContent = duration > 0 ? String(count) : "–";
+    $("splitStart").disabled = !splitFileObject || splitBusy || count < 1;
+  }
+
+  async function splitLoadFile(fileItem) {
+    splitFileObject = null;
+    splitBuffer = null;
+    splitStreamKind = null;
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    $("splitProgress").style.width = "0%";
+    $("splitFileName").textContent = "Ninguno";
+    $("splitDuration").textContent = "–";
+    $("splitCount").textContent = "–";
+    if (!fileItem) return;
+
+    try {
+      const kind = await sniff(fileItem);
+      const isLongFormat = kind === "mp3" || kind === "wav";
+      const sizeLimit = isLongFormat ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
+      if (fileItem.size <= 0 || fileItem.size > sizeLimit) {
+        throw new Error("El archivo supera el límite de " + (isLongFormat ? "500 MB" : "100 MB") + ".");
+      }
+
+      splitStatus("Preparando el reproductor…");
+      if (splitObjectUrl) URL.revokeObjectURL(splitObjectUrl);
+      splitObjectUrl = URL.createObjectURL(fileItem);
+      const player = $("splitPlayer");
+      player.src = splitObjectUrl;
+      player.classList.remove("hide");
+      const duration = await splitWaitForMetadata(player);
+
+      if (duration > (isLongFormat ? 7200 : 900)) {
+        throw new Error(isLongFormat
+          ? "El límite es de 2 horas por archivo."
+          : "Para este formato el límite es de 15 minutos. Convierte el audio a MP3 o WAV para dividir grabaciones largas.");
+      }
+
+      if (isLongFormat) {
+        splitStreamKind = kind;
+        splitBuffer = { duration };
+      } else {
+        splitStatus("Leyendo el audio compatible…");
+        const decoded = await decode(await fileItem.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No pude decodificar el audio.");
+        splitBuffer = decoded;
+      }
+
+      splitFileObject = fileItem;
+      $("splitFileName").textContent = fileItem.name;
+      $("splitDuration").textContent = splitFormatTime(duration);
+      $("splitClear").disabled = false;
+      splitUpdatePlan();
+      splitStatus("✅ Audio listo. Elige cuánto debe durar cada parte.");
+    } catch (error) {
+      splitFileObject = null;
+      splitBuffer = null;
+      splitStreamKind = null;
+      $("splitPlayer").classList.add("hide");
+      splitStatus("❌ " + (error.message || "No pude abrir el audio."));
+    }
+  }
+
+  function splitBufferToInt16(buffer, start, length, channelCount) {
+    const channels = [];
+    for (let channel = 0; channel < channelCount; channel++) {
+      const source = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1));
+      const output = new Int16Array(length);
+      for (let i = 0; i < length; i++) {
+        const sample = Math.max(-1, Math.min(1, source[start + i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return channels;
+  }
+
+  async function splitRun() {
+    if (!splitFileObject || !splitBuffer || splitBusy) return;
+    if (typeof JSZip === "undefined" || typeof lamejs === "undefined") {
+      splitStatus("❌ No cargaron los módulos ZIP/MP3. Recarga con Ctrl + F5.");
+      return;
+    }
+
+    splitBusy = true;
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    $("splitMinutes").disabled = true;
+    $("splitProgress").style.width = "0%";
+
+    const file = splitFileObject;
+    const duration = splitBuffer.duration;
+    const partSeconds = Number($("splitMinutes").value) * 60;
+    const targetFrames = Math.round(partSeconds * SR);
+    const expectedParts = Math.ceil(duration / partSeconds);
+    const baseName = safeName(file.name.replace(/.[^.]+$/, "")) || "Audio";
+    const zip = new JSZip();
+    let channelCount = 0;
+    let partChunks = [];
+    let partFrames = 0;
+    let totalFrames = 0;
+    let partNumber = 0;
+
+    const flushPart = async () => {
+      if (!partFrames) return;
+      partNumber++;
+      const channels = partChunks.map(chunks => {
+        const result = new Int16Array(partFrames);
+        let offset = 0;
+        for (const chunk of chunks) {
+          result.set(chunk, offset);
+          offset += chunk.length;
+        }
+        return result;
+      });
+      splitStatus("Creando parte " + partNumber + " de " + expectedParts + " sin aplicar efectos…");
+      const blob = await encodeMp3(channels, progress => {
+        const overall = (totalFrames + partFrames * progress) / Math.max(1, Math.round(duration * SR));
+        $("splitProgress").style.width = Math.min(99, Math.round(overall * 100)) + "%";
+      });
+      const suffix = String(partNumber).padStart(2, "0");
+      zip.file(baseName + "_Parte_" + suffix + ".mp3", blob, { compression: "STORE" });
+      totalFrames += partFrames;
+      partFrames = 0;
+      partChunks = Array.from({ length: channelCount }, () => []);
+      await sleep();
+    };
+
+    const consumeBuffer = async (buffer, skipFrames = 0) => {
+      const availableChannels = Math.min(2, buffer.numberOfChannels);
+      if (!channelCount) {
+        channelCount = availableChannels;
+        partChunks = Array.from({ length: channelCount }, () => []);
+      }
+      let position = Math.max(0, Math.floor(skipFrames));
+      while (position < buffer.length) {
+        const take = Math.min(targetFrames - partFrames, buffer.length - position);
+        const sampleChannels = splitBufferToInt16(buffer, position, take, channelCount);
+        for (let channel = 0; channel < channelCount; channel++) {
+          partChunks[channel].push(sampleChannels[channel]);
+        }
+        partFrames += take;
+        position += take;
+        if (partFrames >= targetFrames) await flushPart();
+      }
+    };
+
+    try {
+      if (splitStreamKind === "mp3" || splitStreamKind === "wav") {
+        const report = p => {
+          splitStatus("Leyendo el archivo por bloques… " + Math.round(p * 100) + "%");
+        };
+        const chunks = splitStreamKind === "mp3"
+          ? mp3Chunks(file, report)
+          : wavChunks(file, report);
+        for await (const chunk of chunks) {
+          const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+            ? chunk.bytes.buffer
+            : chunk.bytes.slice().buffer;
+          const decoded = await decode(bytes);
+          await consumeBuffer(decoded, Number(chunk.skip) || 0);
+          await sleep();
+        }
+      } else {
+        await consumeBuffer(splitBuffer, 0);
+      }
+
+      await flushPart();
+      if (!partNumber) throw new Error("No se pudo extraer audio del archivo.");
+      splitStatus("Empaquetando " + partNumber + " partes en un ZIP…");
+      const blob = await zip.generateAsync(
+        { type: "blob", compression: "STORE" },
+        meta => { $("splitProgress").style.width = Math.min(99, Math.round(meta.percent)) + "%"; }
+      );
+      downloadBlob(blob, baseName + "_Partes.zip");
+      $("splitProgress").style.width = "100%";
+      splitStatus("✅ Listo: " + partNumber + " partes MP3 descargadas en un ZIP. No se aplicaron cambios de velocidad, tono, volumen ni efectos.");
+    } catch (error) {
+      console.error("Dividir audio:", error);
+      splitStatus("❌ " + (error.message || "No se pudo dividir el audio."));
+    } finally {
+      splitBusy = false;
+      $("splitMinutes").disabled = false;
+      $("splitClear").disabled = !splitFileObject;
+      splitUpdatePlan();
+    }
+  }
+
+  const splitDrop = $("splitDrop");
+  const splitFileInput = $("splitFile");
+  splitDrop.onclick = () => splitFileInput.click();
+  splitDrop.ondragover = event => { event.preventDefault(); splitDrop.classList.add("over"); };
+  splitDrop.ondragleave = () => splitDrop.classList.remove("over");
+  splitDrop.ondrop = event => {
+    event.preventDefault();
+    splitDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) splitLoadFile(event.dataTransfer.files[0]);
+  };
+  splitFileInput.onchange = () => {
+    if (splitFileInput.files[0]) splitLoadFile(splitFileInput.files[0]);
+    splitFileInput.value = "";
+  };
+  $("splitMinutes").onchange = splitUpdatePlan;
+  $("splitStart").onclick = splitRun;
+  $("splitClear").onclick = () => {
+    if (splitBusy) return;
+    if (splitObjectUrl) URL.revokeObjectURL(splitObjectUrl);
+    splitObjectUrl = null;
+    $("splitPlayer").pause();
+    $("splitPlayer").removeAttribute("src");
+    $("splitPlayer").load();
+    $("splitPlayer").classList.add("hide");
+    splitFileObject = null;
+    splitBuffer = null;
+    splitStreamKind = null;
+    $("splitFileName").textContent = "Ninguno";
+    $("splitDuration").textContent = "–";
+    $("splitCount").textContent = "–";
+    $("splitProgress").style.width = "0%";
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    splitStatus("Audio eliminado. Selecciona otro para comenzar.");
   };
 
   // ---------- DETECTOR DE CONCIERTOS ----------
