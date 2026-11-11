@@ -1,26 +1,28 @@
-# DJS DE LA CHAMBA para Android
+# DJS DE LA CHAMBA Android nativo · 2.0
 
-La app Android abre la versión publicada en GitHub Pages dentro de una actividad WebView nativa.
+Esta versión es una aplicación Android nativa. Ya no usa WebView ni muestra el sitio de GitHub Pages dentro de la app.
 
-## Funciones Android
-- Icono adaptativo de DJS DE LA CHAMBA y pantalla de inicio propia.
-- Selector nativo de Android para cargar MP3, WAV y otros audios compatibles.
-- Exportaciones MP3/ZIP guardadas en `Descargas/DJS DE LA CHAMBA` en Android 10 o posterior.
-- Botón Atrás de Android navega por la página.
-- Los enlaces externos se abren en el navegador.
-- La app requiere conexión a internet porque carga la web publicada y sus servicios.
+## Funciones nativas
+- Interfaz Android creada con controles nativos.
+- Selector de archivos de Android (Storage Access Framework).
+- Reproductor de vista previa.
+- Dos métodos de procesamiento:
+  - Principal: tempo 2.5x, tono 2.5x y ganancia -3 dB.
+  - Audacity: tempo +8% y tono -3 semitonos.
+- Intros opcionales en orden: Intro DJ, Intro secundaria, canción procesada.
+- Exportación de audio a M4A/AAC con Media3 Transformer.
+- Divisor de archivos en segmentos de 1 a 7 minutos y ZIP.
+- Detector manual de entradas de voz y comienzos de canción con exportación CSV.
+- Enlaces externos de Roblox abiertos en el navegador predeterminado.
 
-## Identificador
-`com.djchamba.djsdelachamba`
+## Límites conocidos de la versión nativa 2.0
+- La salida de audio es M4A/AAC, no MP3. Media3 Transformer utiliza codificación AAC en el exportador configurado.
+- El divisor genera partes M4A dentro de un ZIP.
+- Detector: registra marcadores manuales; no reconoce canciones automáticamente.
+- La publicación y administración de permisos de Roblox se abre en servicios oficiales externos; no se hacen dentro de la app.
+- Se necesita Android 7.0/API 24 o posterior.
 
-## Compilar
-Desde la raíz del repositorio, con Android SDK 36, JDK 17 y Gradle 8.11.1:
+## Tecnología
+Jetpack Media3 Transformer 1.11.1 para efectos y exportación local. Documentación: https://developer.android.com/media/media3/transformer
 
-```bash
-gradle --no-daemon -p android assembleDebug
-```
-
-APK de prueba:
-`android/app/build/outputs/apk/debug/app-debug.apk`
-
-El workflow de GitHub Actions compila automáticamente un APK de depuración y lo publica como artefacto descargable. Este APK está firmado con la clave de depuración de Android; no es una compilación de publicación para Google Play.
+La app no contiene WebView, no solicita permiso INTERNET y procesa archivos seleccionados localmente.

@@ -1,4 +1,4 @@
-name: Build DJS DE LA CHAMBA Android APK
+name: Build DJS DE LA CHAMBA Native Android APK
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - "android/**"
-      - "index.html"
+      - "README-ANDROID.md"
       - ".github/workflows/build-android-apk.yml"
   workflow_dispatch:
 
@@ -15,9 +15,9 @@ permissions:
 
 jobs:
   build:
-    name: Compile installable Android APK
+    name: Compile native Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -32,26 +32,30 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android 16 SDK platform and build tools
+      - name: Install Android SDK platform and build tools
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Set up Gradle 8.11.1
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
 
-      - name: Build debug APK
+      - name: Build native debug APK
         run: gradle --no-daemon --stacktrace -p android assembleDebug
 
       - name: Verify APK
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
           ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          if grep -R "android.webkit.WebView" android/app/src/main/java; then
+            echo "WebView code found in native app source."
+            exit 1
+          fi
 
-      - name: Upload APK artifact
+      - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: DJS-DE-LA-CHAMBA-Android-APK
+          name: DJS-DE-LA-CHAMBA-Native-Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
