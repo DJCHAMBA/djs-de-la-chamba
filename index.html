@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- DJS DE LA CHAMBA build: intros-first-2026-11-11 -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -171,7 +172,7 @@
     <div class="parts" id="permissionsResults"></div>
   </div>
 
-    <div class="card" style="margin-top:12px;background:rgba(7,5,18,.48)">
+    <div class="card" id="quickIntrosCard" style="margin-top:12px;background:rgba(7,5,18,.48)">
       <div class="step"><span class="num">🎙️</span>Intros antes de la canción (opcionales)</div>
       <p class="detector-small">Se reproducen en este orden: Intro DJ → Intro secundaria → canción procesada. Las intros conservan su tempo, tono y volumen originales; no reciben ningún efecto.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
@@ -839,6 +840,14 @@
 
   bindQuickIntro("dj");
   bindQuickIntro("secondary");
+
+  // Protección extra del orden visual: las intros siempre van antes de la tarjeta
+  // principal, incluso si el HTML cambia de orden en una publicación futura.
+  const quickIntrosCard = $("quickIntrosCard");
+  const mainSongCard = $("drop").closest(".card");
+  if (quickIntrosCard && mainSongCard && mainSongCard.parentNode) {
+    mainSongCard.parentNode.insertBefore(quickIntrosCard, mainSongCard);
+  }
 
   // ---------- lectura por pedazos (así aguantan audios de horas) ----------
   // Un audio de 1 hora decodificado de golpe ocupa más de 1 GB de memoria y el navegador lo rechaza.
