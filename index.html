@@ -178,9 +178,17 @@
       <small>MP3, WAV, OGG, M4A…</small>
     </div>
     <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+    <div class="normal-control" style="margin-top:14px">
+      <label for="quickMethod">Método de procesamiento</label>
+      <select id="quickMethod" style="width:100%">
+        <option value="main" selected>Método principal · +150 % de velocidad/tono y −3 dB</option>
+        <option value="tempoPitch">Método alternativo · Tempo +8 % y tono −3 semitonos</option>
+      </select>
+      <div class="detector-small" style="margin-top:8px">Elige el método antes de subir el audio. Ambos conservan el flujo de escuchar, nombrar y entregar en MP3 o partes.</div>
+    </div>
     <div class="method">
-      <div class="chip"><small>Velocidad y tono</small><strong>+150 % (2.5× más rápido)</strong></div>
-      <div class="chip"><small>Volumen (Amplify)</small><strong>× 0.708 (−3 dB)</strong></div>
+      <div class="chip"><small id="methodSpeedLabel">Velocidad y tono</small><strong id="methodSpeedValue">+150 % (2.5× más rápido)</strong></div>
+      <div class="chip"><small id="methodVolumeLabel">Volumen (Amplify)</small><strong id="methodVolumeValue">× 0.708 (−3 dB)</strong></div>
     </div>
     <div class="bar"><div id="bar"></div></div>
     <div class="status" id="status">Esperando tu audio…</div>
@@ -198,7 +206,7 @@
       <button class="ghost" id="btnFast" type="button">▶ Como quedó (rápido)</button>
       <button class="ghost" id="btnRoblox" type="button">▶ Como sonará en Roblox (0.4)</button>
     </div>
-    <div class="tip">En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.</div>
+    <div class="tip" id="quickMethodNote">En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.</div>
   </div>
 
   <!-- PASO 3 -->
@@ -608,7 +616,14 @@
   let processed = null;   // {chans:[Int16Array], length, sampleRate}
   let origName = "";
   let previewUrl = null;
-  let lastPack = null;    // {name, files:[{name, blob, secs}]}
+  let lastPack = null;    // {name, files:[{name, blob, secs}], method}
+  let processedMethod = "main";
+  let soundTouchModulePromise = null;
+
+  const TEMPO_CHANGE = 1.08;
+  const PITCH_SEMITONES = -3;
+  const SOUND_TOUCH_MODULE_URL = "https://esm.sh/@soundtouchjs/audio-worklet@2.1.1?bundle";
+  const SOUND_TOUCH_PROCESSOR_URL = "https://cdn.jsdelivr.net/npm/@soundtouchjs/audio-worklet@2.1.1/.dist/soundtouch-processor.js";
 
   // Descargas nativas del navegador: no depende de Claude.
   function downloadBlob(blob, filename){
@@ -773,31 +788,42 @@
     $("parts").innerHTML = ""; $("encStatus").textContent = "";
     origName = f.name.replace(/\.[^.]+$/, "");
     processed = null;
+    processedMethod = $("quickMethod").value;
+    $("quickMethod").disabled = true;
     let kind = "other";
     try{
       status("Leyendo " + f.name + "…"); setBar(.02);
       kind = await sniff(f);
-      let proc = null, srcSecs = 0;
-      const run = async gen => {
-        proc = makeProcessor(); srcSecs = 0;
-        const prog = p => { setBar(.02 + .96 * p); };
-        for await (const c of gen(f, prog)){
-          const buf = await decode(c.bytes.buffer.byteLength === c.bytes.length ? c.bytes.buffer : c.bytes.slice().buffer);
-          srcSecs += proc.push(buf, c.skip) / SR;
-          status("Procesando… llevo " + fmt(srcSecs) + " de audio original");
-          await sleep();
+      let srcSecs = 0;
+
+      if (processedMethod === "tempoPitch") {
+        const result = await processTempoPitchAudio(f, kind);
+        processed = result.processed;
+        srcSecs = result.srcSecs;
+      } else {
+        let proc = null;
+        const run = async gen => {
+          proc = makeProcessor(); srcSecs = 0;
+          const prog = p => { setBar(.02 + .96 * p); };
+          for await (const c of gen(f, prog)){
+            const buf = await decode(c.bytes.buffer.byteLength === c.bytes.length ? c.bytes.buffer : c.bytes.slice().buffer);
+            srcSecs += proc.push(buf, c.skip) / SR;
+            status("Procesando… llevo " + fmt(srcSecs) + " de audio original");
+            await sleep();
+          }
+        };
+        try{
+          await run(kind === "mp3" ? mp3Chunks : kind === "wav" ? wavChunks : wholeChunks);
+        }catch(e){
+          // si el método por pedazos no pudo con ese archivo, se intenta abrirlo completo
+          if (kind === "other" || f.size > 400 * 1048576) throw e;
+          console.warn("por pedazos falló, abro completo", e);
+          await run(wholeChunks);
         }
-      };
-      try{
-        await run(kind === "mp3" ? mp3Chunks : kind === "wav" ? wavChunks : wholeChunks);
-      }catch(e){
-        // si el método por pedazos no pudo con ese archivo, se intenta abrirlo completo
-        if (kind === "other" || f.size > 400 * 1048576) throw e;
-        console.warn("por pedazos falló, abro completo", e);
-        await run(wholeChunks);
+        processed = proc.finish();
       }
-      processed = proc.finish();
-      if (!processed.length) throw new Error("vacio");
+
+      if (!processed || !processed.length) throw new Error("El procesamiento no generó audio.");
       setBar(1); status("¡Listo! " + f.name + " ya está editado.");
       $("durOrig").textContent = fmt(srcSecs);
       $("durNew").textContent = fmt(processed.length / SR);
@@ -806,12 +832,14 @@
         previewUrl = URL.createObjectURL(wavBlob(processed.chans, SR));
         const p = $("player"); p.src = previewUrl; setRate(1);
       }catch(e){ console.warn("sin vista previa", e); }
+      $("btnFast").textContent = processedMethod === "tempoPitch" ? "▶ Escuchar resultado (1.0×)" : "▶ Como quedó (rápido)";
+      $("btnRoblox").textContent = processedMethod === "tempoPitch" ? "▶ Como sonará en Roblox (1.0)" : "▶ Como sonará en Roblox (0.4)";
       $("card2").classList.remove("hide"); $("card3").classList.remove("hide");
     }catch(err){
       console.error(err); setBar(0);
-      status(kind === "other" && f.size > 60 * 1048576
-        ? "Ese formato es muy pesado para abrirlo completo. Conviértelo a MP3 o WAV y vuelve a subirlo."
-        : "No pude abrir ese audio. Prueba con otro archivo (MP3 o WAV). [" + ((err && (err.message || err.name)) || "error desconocido") + "]");
+      status("❌ " + ((err && (err.message || err.name)) || "No pude procesar el audio."));
+    }finally{
+      $("quickMethod").disabled = false;
     }
   }
 
@@ -880,6 +908,101 @@
     };
   }
 
+  async function processTempoPitchAudio(fileItem, kind) {
+    if (kind === "other" && fileItem.size > 60 * 1048576) {
+      throw new Error("Para el método Tempo +8% / Tono −3, los formatos distintos de MP3 o WAV se limitan a 60 MB. Convierte el archivo a MP3 o WAV para procesarlo por bloques.");
+    }
+
+    if (!soundTouchModulePromise) {
+      soundTouchModulePromise = import(SOUND_TOUCH_MODULE_URL).catch(error => {
+        soundTouchModulePromise = null;
+        throw new Error("No pude cargar el procesador de tempo y tono. Comprueba tu conexión e inténtalo otra vez.");
+      });
+    }
+    const soundTouch = await soundTouchModulePromise;
+    if (typeof soundTouch.processOffline !== "function") {
+      throw new Error("El procesador de audio cargó una versión incompatible.");
+    }
+
+    const outputLists = [[], []];
+    let outputChannels = 0;
+    let outputFrames = 0;
+    let sourceSeconds = 0;
+    let completedChunks = 0;
+
+    const progress = p => {
+      setBar(.02 + .30 * p);
+      status("Leyendo el audio por bloques… " + Math.round(p * 100) + "%");
+    };
+    const generator = kind === "mp3"
+      ? mp3Chunks(fileItem, progress, 12)
+      : kind === "wav"
+        ? wavChunks(fileItem, progress, 12)
+        : wholeChunks(fileItem, progress);
+
+    for await (const chunk of generator) {
+      const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+        ? chunk.bytes.buffer
+        : chunk.bytes.slice().buffer;
+      const inputBuffer = await decode(bytes);
+      if (kind === "other" && inputBuffer.duration > 900) {
+        throw new Error("Para archivos OGG, M4A o FLAC, este método admite hasta 15 minutos. Para audios más largos, usa MP3 o WAV.");
+      }
+
+      status("Aplicando tempo +8% y tono −3 semitonos al bloque " + (completedChunks + 1) + "…");
+      const rendered = await soundTouch.processOffline({
+        input: inputBuffer,
+        processorUrl: SOUND_TOUCH_PROCESSOR_URL,
+        pitchSemitones: PITCH_SEMITONES,
+        playbackRate: TEMPO_CHANGE,
+        stretchParameters: { overlapMs: 12 }
+      });
+
+      const converted = floatBufferToInt16(rendered);
+      if (!outputChannels) {
+        outputChannels = converted.length;
+        for (let channel = 0; channel < outputChannels; channel++) outputLists[channel] = [];
+      }
+
+      // MP3/WAV se leen con 12 s de solapamiento para que SoundTouch tenga contexto
+      // al comenzar cada bloque. Se elimina esa repetición de la salida ya comprimida.
+      const inputOverlap = Math.max(0, Number(chunk.skip) || 0);
+      const outputOverlap = completedChunks === 0 ? 0 : Math.min(
+        converted[0].length,
+        Math.round(inputOverlap / TEMPO_CHANGE)
+      );
+      const emittedLength = Math.max(0, converted[0].length - outputOverlap);
+      for (let channel = 0; channel < outputChannels; channel++) {
+        outputLists[channel].push(converted[channel].subarray(outputOverlap));
+      }
+      outputFrames += emittedLength;
+      sourceSeconds += Math.max(0, inputBuffer.duration - inputOverlap / SR);
+      completedChunks++;
+      setBar(.32 + .66 * Math.min(1, sourceSeconds / Math.max(sourceSeconds, fileItem.size / (192 * 1024 / 8))));
+      status("Tempo +8% · Tono −3 semitonos · procesados " + fmt(sourceSeconds) + " de audio…");
+      await sleep();
+    }
+
+    if (!outputFrames || !outputChannels) {
+      throw new Error("No pude extraer audio válido del archivo.");
+    }
+
+    const channels = outputLists.slice(0, outputChannels).map(list => {
+      const merged = new Int16Array(outputFrames);
+      let offset = 0;
+      for (const part of list) {
+        merged.set(part, offset);
+        offset += part.length;
+      }
+      return merged;
+    });
+
+    return {
+      processed: { chans: channels, length: outputFrames, sampleRate: SR },
+      srcSecs: sourceSeconds
+    };
+  }
+
   // ---------- preview ----------
   function setRate(r){
     const p = $("player");
@@ -887,7 +1010,10 @@
     p.playbackRate = r; p.defaultPlaybackRate = r;
   }
   $("btnFast").onclick = () => { setRate(1); $("player").play().catch(()=>{}); };
-  $("btnRoblox").onclick = () => { setRate(0.4); $("player").play().catch(()=>{}); };
+  $("btnRoblox").onclick = () => {
+    setRate(processedMethod === "tempoPitch" ? 1 : 0.4);
+    $("player").play().catch(()=>{});
+  };
 
   // ---------- entregar ----------
   $("btnDeliver").onclick = () => {
@@ -948,7 +1074,13 @@
         msg => { $("encStatus").textContent = msg; });
       segs.forEach((s, k) => files.push({ name: s.label + ".mp3", blob: blobs[k], secs: (s.b - s.a) / SR }));
       $("encBar").style.width = "100%";
-      lastPack = { name, files };
+      lastPack = {
+        name,
+        files,
+        method: processedMethod,
+        robloxPlaybackSpeed: processedMethod === "tempoPitch" ? 1 : 0.4,
+        robloxDurationFactor: processedMethod === "tempoPitch" ? 1 : FACTOR
+      };
       renderParts();
       $("encStatus").textContent = files.length > 1
         ? "✅ Tus " + files.length + " MP3 están listos. Pulsa «Bajar todas las partes» y elige ZIP o carpeta normal."
@@ -967,7 +1099,10 @@
       const d = document.createElement("div"); d.className = "part";
       d.innerHTML = '<div><div></div><div class="t"></div></div>';
       d.firstElementChild.firstElementChild.textContent = "🎵 " + f.name;
-      d.querySelector(".t").textContent = fmt(f.secs) + " editado · " + fmt(f.secs * FACTOR) + " en Roblox (0.4) · " + (f.blob.size/1048576).toFixed(1) + " MB";
+      const gameDuration = f.secs * (lastPack.robloxDurationFactor || FACTOR);
+      const gameSpeed = lastPack.robloxPlaybackSpeed || 0.4;
+      d.querySelector(".t").textContent = fmt(f.secs) + " exportado · " + fmt(gameDuration) +
+        " en Roblox (PlaybackSpeed " + gameSpeed + ") · " + (f.blob.size/1048576).toFixed(1) + " MB";
       const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
       b.onclick = () => {
         try {
@@ -1230,6 +1365,24 @@
     $("tabDetector").classList.toggle("active", detector);
     $("tabUpload").classList.toggle("active", upload);
   }
+
+  function updateQuickMethodLabels() {
+    const alternative = $("quickMethod").value === "tempoPitch";
+    $("methodSpeedLabel").textContent = alternative ? "Cambiar tempo" : "Velocidad y tono";
+    $("methodSpeedValue").textContent = alternative ? "+8 % (1.08×; audio más corto)" : "+150 % (2.5× más rápido)";
+    $("methodVolumeLabel").textContent = alternative ? "Cambiar tono" : "Volumen (Amplify)";
+    $("methodVolumeValue").textContent = alternative ? "−3 semitonos (sin bajar volumen)" : "× 0.708 (−3 dB)";
+    if (!processed) {
+      $("btnFast").textContent = alternative ? "▶ Escuchar resultado (1.0×)" : "▶ Como quedó (rápido)";
+      $("btnRoblox").textContent = alternative ? "▶ Como sonará en Roblox (1.0)" : "▶ Como sonará en Roblox (0.4)";
+      $("quickMethodNote").innerHTML = alternative
+        ? "Este método deja el audio aproximadamente 7.4% más corto y baja el tono 3 semitonos. En Roblox usa <code>PlaybackSpeed = 1</code>; no necesita el 0.4 del método principal."
+        : "En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.";
+    }
+  }
+
+  $("quickMethod").addEventListener("change", updateQuickMethodLabels);
+  updateQuickMethodLabels();
 
   $("tabEditor").onclick = () => setMainTab("editor");
   $("tabNormal").onclick = () => setMainTab("normal");
