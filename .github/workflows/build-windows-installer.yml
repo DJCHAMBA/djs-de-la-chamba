@@ -1,0 +1,55 @@
+name: Build DJS DE LA CHAMBA Windows Installer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "desktop/**"
+      - ".github/workflows/build-windows-installer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package.json
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows installer
+        working-directory: desktop
+        run: npm run dist:win
+
+      - name: Verify installer
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $installer = "dist/DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe"
+          if (!(Test-Path $installer)) { throw "Installer not found: $installer" }
+          $item = Get-Item $installer
+          if ($item.Length -lt 10MB) { throw "Installer unexpectedly small: $($item.Length) bytes" }
+          Get-FileHash $installer -Algorithm SHA256
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DJS-DE-LA-CHAMBA-Windows-Installer
+          path: desktop/dist/DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe
+          if-no-files-found: error
+          retention-days: 30

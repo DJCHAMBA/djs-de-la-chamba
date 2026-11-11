@@ -1,0 +1,42 @@
+{
+  "name": "djs-de-la-chamba-desktop",
+  "version": "1.0.0",
+  "description": "DJS DE LA CHAMBA - Estudio de audio para DJs y Roblox",
+  "main": "src/main.cjs",
+  "author": "La Chamba",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "build:icon": "node scripts/generate-icon.cjs",
+    "dist:win": "npm run build:icon && electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.18.1",
+    "sharp": "0.35.5"
+  },
+  "build": {
+    "appId": "com.djchamba.djsdelachamba.desktop",
+    "productName": "DJS DE LA CHAMBA",
+    "executableName": "DJS-DE-LA-CHAMBA",
+    "asar": true,
+    "directories": {"output": "dist", "buildResources": "build"},
+    "files": ["src/**/*", "build/icon.ico", "package.json"],
+    "win": {
+      "target": [{"target": "nsis", "arch": ["x64"]}],
+      "icon": "build/icon.ico",
+      "artifactName": "DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DJS DE LA CHAMBA",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
