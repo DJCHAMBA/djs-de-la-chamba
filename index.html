@@ -171,16 +171,6 @@
     <div class="parts" id="permissionsResults"></div>
   </div>
 
-  <!-- PASO 1 -->
-  <div class="card">
-    <div class="step"><span class="num">1</span>Sube tu canción</div>
-    <div class="drop" id="drop">
-      <div style="font-size:34px">🎧</div>
-      Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
-      <small>MP3, WAV, OGG, M4A…</small>
-    </div>
-    <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
-
     <div class="card" style="margin-top:12px;background:rgba(7,5,18,.48)">
       <div class="step"><span class="num">🎙️</span>Intros antes de la canción (opcionales)</div>
       <p class="detector-small">Se reproducen en este orden: Intro DJ → Intro secundaria → canción procesada. Las intros conservan su tempo, tono y volumen originales; no reciben ningún efecto.</p>
@@ -212,6 +202,17 @@
       </div>
       <div class="status" id="quickIntroStatus">Puedes agregar una, las dos o ninguna intro.</div>
     </div>
+
+
+  <!-- PASO 1 -->
+  <div class="card">
+    <div class="step"><span class="num">1</span>Sube tu canción</div>
+    <div class="drop" id="drop">
+      <div style="font-size:34px">🎧</div>
+      Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+      <small>MP3, WAV, OGG, M4A…</small>
+    </div>
+    <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
 
     <div class="normal-control" style="margin-top:14px">
       <label for="quickMethod">Método de procesamiento</label>
