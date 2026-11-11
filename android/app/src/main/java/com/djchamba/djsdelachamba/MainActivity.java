@@ -23,7 +23,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebStorage;
 import android.graphics.Color;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -266,7 +265,6 @@ public class MainActivity extends Activity {
             webView.destroy();
             webView = null;
         }
-        WebStorage.getInstance().flush();
         super.onDestroy();
     }
 
