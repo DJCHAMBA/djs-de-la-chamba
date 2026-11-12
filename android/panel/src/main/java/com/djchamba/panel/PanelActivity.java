@@ -20,8 +20,8 @@ import org.json.JSONObject;
 import org.json.JSONObject;
 
 public class PanelActivity extends Activity {
-    private static final int BG=0xFF080D18, CARD=0xFF101A2A, FIELD=0xFF080F1B, LINE=0xFF293A53, WHITE=0xFFF0F5FF, MUTED=0xFF9EACC2, BLUE=0xFF287CFF, GREEN=0xFF4BD49A, RED=0xFFFF6E7D;
-    private static final String DEFAULT_URL="http://187.33.156.186:3000/comando";
+    private static final int BG=0xFF090817, CARD=0xFF17132B, FIELD=0xFF0D0B1B, LINE=0xFF40305F, WHITE=0xFFF7F2FF, MUTED=0xFFB8AACD, BLUE=0xFF873BFF, GREEN=0xFF4BD49A, RED=0xFFFF6E9B;
+    private static final String DEFAULT_URL="http://187.33.156.186:3000/comando";\n    private static final int PINK=0xFFFF4FD8;
     private final ExecutorService executor=Executors.newSingleThreadExecutor();
     private SharedPreferences prefs;
     private LinearLayout root, logList;
@@ -37,7 +37,7 @@ public class PanelActivity extends Activity {
     private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.HORIZONTAL);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
     private void build(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root=column();root.setPadding(dp(18),dp(22),dp(18),dp(30));root.setBackgroundColor(BG);scroll.addView(root);setContentView(scroll);
-        LinearLayout header=row();TextView logo=text("🎧",30,WHITE,true);header.addView(logo);LinearLayout titles=column();titles.setPadding(dp(12),0,0,0);titles.addView(text("PANEL LA CHAMBA",20,WHITE,true));titles.addView(text("CENTRO DE CONTROL · ANDROID NATIVO",10,MUTED,true));header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
+        LinearLayout header=row();android.widget.ImageView logo=new android.widget.ImageView(this);logo.setImageResource(R.drawable.panel_launcher_foreground);logo.setBackground(shape(0xFF241044,0xFF8D42FF,16));logo.setPadding(dp(5),dp(5),dp(5),dp(5));header.addView(logo,new LinearLayout.LayoutParams(dp(58),dp(58)));LinearLayout titles=column();titles.setPadding(dp(12),0,0,0);titles.addView(text("PANEL LA CHAMBA",20,WHITE,true));titles.addView(text("MOBILE  ·  DJ CONTROL SYSTEM",10,PINK,true));header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         TextView hero=text("Tu cabina de comandos.\nLa Chamba en tu bolsillo.",25,WHITE,true);LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.setMargins(0,dp(22),0,dp(6));root.addView(hero,hp);root.addView(text("Controla tu servidor de Roblox desde el teléfono.",13,MUTED,false));
         LinearLayout statusRow=row();status=text("●  Listo para conectar",12,0xFFFFC45C,true);status.setPadding(dp(13),dp(10),dp(13),dp(10));status.setBackground(shape(CARD,LINE,24));LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-2,-2);sp.setMargins(0,dp(18),0,dp(12));root.addView(statusRow);statusRow.addView(status,sp);
         musicCard();messageCard();announceCard();multiCard();audioCard();playbackCard();connectionCard();historyCard();
