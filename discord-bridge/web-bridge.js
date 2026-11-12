@@ -53,7 +53,7 @@ function sendJson(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body));
 }
-function readJson(req, limit=16*1024) {
+function readJson(req, limit=1024*1024) {
   return new Promise((resolve,reject)=>{
     let body="";
     req.setEncoding("utf8");
@@ -71,7 +71,7 @@ function readJson(req, limit=16*1024) {
 function validCommand(value) {
   if(typeof value!=="string") return false;
   const command=value.trim();
-  if(!command||command.length>500||/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(command)) return false;
+  if(!command||command.length>1000000||/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(command)) return false;
   return SIMPLE.has(command)||COMMAND_PATTERNS.some(pattern=>pattern.test(command));
 }
 const server=http.createServer(async(req,res)=>{
