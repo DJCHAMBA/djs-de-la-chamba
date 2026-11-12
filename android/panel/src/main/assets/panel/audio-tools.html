@@ -1,0 +1,4158 @@
+<!DOCTYPE html>
+<!-- DJS DE LA CHAMBA build: intros-first-2026-11-11 -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Herramientas Roblox · Panel La Chamba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#07050d; --panel:#120d1f; --panel2:#1a1230; --line:#2c2148;
+    --pink:#ff2bd6; --cyan:#22e7ff; --lime:#b6ff3b; --txt:#efeaff; --mut:#9a8fbf;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif}
+  body{min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 15% -10%, #ff2bd633, transparent 60%),
+      radial-gradient(800px 500px at 100% 10%, #22e7ff26, transparent 60%),
+      var(--bg);}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+  header{text-align:center;margin-bottom:22px}
+  h1{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;letter-spacing:3px;
+     font-size:clamp(48px,11vw,96px);line-height:.9;margin:0;
+     background:linear-gradient(90deg,var(--pink),#a95bff,var(--cyan));
+     -webkit-background-clip:text;background-clip:text;color:transparent;
+     filter:drop-shadow(0 0 18px #ff2bd655)}
+  .sub{color:var(--mut);margin-top:8px;font-size:15px}
+  .eq{display:flex;gap:4px;justify-content:center;height:26px;align-items:flex-end;margin:14px 0 0}
+  .eq i{width:6px;border-radius:3px;background:linear-gradient(var(--cyan),var(--pink));animation:b 1s ease-in-out infinite}
+  .eq i:nth-child(2n){animation-delay:-.3s}.eq i:nth-child(3n){animation-delay:-.6s}.eq i:nth-child(5n){animation-delay:-.8s}
+  @keyframes b{0%,100%{height:5px}50%{height:26px}}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+        border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 10px 40px #0007}
+  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-weight:800;font-size:17px}
+  .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:14px;
+       background:var(--pink);color:#12001a;box-shadow:0 0 14px var(--pink)}
+  .drop{border:2px dashed #4a3a75;border-radius:14px;padding:30px 16px;text-align:center;cursor:pointer;
+        transition:.2s;color:var(--mut)}
+  .drop:hover,.drop.over{border-color:var(--cyan);background:#22e7ff0d;color:var(--txt)}
+  .drop b{color:var(--cyan)}
+  .method{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .chip{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .chip small{display:block;color:var(--mut);font-size:12px}
+  .chip strong{font-size:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label.lbl{font-size:13px;color:var(--mut)}
+  select,input[type=text]{background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:10px;
+        padding:10px 12px;font:inherit;font-size:15px}
+  input[type=text]{width:100%}
+  select:focus,input:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;
+         background:linear-gradient(90deg,var(--pink),#a95bff);color:#fff;letter-spacing:.3px;
+         box-shadow:0 0 18px #ff2bd655;transition:transform .1s, opacity .2s}
+  button:hover{transform:translateY(-1px)}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  button.ghost{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--txt)}
+  button.cyan{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;box-shadow:0 0 18px #22e7ff55}
+  .bar{height:10px;border-radius:6px;background:#0c0816;border:1px solid var(--line);overflow:hidden;margin-top:12px}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .15s}
+  .status{color:var(--mut);font-size:14px;margin-top:8px;min-height:20px}
+  .info{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin:10px 0}
+  .info b{color:var(--txt)}
+  audio{width:100%;margin-top:6px}
+  input[type=password]{background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;width:100%}
+  .permission-ids{display:block;width:100%;min-height:170px;resize:vertical;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:13px/1.5 ui-monospace,monospace}
+  .permission-ids:focus,input[type=password]:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  .admin-entry{display:flex;justify-content:center;margin-top:14px}
+  .normal-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+  .normal-control{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .normal-control label{display:block;color:var(--mut);font-size:13px;margin-bottom:8px}
+  .normal-control input[type=number],.normal-control input[type=text]{width:100%;background:#0c0816;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px;font:inherit}
+  .normal-control input[type=range]{width:100%;accent-color:var(--cyan)}
+  .normal-control strong{display:block;margin-top:6px}
+  .normal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  @media(max-width:520px){.normal-controls{grid-template-columns:1fr}}
+  .effects-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+  .effects-control{background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .effects-control label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px;margin-bottom:9px}
+  .effects-control input[type=range]{width:100%;accent-color:var(--cyan)}
+  .effects-control output{color:var(--txt);font-weight:800;white-space:nowrap}
+  .effects-group-title{margin:18px 0 8px;color:var(--cyan);font-weight:800}
+  @media(max-width:520px){.effects-grid{grid-template-columns:1fr}}
+  .detector-result{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;background:#0c0816;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .detector-time{font-family:ui-monospace,monospace;color:var(--cyan);font-weight:800;font-size:14px}
+  .detector-meta{color:var(--mut);font-size:12px;line-height:1.45}
+  .detector-marker{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;background:#0c0816;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .detector-timeline{display:grid;gap:8px;margin-top:12px}
+  .detector-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .detector-actions button{flex:1}
+  .detector-range{height:9px;border-radius:6px;background:#0c0816;border:1px solid var(--line);overflow:hidden;margin-top:12px}
+  .detector-range>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+  .detector-small{font-size:12px;color:var(--mut);line-height:1.5}
+  @media(max-width:520px){.detector-marker{grid-template-columns:76px minmax(0,1fr)}.detector-marker button{grid-column:1/-1}}
+  .tabs{display:flex;gap:8px;justify-content:center;margin:0 0 18px;flex-wrap:wrap}
+  .tab-button{background:#0c0816;border:1px solid var(--line);box-shadow:none;color:var(--mut)}
+  .tab-button.active{background:linear-gradient(90deg,#16b6d6,var(--cyan));color:#00141a;border:0;box-shadow:0 0 18px #22e7ff55}
+  .upload-file-list{display:grid;gap:7px;margin-top:10px}
+  .upload-file-item{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0c0816;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px}
+  .upload-file-item small{color:var(--mut)}
+  .upload-progress{height:8px;background:#0c0816;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:10px}
+  .upload-progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .2s}
+  .upload-status-card{display:grid;gap:8px;margin-top:12px}
+  .status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;background:#2b2440;color:var(--mut)}
+  .status-pill.approved{background:#123d2c;color:#8dffc2}
+  .status-pill.reviewing{background:#493915;color:#ffe09a}
+  .status-pill.rejected,.status-pill.failed{background:#4b1824;color:#ff9aaa}
+  .hide{display:none!important}
+  .file-picker-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none!important;padding:0!important;border:0!important}
+  .tip{font-size:13px;color:var(--mut);line-height:1.5;margin-top:12px;padding:10px 12px;border-left:3px solid var(--lime);background:#b6ff3b0a;border-radius:0 10px 10px 0}
+  .tip code{color:var(--lime)}
+  .parts{display:grid;gap:8px;margin-top:12px}
+  .part{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0c0816;border:1px solid var(--line);
+        border-radius:12px;padding:10px 12px;font-size:14px}
+  .part .t{color:var(--mut);font-size:12px}
+  .part button{padding:8px 12px;font-size:13px}
+  /* modal */
+  .ov{position:fixed;inset:0;background:#000b;display:grid;place-items:center;padding:16px;z-index:10;backdrop-filter:blur(4px)}
+  .modal{width:min(460px,100%);background:linear-gradient(180deg,#22183d,var(--panel));border:1px solid #4a3a75;border-radius:20px;
+         padding:22px;box-shadow:0 0 50px #ff2bd633}
+  .modal h2{margin:0 0 6px;font-family:"Bebas Neue",sans-serif;font-weight:400;letter-spacing:1.5px;font-size:34px;color:var(--cyan)}
+  .modal p{color:var(--mut);margin:0 0 14px;font-size:14px;line-height:1.45}
+  .modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .err{color:#ff6b8a;font-size:13px;margin-top:6px;min-height:16px}
+  .opt{display:block;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;background:#0c0816}
+  .opt:has(input:checked){border-color:var(--pink);box-shadow:0 0 0 1px var(--pink) inset}
+  .opt input{accent-color:var(--pink);margin-right:8px}
+  .opt .sel{margin:10px 0 0 26px}
+  @media (max-width:520px){.method{grid-template-columns:1fr}}
+
+  /* ===== DJS DE LA CHAMBA · Apple-inspired studio UI ===== */
+  :root{
+    color-scheme:dark;
+    --bg:#090a0d;
+    --panel:#17191e;
+    --panel2:#1d2027;
+    --line:#30343d;
+    --pink:#0a84ff;
+    --cyan:#409cff;
+    --lime:#30d158;
+    --txt:#f5f6f8;
+    --mut:#a1a7b2;
+    --apple-blue:#0a84ff;
+    --apple-blue-soft:rgba(10,132,255,.14);
+    --surface:#17191e;
+    --surface-raised:#20232a;
+  }
+  html,body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Segoe UI",sans-serif;
+    font-size:15px;
+    letter-spacing:-.01em;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(900px 520px at 50% -300px,rgba(10,132,255,.17),transparent 72%),
+      radial-gradient(760px 520px at 100% 15%,rgba(87,100,130,.08),transparent 68%),
+      #090a0d;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:42px 26px 76px}
+  header{
+    position:relative;
+    text-align:center;
+    margin:0 auto 28px;
+    padding:12px 12px 20px;
+  }
+  h1{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    font-weight:760;
+    letter-spacing:-2.2px;
+    font-size:clamp(32px,5vw,48px);
+    line-height:1.08;
+    margin:0;
+    color:#f5f6f8;
+    background:none;
+    -webkit-text-fill-color:currentColor;
+    filter:none;
+  }
+  .sub{color:#9ca3af;margin-top:10px;font-size:15px;font-weight:450;letter-spacing:0}
+  .eq{height:18px;gap:3px;margin:16px 0 0;opacity:.76}
+  .eq i{width:3px;border-radius:4px;background:linear-gradient(180deg,#69b5ff,#1677ed);animation-duration:1.25s}
+  @keyframes b{0%,100%{height:4px;opacity:.55}50%{height:17px;opacity:1}}
+  .admin-entry{margin-top:18px}
+  .admin-entry button{font-size:13px;padding:9px 14px}
+  .tabs{
+    position:sticky;top:10px;z-index:5;
+    display:flex;gap:7px;justify-content:flex-start;
+    margin:0 auto 22px;padding:7px;
+    width:fit-content;max-width:100%;
+    overflow-x:auto;flex-wrap:nowrap;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:17px;
+    background:rgba(25,27,32,.82);
+    -webkit-backdrop-filter:blur(22px) saturate(1.5);
+    backdrop-filter:blur(22px) saturate(1.5);
+    box-shadow:0 12px 38px rgba(0,0,0,.28);
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  button,.tab-button{
+    font-family:inherit;font-size:14px;font-weight:650;
+    letter-spacing:-.01em;
+    border:1px solid transparent;border-radius:11px;
+    padding:11px 15px;cursor:pointer;
+    transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease;
+  }
+  button{
+    background:var(--apple-blue);
+    color:white;
+    box-shadow:0 3px 12px rgba(10,132,255,.18);
+  }
+  button:hover{transform:translateY(-1px);background:#2795ff;box-shadow:0 5px 16px rgba(10,132,255,.24)}
+  button:active{transform:scale(.985)}
+  button:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+  button.ghost,.tab-button{
+    background:#252830;border:1px solid #383d47;color:#d8dce4;box-shadow:none;
+  }
+  button.ghost:hover,.tab-button:hover{background:#303540;border-color:#4a515e;color:#fff;box-shadow:none}
+  button.cyan,.tab-button.active{
+    background:var(--apple-blue);border:1px solid #2997ff;color:#fff;
+    box-shadow:0 4px 16px rgba(10,132,255,.22);
+  }
+  button.cyan:hover,.tab-button.active:hover{background:#2795ff}
+  .card{
+    background:linear-gradient(180deg,rgba(29,32,39,.98),rgba(22,24,29,.98));
+    border:1px solid #30343d;border-radius:20px;
+    padding:23px;margin-bottom:17px;
+    box-shadow:0 14px 44px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.025);
+  }
+  .step{display:flex;align-items:center;gap:11px;margin:0 0 17px;font-weight:700;font-size:17px;letter-spacing:-.35px}
+  .num{
+    width:29px;height:29px;border-radius:10px;
+    display:grid;place-items:center;font-size:13px;font-weight:750;
+    background:var(--apple-blue);color:white;box-shadow:0 4px 13px rgba(10,132,255,.22);
+  }
+  .drop{
+    border:1.5px dashed #505865;border-radius:15px;
+    padding:30px 18px;text-align:center;cursor:pointer;
+    transition:border-color .18s ease,background .18s ease,color .18s ease;
+    color:#aeb5c1;background:rgba(255,255,255,.018);
+    line-height:1.55;
+  }
+  .drop:hover,.drop.over{border-color:#3898ff;background:rgba(10,132,255,.075);color:#f4f7fb}
+  .drop b{color:#55aaff}
+  .normal-control,.effects-control,.chip{
+    background:#13151a;border:1px solid #30343d;border-radius:14px;padding:14px;
+  }
+  .normal-control label,.effects-control label,.chip small{color:#aeb5c1}
+  .normal-control strong,.chip strong{color:#f5f6f8}
+  .method{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:14px}
+  .chip{padding:13px 15px}
+  .chip small{font-size:12px;letter-spacing:.01em}
+  .chip strong{display:block;font-size:15px;margin-top:5px}
+  .row{gap:10px}
+  label.lbl{font-size:13px;color:#b4bbc6}
+  select,input[type=text],input[type=password],.normal-control input[type=number],.normal-control input[type=text]{
+    background:#111318;color:#f5f6f8;border:1px solid #3a404b;border-radius:11px;
+    padding:11px 13px;font:inherit;font-size:14px;
+  }
+  select{min-height:42px}
+  select:focus,input:focus,textarea:focus{
+    outline:2px solid rgba(10,132,255,.7);outline-offset:2px;
+  }
+  input[type=text],input[type=password]{width:100%}
+  .normal-control input[type=range],.effects-control input[type=range]{width:100%;accent-color:var(--apple-blue)}
+  .normal-actions,.detector-actions{gap:9px}
+  .effects-grid{gap:11px}
+  .effects-group-title{color:#72b7ff;font-size:14px;letter-spacing:-.1px}
+  .bar,.detector-range,.upload-progress{
+    height:8px;border:0;background:#30343d;border-radius:99px;overflow:hidden;
+  }
+  .bar>div,.detector-range>div,.upload-progress>div{
+    background:linear-gradient(90deg,#0a84ff,#60b5ff);border-radius:99px;transition:width .2s ease;
+  }
+  .status{color:#aeb5c1;font-size:13px;line-height:1.5;margin-top:10px}
+  .info{display:flex;gap:12px 19px;flex-wrap:wrap;font-size:13px;color:#aeb5c1;margin:12px 0}
+  .info b{color:#f5f6f8;font-weight:650}
+  .tip{
+    color:#b5bfce;line-height:1.55;margin-top:12px;padding:12px 14px;
+    border-left:3px solid #0a84ff;background:rgba(10,132,255,.075);
+    border-radius:0 11px 11px 0;font-size:13px;
+  }
+  .tip code{color:#8fc7ff}
+  .detector-small{font-size:12px;color:#aeb5c1;line-height:1.55}
+  .detector-result,.detector-marker,.upload-file-item,.part,.opt{
+    background:#13151a;border:1px solid #343944;border-radius:13px;
+  }
+  .detector-result{padding:13px}
+  .detector-time{color:#79baff;font-size:13px}
+  .detector-meta{color:#9fa7b3}
+  .detector-marker{padding:11px}
+  .upload-file-item{padding:11px 13px}
+  .upload-file-item small,.part .t{color:#a4acb8}
+  .part{padding:12px 14px}
+  .part button{padding:8px 12px;font-size:13px}
+  .status-pill{background:#30343d;color:#d4dae3}
+  .status-pill.approved{background:rgba(48,209,88,.14);color:#6de28c}
+  .status-pill.reviewing{background:rgba(255,190,60,.14);color:#ffd078}
+  .status-pill.rejected,.status-pill.failed{background:rgba(255,69,58,.14);color:#ff8e87}
+  audio{width:100%;margin-top:8px;accent-color:var(--apple-blue)}
+  .permission-ids{
+    display:block;width:100%;min-height:170px;resize:vertical;
+    background:#111318;color:#f5f6f8;border:1px solid #3a404b;
+    border-radius:12px;padding:13px;font:13px/1.55 ui-monospace,monospace;
+  }
+  .permission-ids:focus,input[type=password]:focus{outline:2px solid rgba(10,132,255,.7);outline-offset:2px}
+  .ov{
+    position:fixed;inset:0;background:rgba(0,0,0,.68);
+    display:grid;place-items:center;padding:16px;z-index:10;
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  }
+  .modal{
+    width:min(460px,100%);background:linear-gradient(180deg,#252a33,#191c22);
+    border:1px solid #424955;border-radius:22px;padding:24px;
+    box-shadow:0 24px 80px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.05);
+  }
+  .modal h2{
+    margin:0 0 8px;font-family:inherit;font-weight:750;letter-spacing:-.8px;
+    font-size:27px;color:#f5f6f8;
+  }
+  .modal p{color:#aeb5c1;line-height:1.55}
+  .modal .acts{gap:9px}
+  .opt{padding:13px;margin-bottom:9px;cursor:pointer}
+  .opt:has(input:checked){border-color:#0a84ff;box-shadow:0 0 0 1px rgba(10,132,255,.55) inset;background:rgba(10,132,255,.08)}
+  .opt input{accent-color:var(--apple-blue)}
+  .admin-entry button{border-radius:999px}
+  a{color:#65b2ff}
+  a:hover{color:#9bcfff}
+  .file-picker-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none!important;padding:0!important;border:0!important}
+  ::selection{background:rgba(10,132,255,.32);color:white}
+  *{scrollbar-color:#444b57 #15171c;scrollbar-width:thin}
+  @media(max-width:700px){
+    .wrap{padding:26px 14px 48px}
+    header{padding:10px 4px 16px;margin-bottom:17px}
+    h1{font-size:clamp(29px,8vw,40px);letter-spacing:-1.5px}
+    .sub{font-size:13px}
+    .tabs{position:relative;top:auto;width:100%;justify-content:flex-start;margin-bottom:16px;border-radius:14px}
+    .tab-button{flex:0 0 auto;padding:10px 13px;font-size:13px}
+    .card{padding:17px;border-radius:17px}
+    .step{font-size:16px}
+    .drop{padding:24px 13px}
+    .method,.effects-grid{grid-template-columns:1fr}
+    .normal-controls{grid-template-columns:1fr}
+    .detector-result{grid-template-columns:76px minmax(0,1fr)}
+    .detector-marker{grid-template-columns:76px minmax(0,1fr)}
+    .detector-marker button{grid-column:1/-1}
+    .part{align-items:flex-start;flex-direction:column}
+    .part button{width:100%}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
+
+
+  /* Panel La Chamba: mostrar solo las tres herramientas solicitadas */
+  #tabAudacity,#tabNormal,#tabEffects,#tabSplit,#tabDetector,#tabBot,
+  #normalPanel,#effectsPanel,#splitPanel,#detectorPanel,#bridgePanel { display:none !important; }
+  #tabEditor,#tabUpload { display:inline-flex; }
+  #permissionsCard { margin-top:12px; }
+  body { min-width:320px; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DJS DE LA CHAMBA</h1>
+    <div class="sub">Prepara tus audios para los conciertos de Roblox</div>
+    <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="admin-entry"><button class="ghost" id="openPermissions" type="button">🔐 Permisos Roblox (Admin)</button></div>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones de DJS DE LA CHAMBA">
+    <button class="tab-button active" id="tabEditor" type="button">⚡ Editor Roblox rápido</button>
+    <button class="tab-button" id="tabAudacity" type="button">🎚️ Método Audacity</button>
+    <button class="tab-button" id="tabNormal" type="button">🎛️ Editor normal</button>
+    <button class="tab-button" id="tabEffects" type="button">🎚️ Editor de efectos</button>
+    <button class="tab-button" id="tabSplit" type="button">✂️ Dividir audio</button>
+    <button class="tab-button" id="tabDetector" type="button">🎤 Detector</button>
+    <button class="tab-button" id="tabBot" type="button">🎮 La Chamba Studios</button>
+    <button class="tab-button" id="tabUpload" type="button">☁️ Subir audios a Roblox</button>
+  </nav>
+
+  <div id="editorPanel">
+
+  <!-- PANEL PRIVADO DE PERMISOS -->
+  <div class="card hide" id="permissionsCard">
+    <div class="step"><span class="num">🔐</span>Administrar permisos de Roblox</div>
+    <p class="tip">Experiencia destino: <code>6475547874</code>. Importa tu archivo enviar.js para cargar sus IDs o pégalos en el cuadro. Las API keys nunca se envían al navegador.</p>
+    <div class="row" style="margin:12px 0">
+      <label class="lbl" for="permissionJsFile">Importar IDs desde enviar.js</label>
+      <input type="file" id="permissionJsFile" accept=".js,text/javascript">
+    </div>
+    <label class="lbl" for="permissionIds">IDs de audio (separadas por comas, espacios o saltos de línea)</label>
+    <textarea id="permissionIds" class="permission-ids" rows="7" placeholder="Pega aquí tus IDs de Roblox…"></textarea>
+    <div class="info"><span>IDs válidas y únicas: <b id="permissionCount">0</b></span><span>Máximo por envío: <b>500</b></span></div>
+    <div class="row">
+      <button class="cyan" id="sendPermissions" type="button">🚀 Enviar IDs a permisos</button>
+      <button class="ghost" id="logoutPermissions" type="button">Cerrar sesión</button>
+    </div>
+    <div class="status" id="permissionsStatus">Zona privada de administración.</div>
+    <div class="parts" id="permissionsResults"></div>
+  </div>
+
+    <div class="card" id="quickIntrosCard" style="margin-top:12px;background:rgba(7,5,18,.48)">
+      <div class="step"><span class="num">🎙️</span>Intros antes de la canción (opcionales)</div>
+      <p class="detector-small">Se reproducen en este orden: Intro DJ → Intro secundaria → canción procesada. Las intros conservan su tempo, tono y volumen originales; no reciben ningún efecto.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div>
+          <label class="lbl" for="quickIntroDjFile">🎧 Intro de DJ</label>
+          <label class="drop" id="quickIntroDjDrop" for="quickIntroDjFile" style="display:block;min-height:100px;padding:14px;margin:6px 0">
+            <div style="font-size:26px">🎤</div>
+            Toca para elegir la intro del DJ
+            <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
+          </label>
+          <input type="file" id="quickIntroDjFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="file-picker-hidden">
+          <div class="info"><span id="quickIntroDjName">Ninguna seleccionada</span></div>
+          <audio id="quickIntroDjPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
+          <button class="ghost" id="quickIntroDjClear" type="button" disabled>Quitar intro DJ</button>
+        </div>
+        <div>
+          <label class="lbl" for="quickIntroSecondaryFile">🎶 Intro secundaria</label>
+          <label class="drop" id="quickIntroSecondaryDrop" for="quickIntroSecondaryFile" style="display:block;min-height:100px;padding:14px;margin:6px 0">
+            <div style="font-size:26px">🔊</div>
+            Toca para elegir la intro secundaria
+            <small>MP3, WAV u otro formato compatible · Máx. 90 s</small>
+          </label>
+          <input type="file" id="quickIntroSecondaryFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="file-picker-hidden">
+          <div class="info"><span id="quickIntroSecondaryName">Ninguna seleccionada</span></div>
+          <audio id="quickIntroSecondaryPlayer" class="hide" controls style="width:100%;margin-top:6px"></audio>
+          <button class="ghost" id="quickIntroSecondaryClear" type="button" disabled>Quitar intro secundaria</button>
+        </div>
+      </div>
+      <div class="status" id="quickIntroStatus">Puedes agregar una, las dos o ninguna intro.</div>
+    </div>
+
+
+  <!-- PASO 1 -->
+  <div class="card">
+    <div class="step"><span class="num">1</span>Sube tu canción</div>
+    <div class="drop" id="drop">
+      <div style="font-size:34px">🎧</div>
+      Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+      <small>MP3, WAV, OGG, M4A…</small>
+    </div>
+    <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+    <div class="normal-control" style="margin-top:14px">
+      <label for="quickMethod">Método de procesamiento</label>
+      <select id="quickMethod" style="width:100%">
+        <option value="main" selected>Método principal · +150 % de velocidad/tono y −3 dB</option>
+        <option value="tempoPitch">Método alternativo · Tempo +8 % y tono −3 semitonos</option>
+      </select>
+      <div class="detector-small" style="margin-top:8px">Elige el método antes de subir el audio. Ambos conservan el flujo de escuchar, nombrar y entregar en MP3 o partes.</div>
+    </div>
+    <div class="method">
+      <div class="chip"><small id="methodSpeedLabel">Velocidad y tono</small><strong id="methodSpeedValue">+150 % (2.5× más rápido)</strong></div>
+      <div class="chip"><small id="methodVolumeLabel">Volumen (Amplify)</small><strong id="methodVolumeValue">× 0.708 (−3 dB)</strong></div>
+    </div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="status" id="status">Esperando tu audio…</div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="card hide" id="card2">
+    <div class="step"><span class="num">2</span>Escúchalo</div>
+    <div class="info">
+      <span>Canción original: <b id="durOrig">–</b></span>
+      <span>Salida final con intros: <b id="durNew">–</b></span>
+    </div>
+    <audio id="player" controls></audio>
+    <div class="row" style="margin-top:8px">
+      <button class="ghost" id="btnFast" type="button">▶ Como quedó (rápido)</button>
+      <button class="ghost" id="btnRoblox" type="button">▶ Como sonará en Roblox (0.4)</button>
+    </div>
+    <div class="tip" id="quickMethodNote">En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.</div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="card hide" id="card3">
+    <div class="step"><span class="num">3</span>Entregar</div>
+    <div class="row">
+      <label class="lbl" for="maxLen">Si dura más de</label>
+      <select id="maxLen">
+        <option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option>
+        <option value="240">4 min</option><option value="300" selected>5 min</option><option value="360">6 min</option>
+        <option value="420">7 min</option>
+      </select>
+      <span class="lbl">te pregunto si lo quieres en partes.</span>
+    </div>
+    <div style="margin-top:14px"><button id="btnDeliver" class="cyan" type="button">💾 Entregar mi audio</button></div>
+    <div class="bar hide" id="encBarWrap"><div id="encBar"></div></div>
+    <div class="status" id="encStatus"></div>
+    <div class="parts" id="parts"></div>
+  </div>
+
+  </div>
+
+  <!-- PESTAÑA: LA CHAMBA STUDIOS / BOT DISCORD -->
+  <div id="bridgePanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎮</span>LA CHAMBA STUDIOS · Control Roblox</div>
+      <p class="tip">Este panel comparte el mismo puente local que utiliza tu bot de Discord. Los comandos enviados aquí y desde Discord llegan al mismo servidor de Roblox. No introduzcas aquí el token de Discord ni la API key de Roblox.</p>
+      <div class="normal-control" style="margin-top:12px">
+        <div style="font-weight:800;margin-bottom:8px">Conectar con el puente local</div>
+        <label class="lbl" for="bridgeToken">Token local de conexión</label>
+        <input type="password" id="bridgeToken" autocomplete="off" placeholder="Pega el WEB_BRIDGE_TOKEN de tu archivo .env" style="margin-top:6px">
+        <div class="row" style="margin-top:10px">
+          <button class="cyan" id="bridgeConnect" type="button">🔌 Conectar</button>
+          <button class="ghost" id="bridgeDisconnect" type="button">Desconectar</button>
+        </div>
+        <div class="status" id="bridgeStatus">Desconectado. Inicia el conector local en tu PC y después conecta aquí.</div>
+        <div class="detector-small">Dirección local: <code>http://127.0.0.1:3001</code>. Chrome puede pedir permiso para acceder a la red local. El token se conserva solo en esta pestaña mientras esté abierta.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">📢</span>Anuncios</div>
+      <label class="lbl" for="bridgeDjName">Nombre que aparecerá como DJ</label>
+      <input type="text" id="bridgeDjName" maxlength="50" value="DJS DE LA CHAMBA" placeholder="Nombre del DJ">
+      <label class="lbl" for="bridgeM2Text" style="display:block;margin-top:10px">Mensaje M2</label>
+      <input type="text" id="bridgeM2Text" maxlength="350" placeholder="Escribe el anuncio para Roblox">
+      <button id="bridgeM2Send" type="button" style="margin-top:9px">📢 Enviar M2</button>
+      <div style="margin-top:16px">
+        <label class="lbl" for="bridgeChambaText">Anuncio de La Chamba</label>
+        <input type="text" id="bridgeChambaText" maxlength="350" placeholder="Mensaje para todos los servidores">
+        <button id="bridgeChambaSend" class="ghost" type="button" style="margin-top:9px">Enviar anuncio La Chamba</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎵</span>Control de música</div>
+      <label class="lbl" for="bridgeMusicId">ID de audio Roblox</label>
+      <input type="text" id="bridgeMusicId" inputmode="numeric" placeholder="Ej. 1234567890">
+      <div class="row" style="margin-top:10px">
+        <div style="flex:1;min-width:130px">
+          <label class="lbl" for="bridgeMusicPitch">Pitch opcional</label>
+          <input type="text" id="bridgeMusicPitch" inputmode="decimal" placeholder="1.0">
+        </div>
+        <button id="bridgeMusicSend" type="button" style="align-self:end">🎶 Agregar a cola</button>
+        <button id="bridgeForceSend" class="ghost" type="button" style="align-self:end">⚡ Reproducir ya</button>
+      </div>
+      <div style="margin-top:14px">
+        <label class="lbl" for="bridgeMultiIds">Multimusica · IDs separadas por comas (máximo 25)</label>
+        <textarea id="bridgeMultiIds" class="permission-ids" rows="3" placeholder="12345, 67890, 24680"></textarea>
+        <button id="bridgeMultiSend" class="ghost" type="button" style="margin-top:9px">🎶 Agregar varias canciones</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="ghost" data-bridge-command="skip" type="button">⏭️ Skip</button>
+        <button class="ghost" data-bridge-command="pause" type="button">⏸️ Pausar</button>
+        <button class="ghost" data-bridge-command="resume" type="button">▶️ Continuar</button>
+        <button class="ghost" data-bridge-command="resetear" type="button">⏮️ Reiniciar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎚️</span>Audio y modo DJ</div>
+      <div class="row">
+        <div style="flex:1;min-width:130px">
+          <label class="lbl" for="bridgeVolume">Volumen (0–10)</label>
+          <input type="number" id="bridgeVolume" min="0" max="10" step="0.1" value="5">
+        </div>
+        <button class="cyan" id="bridgeVolumeSend" type="button" style="align-self:end">Aplicar volumen</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:1;min-width:130px">
+          <label class="lbl" for="bridgePitch">Pitch (0.1–3)</label>
+          <input type="number" id="bridgePitch" min="0.1" max="3" step="0.01" value="1">
+        </div>
+        <button class="ghost" id="bridgePitchSend" type="button" style="align-self:end">Aplicar pitch</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="cyan" data-bridge-command="mododj" type="button">🎧 Activar modo DJ</button>
+        <button class="ghost" data-bridge-command="nomododj" type="button">Desactivar modo DJ</button>
+        <button class="cyan" data-bridge-command="loop" type="button">🔁 Activar loop</button>
+        <button class="ghost" data-bridge-command="unloop" type="button">Desactivar loop</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div style="flex:1;min-width:130px">
+          <label class="lbl" for="bridgeRealistaMode">Modo realista</label>
+          <select id="bridgeRealistaMode">
+            <option value="normal">Normal</option>
+            <option value="2">Realista 2</option>
+            <option value="3">Realista 3</option>
+            <option value="4">Realista 4</option>
+          </select>
+        </div>
+        <button id="bridgeRealistaOn" type="button" style="align-self:end">Activar</button>
+        <button id="bridgeRealistaOff" class="ghost" type="button" style="align-self:end">Desactivar</button>
+      </div>
+      <div style="margin-top:14px">
+        <label class="lbl" for="bridgeNowDj">Anunciar DJ que está tocando</label>
+        <div class="row">
+          <input type="text" id="bridgeNowDj" maxlength="80" placeholder="Nombre del DJ">
+          <button id="bridgeNowSend" class="ghost" type="button">🎧 Anunciar</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;border:1px solid rgba(0,220,255,.28)">
+        <div class="step"><span class="num">⌨️</span>Consola de comandos · estilo Discord</div>
+        <p class="tip">Escribe el comando como lo harías en Discord. También puedes usar los accesos rápidos.</p>
+        <label class="lbl" for="bridgeConsoleInput">Comando</label>
+        <div class="row" style="margin-top:7px;align-items:stretch">
+          <input id="bridgeConsoleInput" type="text" autocomplete="off" spellcheck="false" placeholder="Ej. /musica 131242819094093 0.4" style="flex:1;min-width:180px">
+          <button class="cyan" id="bridgeConsoleSend" type="button">Enviar ↗</button>
+        </div>
+        <div class="row" style="margin-top:10px;gap:7px;flex-wrap:wrap">
+          <button class="ghost" type="button" data-console-fill="/chamba ">📢 chamba</button>
+          <button class="ghost" type="button" data-console-fill="/m2 ">💬 m2</button>
+          <button class="ghost" type="button" data-console-fill="/musica ">🎵 musica</button>
+          <button class="ghost" type="button" data-console-fill="/force ">⚡ force</button>
+          <button class="ghost" type="button" data-console-fill="/multimusica ">🎶 multimusica</button>
+          <button class="ghost" type="button" data-console-fill="/skip">⏭️ skip</button>
+          <button class="ghost" type="button" data-console-fill="/pause">⏸️ pause</button>
+          <button class="ghost" type="button" data-console-fill="/resume">▶️ resume</button>
+          <button class="ghost" type="button" data-console-fill="/volumen ">🔊 volumen</button>
+          <button class="ghost" type="button" data-console-fill="/pitch ">🎚️ pitch</button>
+          <button class="ghost" type="button" data-console-fill="/realista">✨ realista</button>
+          <button class="ghost" type="button" data-console-fill="/mododj">🎧 mododj</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px">
+          <strong>Historial de actividad</strong>
+          <button class="ghost" id="bridgeConsoleClear" type="button">Limpiar</button>
+        </div>
+        <div id="bridgeConsoleHistory" aria-live="polite" style="margin-top:9px;max-height:230px;overflow:auto;display:flex;flex-direction:column;gap:7px">
+          <div class="tip">Todavía no hay comandos enviados desde esta consola.</div>
+        </div>
+      </div>
+      <div class="status" id="bridgeCommandStatus">Los comandos aparecerán aquí.</div>
+      <p class="tip">Los permisos de audios se siguen gestionando desde «Permisos Roblox (Admin)». La clave API de Roblox nunca pasa por este panel.</p>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: SUBIR AUDIOS A ROBLOX -->
+  <div id="uploadPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">☁️</span>Subir archivos a Roblox</div>
+      <p class="tip">La subida automática por API puede encontrar temporalmente un límite 1015. Mientras tanto, puedes subir desde <a href="https://create.roblox.com/dashboard/creations" target="_blank" rel="noopener">Creator Dashboard</a> y pegar aquí el ID para consultar su moderación y dar permiso a La Chamba. Para la subida automática, configura <code>ROBLOX_AUDIO_API_KEY</code>, <code>asset:read</code>, <code>asset:write</code> y tu variable de creador personal o de grupo.</p>
+      <div class="drop" id="robloxUploadDrop">
+        <div style="font-size:34px">☁️🎵</div>
+        Arrastra tus audios aquí o <b>toca para elegirlos</b><br>
+        <small>MP3, OGG, WAV o FLAC · Menos de 20 MB · Máximo 7 minutos · Hasta 48 kHz</small>
+      </div>
+      <input type="file" id="robloxUploadFiles" accept=".mp3,.ogg,.wav,.flac,audio/mpeg,audio/ogg,audio/wav,audio/flac" multiple class="hide">
+      <div id="robloxUploadFileList" class="upload-file-list"></div>
+      <div style="margin-top:14px">
+        <label class="lbl" for="robloxUploadName">Nombre del audio (se usa si seleccionas un solo archivo)</label>
+        <input type="text" id="robloxUploadName" maxlength="50" placeholder="Se tomará del nombre del archivo">
+      </div>
+      <div style="margin-top:12px">
+        <label class="lbl" for="robloxUploadDescription">Descripción</label>
+        <input type="text" id="robloxUploadDescription" maxlength="1000" placeholder="Audio para DJS DE LA CHAMBA">
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="cyan" id="startRobloxUpload" type="button">🚀 Subir a Roblox</button>
+        <button class="ghost" id="clearRobloxUpload" type="button">Limpiar selección</button>
+      </div>
+      <div class="upload-progress"><div id="robloxUploadProgress"></div></div>
+      <div class="status" id="robloxUploadStatus">Selecciona uno o varios audios para comenzar.</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="step" style="margin:0"><span class="num">📋</span>Mis subidas y revisión</div>
+        <button class="ghost" id="refreshAllUploads" type="button">↻ Actualizar estados</button>
+      </div>
+      <p class="tip">Roblox puede dejar un audio en revisión antes de aprobarlo. Aquí verás el estado que informe Roblox: En revisión, Aceptado o Rechazado. La lista se guarda en este navegador.</p>
+      <div id="robloxUploadHistory" class="upload-status-card"></div>
+      <div class="status" id="robloxHistoryStatus"></div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🔎</span>Ya subí el audio desde Roblox</div>
+      <p class="tip">Si Creator Dashboard sí te deja subir, pega aquí el Asset ID que te dio Roblox. Consultaremos su estado real y podrás conceder permiso a la experiencia La Chamba (6475547874).</p>
+      <label class="lbl" for="manualRobloxAssetId">Asset ID de Roblox</label>
+      <input type="text" id="manualRobloxAssetId" inputmode="numeric" placeholder="Ej. 123456789012345" autocomplete="off">
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="checkManualRobloxAsset" type="button">🔎 Consultar estado</button>
+        <button class="cyan" id="grantManualRobloxAsset" type="button">🔐 Dar permiso a La Chamba</button>
+      </div>
+      <div class="status" id="manualRobloxAssetStatus">Pega el ID después de subir el audio en Roblox.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: EDITOR NORMAL -->
+  <div id="normalPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎛️</span>Editor normal de audio</div>
+      <p class="tip">Este editor conserva la velocidad y el tono originales (1×). Puedes recortar el inicio y final, ajustar el volumen y aplicar fundidos. No aplica la aceleración del editor rápido de Roblox.</p>
+
+      <div class="drop" id="normalDrop">
+        <div style="font-size:34px">🎵</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3, WAV, OGG, M4A, FLAC y otros formatos compatibles con tu navegador</small>
+      </div>
+      <input type="file" id="normalFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="normalFileName">Ninguno</b></span>
+        <span>Duración original: <b id="normalDuration">–</b></span>
+        <span>Duración final: <b id="normalFinalDuration">–</b></span>
+      </div>
+
+      <div class="normal-controls">
+        <div class="normal-control">
+          <label for="normalStart">Recortar desde (segundos)</label>
+          <input type="number" id="normalStart" min="0" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalEnd">Terminar en (segundos)</label>
+          <input type="number" id="normalEnd" min="0" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalVolume">Volumen</label>
+          <input type="range" id="normalVolume" min="0" max="200" step="1" value="100">
+          <strong id="normalVolumeValue">100 %</strong>
+        </div>
+        <div class="normal-control">
+          <label for="normalFadeIn">Fundido de entrada (segundos)</label>
+          <input type="number" id="normalFadeIn" min="0" max="30" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalFadeOut">Fundido de salida (segundos)</label>
+          <input type="number" id="normalFadeOut" min="0" max="30" step="0.1" value="0">
+        </div>
+        <div class="normal-control">
+          <label for="normalOutputName">Nombre del MP3 final</label>
+          <input type="text" id="normalOutputName" maxlength="80" placeholder="Mi audio editado">
+        </div>
+      </div>
+
+      <div class="normal-actions">
+        <button class="ghost" id="normalPreviewButton" type="button" disabled>▶ Previsualizar cambios</button>
+        <button class="cyan" id="normalExportButton" type="button" disabled>💾 Exportar MP3 normal</button>
+        <button class="ghost" id="normalResetButton" type="button" disabled>↺ Restablecer recorte y efectos</button>
+      </div>
+      <audio id="normalPlayer" controls class="hide"></audio>
+      <div class="bar hide" id="normalProgressWrap"><div id="normalProgress"></div></div>
+      <div class="status" id="normalStatus">Selecciona un audio para comenzar. La velocidad siempre será 1×.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: EDITOR DE EFECTOS -->
+  <div id="effectsPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎚️</span>Editor de efectos de audio</div>
+      <p class="tip">Dale tu propio estilo al audio: cambia velocidad y tono, añade reverberación, eco, ecualización, distorsión o ruido blanco. La exportación se procesa en tu navegador.</p>
+
+      <div class="drop" id="effectsDrop">
+        <div style="font-size:34px">🎛️</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3, WAV, OGG, M4A, FLAC y formatos compatibles con tu navegador · Máximo 15 minutos</small>
+      </div>
+      <input type="file" id="effectsFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="effectsFileName">Ninguno</b></span>
+        <span>Duración original: <b id="effectsOriginalDuration">–</b></span>
+        <span>Duración procesada: <b id="effectsOutputDuration">–</b></span>
+      </div>
+
+      <div class="effects-group-title">⏩ Velocidad y tono</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsSpeed">Velocidad <output id="effectsSpeedValue">1.00×</output></label>
+          <input type="range" id="effectsSpeed" min="0.5" max="2" step="0.05" value="1">
+        </div>
+        <div class="effects-control">
+          <label for="effectsPitch">Tono <output id="effectsPitchValue">0 semitonos</output></label>
+          <input type="range" id="effectsPitch" min="-12" max="12" step="1" value="0">
+        </div>
+      </div>
+      <p class="tip">Velocidad y tono se combinan y pueden cambiar la duración. Para conservar el audio original usa velocidad 1× y tono 0.</p>
+
+      <div class="effects-group-title">🌌 Ambiente y espacio</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsReverb">Reverberación <output id="effectsReverbValue">25 %</output></label>
+          <input type="range" id="effectsReverb" min="0" max="100" step="1" value="25">
+        </div>
+        <div class="effects-control">
+          <label for="effectsDecay">Cola de reverb <output id="effectsDecayValue">1.8 s</output></label>
+          <input type="range" id="effectsDecay" min="0.2" max="4" step="0.1" value="1.8">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEcho">Eco / Delay <output id="effectsEchoValue">0 %</output></label>
+          <input type="range" id="effectsEcho" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEchoTime">Tiempo del eco <output id="effectsEchoTimeValue">300 ms</output></label>
+          <input type="range" id="effectsEchoTime" min="50" max="800" step="10" value="300">
+        </div>
+        <div class="effects-control">
+          <label for="effectsEchoFeedback">Repeticiones <output id="effectsEchoFeedbackValue">35 %</output></label>
+          <input type="range" id="effectsEchoFeedback" min="0" max="80" step="1" value="35">
+        </div>
+      </div>
+
+      <div class="effects-group-title">🎚️ Ecualizador y carácter</div>
+      <div class="effects-grid">
+        <div class="effects-control">
+          <label for="effectsBass">Graves <output id="effectsBassValue">0 dB</output></label>
+          <input type="range" id="effectsBass" min="-12" max="12" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsTreble">Agudos <output id="effectsTrebleValue">0 dB</output></label>
+          <input type="range" id="effectsTreble" min="-12" max="12" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsDistortion">Distorsión <output id="effectsDistortionValue">0 %</output></label>
+          <input type="range" id="effectsDistortion" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="effects-control">
+          <label for="effectsVolume">Volumen final <output id="effectsVolumeValue">100 %</output></label>
+          <input type="range" id="effectsVolume" min="0" max="200" step="1" value="100">
+        </div>
+        <div class="effects-control">
+          <label for="effectsWhiteNoise">Ruido blanco <output id="effectsWhiteNoiseValue">0 %</output></label>
+          <input type="range" id="effectsWhiteNoise" min="0" max="40" step="1" value="0">
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label class="lbl" for="effectsOutputName">Nombre del archivo final</label>
+        <input type="text" id="effectsOutputName" maxlength="80" placeholder="Audio con efectos">
+      </div>
+
+      <div class="normal-actions">
+        <button class="ghost" id="effectsPreview" type="button" disabled>▶ Escuchar efectos</button>
+        <button class="cyan" id="effectsExport" type="button" disabled>💾 Exportar MP3</button>
+        <button class="ghost" id="effectsReset" type="button" disabled>↺ Restablecer efectos</button>
+      </div>
+      <audio id="effectsPlayer" controls class="hide"></audio>
+      <div class="bar hide" id="effectsProgressWrap"><div id="effectsProgress"></div></div>
+      <div class="status" id="effectsStatus">Selecciona un audio para comenzar. Los efectos se aplicarán al exportar.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: DIVIDIR AUDIO SIN EDITAR -->
+  <div id="splitPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">✂️</span>Dividir audio en partes</div>
+      <p class="tip">Esta herramienta solamente corta el audio en segmentos. No cambia velocidad, tono ni volumen, y no aplica efectos. Las partes se entregan en MP3 a 192 kbps dentro de un ZIP.</p>
+      <div class="drop" id="splitDrop">
+        <div style="font-size:34px">✂️🎵</div>
+        Arrastra tu audio aquí o <b>toca para elegirlo</b><br>
+        <small>MP3 o WAV · Hasta 500 MB y 2 horas (otros formatos compatibles: hasta 100 MB y 15 minutos)</small>
+      </div>
+      <input type="file" id="splitFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+      <div class="info">
+        <span>Archivo: <b id="splitFileName">Ninguno</b></span>
+        <span>Duración: <b id="splitDuration">–</b></span>
+        <span>Partes estimadas: <b id="splitCount">–</b></span>
+      </div>
+      <audio id="splitPlayer" controls class="hide"></audio>
+      <div class="normal-control" style="margin-top:14px">
+        <label for="splitMinutes">Duración máxima de cada parte</label>
+        <select id="splitMinutes" style="width:100%">
+          <option value="1">1 minuto</option>
+          <option value="2">2 minutos</option>
+          <option value="3">3 minutos</option>
+          <option value="4">4 minutos</option>
+          <option value="5">5 minutos</option>
+          <option value="6">6 minutos</option>
+          <option value="7" selected>7 minutos · Límite habitual de Roblox</option>
+        </select>
+      </div>
+      <div class="detector-actions">
+        <button class="cyan" id="splitStart" type="button" disabled>✂️ Dividir y descargar ZIP</button>
+        <button class="ghost" id="splitClear" type="button" disabled>Limpiar</button>
+      </div>
+      <div class="detector-range"><div id="splitProgress"></div></div>
+      <div class="status" id="splitStatus">Selecciona un audio para comenzar.</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: DETECTOR DE CONCIERTOS -->
+  <div id="detectorPanel" class="hide">
+    <div class="card">
+      <div class="step"><span class="num">🎤</span>Detector de conciertos</div>
+      <p class="tip">Carga una grabación y el detector enviará a AudD únicamente muestras de hasta 12 segundos, no el concierto completo. El tiempo mostrado es el primer punto donde se reconoció cada canción, no necesariamente el primer compás exacto. Necesita el secreto <code>AUDD_API_TOKEN</code> en Cloudflare. <a href="https://dashboard.audd.io/" target="_blank" rel="noopener noreferrer">Crear token de AudD</a>.</p>
+
+      <div class="drop" id="detectorDrop">
+        <div style="font-size:34px">🎙️</div>
+        Arrastra la grabación completa aquí o <b>toca para elegirla</b><br>
+        <small>MP3 o WAV · Hasta 500 MB y 2 horas (otros formatos: hasta 30 minutos y 100 MB)</small>
+      </div>
+      <input type="file" id="detectorFile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hide">
+
+      <div class="info">
+        <span>Archivo: <b id="detectorFileName">Ninguno</b></span>
+        <span>Duración: <b id="detectorDuration">–</b></span>
+        <span>Muestras estimadas: <b id="detectorRequestCount">–</b></span>
+      </div>
+      <audio id="detectorPlayer" controls class="hide"></audio>
+
+      <div class="row" style="margin-top:14px">
+        <label class="lbl" for="detectorInterval">Reconocer una muestra cada</label>
+        <select id="detectorInterval">
+          <option value="15">15 segundos · Más preciso</option>
+          <option value="30" selected>30 segundos · Recomendado</option>
+          <option value="60">60 segundos · Menos solicitudes</option>
+        </select>
+      </div>
+      <div class="detector-small" id="detectorEstimate">Cada muestra usa una solicitud de reconocimiento de hasta 12 segundos. Elige un intervalo para calcular el consumo estimado.</div>
+
+      <div class="detector-actions">
+        <button class="cyan" id="detectorStart" type="button" disabled>🔎 Detectar canciones</button>
+        <button class="ghost" id="detectorClear" type="button" disabled>Limpiar</button>
+      </div>
+      <div class="detector-range"><div id="detectorProgress"></div></div>
+      <div class="status" id="detectorStatus">Selecciona una grabación para comenzar.</div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎵</span>Canciones detectadas</div>
+      <p class="detector-small">Los tiempos son aproximados: corresponden a la primera muestra en la que AudD reconoció la canción. Revisa y ajusta los momentos al escuchar la grabación.</p>
+      <div class="detector-timeline" id="detectorResults">
+        <div class="status">Todavía no hay canciones detectadas.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">🎙️</span>Entradas de voz del cantante</div>
+      <p class="detector-small">Reproduce la grabación y pulsa «Marcar entrada de voz» justo cuando el cantante empiece a cantar. Esta primera versión guarda marcas manuales precisas; no afirma detectar voces automáticamente sobre la música.</p>
+      <label class="lbl" for="detectorMarkerLabel">Nota opcional (ej. empieza el coro, primera estrofa)</label>
+      <input type="text" id="detectorMarkerLabel" maxlength="80" placeholder="Empieza a cantar…">
+      <div class="detector-actions">
+        <button class="cyan" id="detectorMarkVoice" type="button" disabled>🎙️ Marcar entrada de voz</button>
+        <button class="ghost" id="detectorMarkSong" type="button" disabled>🎵 Marcar inicio de canción</button>
+      </div>
+      <div class="detector-timeline" id="detectorMarkers">
+        <div class="status">No hay marcas manuales todavía.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span class="num">📤</span>Exportar reporte del concierto</div>
+      <p class="detector-small">Descarga las canciones reconocidas y tus marcas de entrada vocal en un CSV que puedes abrir con Excel.</p>
+      <div class="detector-actions">
+        <button class="cyan" id="detectorExport" type="button" disabled>📄 Descargar reporte CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOMBRE -->
+<div class="ov hide" id="mName">
+  <form class="modal" id="fName" autocomplete="off">
+    <h2>¿Cómo se llama tu audio?</h2>
+    <p>Escribe el nombre que quieres ponerle antes de entregártelo.</p>
+    <input type="text" id="inName" maxlength="80" placeholder="Ej: Peso Pluma - Concierto Arena">
+    <div class="err" id="nameErr"></div>
+    <div class="acts">
+      <button type="button" class="ghost" id="nameCancel">Cancelar</button>
+      <button type="submit">Siguiente</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL ENTREGA -->
+<div class="ov hide" id="mDeliv">
+  <form class="modal" id="fDeliv">
+    <h2>¿Cómo quieres descargar?</h2>
+    <p id="delivMsg">Elige un ZIP o descarga los MP3 sueltos. Los archivos separados se guardan en la ubicación de descargas configurada en Chrome.</p>
+    <label class="opt"><input type="radio" name="dm" value="zip" checked>📦 Un solo archivo ZIP (todos los MP3 juntos)</label>
+    <label class="opt"><input type="radio" name="dm" value="files">🎵 MP3 separados (sin ZIP, en la carpeta de Descargas de Chrome)</label>
+    <div class="acts">
+      <button type="button" class="ghost" id="delivCancel">Cancelar</button>
+      <button type="submit">Continuar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ACCESO PRIVADO A PERMISOS -->
+<div class="ov hide" id="mPermissionLogin">
+  <form class="modal" id="fPermissionLogin" autocomplete="off">
+    <h2>Zona privada</h2>
+    <p>Introduce la contraseña de administrador para abrir el panel de permisos de Roblox.</p>
+    <input type="password" id="permissionPassword" maxlength="200" autocomplete="current-password" placeholder="Contraseña de administrador" required>
+    <div class="err" id="permissionLoginError"></div>
+    <div class="acts">
+      <button type="button" class="ghost" id="cancelPermissionLogin">Cancelar</button>
+      <button type="submit" id="permissionLoginButton">Entrar</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL PARTES -->
+<div class="ov hide" id="mParts">
+  <form class="modal" id="fParts">
+    <h2>Tu audio es muy largo</h2>
+    <p id="partsMsg"></p>
+    <label class="opt"><input type="radio" name="mode" value="parts" checked>Dividirlo en partes
+      <div class="sel row"><select id="partsCount"></select><span class="lbl" id="partsEach"></span></div>
+    </label>
+    <label class="opt"><input type="radio" name="mode" value="whole">Entregarlo completo (1 solo archivo)</label>
+    <div class="acts">
+      <button type="button" class="ghost" id="partsCancel">Cancelar</button>
+      <button type="submit">Entregar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const FACTOR = 2.5;            // ChangeSpeedAndPitch Percentage=150  -> +150 % = 2.5x
+  const GAIN   = 0.70794578;     // Amplify Ratio
+  const SR     = 44100;
+  const KBPS   = 192;
+
+  const $ = id => document.getElementById(id);
+  const fmt = s => { s = Math.round(s); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+  // cede el control sin depender de setTimeout (los navegadores lo frenan mucho si cambias de pestaña)
+  const sleep = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); r(); }; c.port2.postMessage(0); });
+  const safeName = n => n.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g," ").trim();
+
+  let processed = null;   // Audio principal ya procesado
+  let processedPrefixSegments = [];
+  let mainAudioFile = null;
+  const quickIntros = {
+    dj: { file: null, pcm: null, url: null },
+    secondary: { file: null, pcm: null, url: null }
+  };
+  let origName = "";
+  let previewUrl = null;
+  let lastPack = null;    // {name, files:[{name, blob, secs}], method}
+  let processedMethod = "main";
+  let soundTouchModulePromise = null;
+
+  const TEMPO_CHANGE = 1.08;
+  const PITCH_SEMITONES = -3;
+  const SOUND_TOUCH_MODULE_URL = "https://esm.sh/@soundtouchjs/audio-worklet@2.1.1?bundle";
+  const SOUND_TOUCH_PROCESSOR_URL = "https://cdn.jsdelivr.net/npm/@soundtouchjs/audio-worklet@2.1.1/.dist/soundtouch-processor.js";
+
+  // Descargas nativas del navegador: no depende de Claude.
+  function downloadBlob(blob, filename){
+    // En el APK Android guarda directamente en Descargas/DJS DE LA CHAMBA.
+    // En navegador conserva la descarga estándar.
+    if (window.DJSAndroid && typeof window.DJSAndroid.saveBase64 === "function" &&
+        blob.size <= 120 * 1024 * 1024 && typeof FileReader !== "undefined") {
+      const reader = new FileReader();
+      const fallback = () => downloadBlobInBrowser(blob, filename);
+      reader.onload = () => {
+        try {
+          const dataUrl = String(reader.result || "");
+          const comma = dataUrl.indexOf(",");
+          if (comma < 0) throw new Error("No se pudo preparar el archivo.");
+          window.DJSAndroid.saveBase64(
+            dataUrl.slice(comma + 1),
+            filename,
+            blob.type || "application/octet-stream"
+          );
+        } catch (error) {
+          console.warn("Descarga nativa no disponible; uso descarga del navegador.", error);
+          fallback();
+        }
+      };
+      reader.onerror = fallback;
+      try {
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        fallback();
+      }
+      return;
+    }
+    downloadBlobInBrowser(blob, filename);
+  }
+
+  function downloadBlobInBrowser(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  // ---------- subir ----------
+  const drop = $("drop"), file = $("file");
+  drop.onclick = () => file.click();
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); };
+  file.onchange = () => { if (file.files[0]) handle(file.files[0]); file.value = ""; };
+
+  function setBar(p){ $("bar").style.width = Math.round(p*100) + "%"; }
+  function status(t){ $("status").textContent = t; }
+
+  function getFinalAudioSegments() {
+    const segments = processedPrefixSegments.slice();
+    if (processed) segments.push(processed);
+    return segments;
+  }
+
+  function getFinalAudioLength() {
+    return getFinalAudioSegments().reduce((total, segment) => total + segment.length, 0);
+  }
+
+  function getFinalAudioChannels() {
+    return Math.max(1, ...getFinalAudioSegments().map(segment => segment.chans.length));
+  }
+
+  function getFinalAudioSlice(start, end) {
+    const segments = getFinalAudioSegments();
+    const channelCount = getFinalAudioChannels();
+    const output = Array.from({ length: channelCount }, () => new Int16Array(end - start));
+    let cursor = 0;
+    for (const segment of segments) {
+      const segmentEnd = cursor + segment.length;
+      const overlapStart = Math.max(start, cursor);
+      const overlapEnd = Math.min(end, segmentEnd);
+      if (overlapEnd > overlapStart) {
+        const localStart = overlapStart - cursor;
+        const localEnd = overlapEnd - cursor;
+        for (let channel = 0; channel < channelCount; channel++) {
+          const source = segment.chans[Math.min(channel, segment.chans.length - 1)];
+          output[channel].set(source.subarray(localStart, localEnd), overlapStart - start);
+        }
+      }
+      cursor = segmentEnd;
+      if (cursor >= end) break;
+    }
+    return output;
+  }
+
+  function wavBlobFromSegments(segments, sr) {
+    const channelCount = Math.max(1, ...segments.map(segment => segment.chans.length));
+    const totalFrames = segments.reduce((sum, segment) => sum + segment.length, 0);
+    const bytes = totalFrames * channelCount * 2;
+    if (!totalFrames || bytes > 0xFFFFFFF0 - 44) throw new Error("grande");
+    const header = new ArrayBuffer(44), view = new DataView(header);
+    const write = (offset, value) => {
+      for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
+    };
+    write(0, "RIFF"); view.setUint32(4, 36 + bytes, true); write(8, "WAVE"); write(12, "fmt ");
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channelCount, true);
+    view.setUint32(24, sr, true); view.setUint32(28, sr * channelCount * 2, true);
+    view.setUint16(32, channelCount * 2, true); view.setUint16(34, 16, true);
+    write(36, "data"); view.setUint32(40, bytes, true);
+    const parts = [header], blockFrames = 1 << 18;
+    for (const segment of segments) {
+      for (let offset = 0; offset < segment.length; offset += blockFrames) {
+        const count = Math.min(blockFrames, segment.length - offset);
+        if (channelCount === 1) {
+          parts.push(segment.chans[0].subarray(offset, offset + count));
+        } else {
+          const interleaved = new Int16Array(count * channelCount);
+          for (let channel = 0; channel < channelCount; channel++) {
+            const source = segment.chans[Math.min(channel, segment.chans.length - 1)];
+            for (let i = 0; i < count; i++) interleaved[i * channelCount + channel] = source[offset + i];
+          }
+          parts.push(interleaved);
+        }
+      }
+    }
+    return new Blob(parts, { type: "audio/wav" });
+  }
+
+  function quickIntroUi(kind) {
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const item = quickIntros[kind];
+    $(prefix + "Name").textContent = item.file
+      ? item.file.name + " · " + fmt(item.pcm.length / SR)
+      : "Ninguna seleccionada";
+    $(prefix + "Clear").disabled = !item.file || $("quickMethod").disabled;
+    $(prefix + "Player").classList.toggle("hide", !item.file);
+  }
+
+  function setQuickIntroControlsDisabled(disabled) {
+    $("quickIntroDjFile").disabled = disabled;
+    $("quickIntroSecondaryFile").disabled = disabled;
+    $("quickIntroDjClear").disabled = disabled || !quickIntros.dj.file;
+    $("quickIntroSecondaryClear").disabled = disabled || !quickIntros.secondary.file;
+    $("quickIntroDjDrop").style.pointerEvents = disabled ? "none" : "";
+    $("quickIntroSecondaryDrop").style.pointerEvents = disabled ? "none" : "";
+  }
+
+  async function loadQuickIntro(kind, selectedFile) {
+    if ($("quickMethod").disabled) return;
+    const item = quickIntros[kind];
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const player = $(prefix + "Player");
+    try {
+      let nextPcm = null, nextUrl = null;
+      if (selectedFile) {
+        if (selectedFile.size <= 0 || selectedFile.size > 30 * 1024 * 1024) {
+          throw new Error("Cada intro debe pesar menos de 30 MB.");
+        }
+        const decoded = await decode(await selectedFile.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No pude leer esta intro.");
+        if (decoded.duration > 90) throw new Error("Cada intro puede durar máximo 90 segundos.");
+        nextPcm = { chans: floatBufferToInt16(decoded), length: decoded.length, sampleRate: SR };
+        nextUrl = URL.createObjectURL(selectedFile);
+      }
+      if (item.url) URL.revokeObjectURL(item.url);
+      item.file = selectedFile || null;
+      item.pcm = nextPcm;
+      item.url = nextUrl;
+      if (nextUrl) {
+        player.src = nextUrl;
+        player.classList.remove("hide");
+      } else {
+        player.pause(); player.removeAttribute("src"); player.load(); player.classList.add("hide");
+      }
+      quickIntroUi(kind);
+      $("quickIntroStatus").textContent = selectedFile
+        ? "✅ " + (kind === "dj" ? "Intro DJ" : "Intro secundaria") + " cargada sin editar."
+        : (kind === "dj" ? "Intro DJ eliminada." : "Intro secundaria eliminada.");
+      if (processed && mainAudioFile) {
+        $("quickIntroStatus").textContent += " Reprocesando la canción para actualizar la salida…";
+        await handle(mainAudioFile);
+      }
+    } catch (error) {
+      $(prefix + "Name").textContent = "No se pudo cargar la intro";
+      $("quickIntroStatus").textContent = "❌ " + (error.message || "No pude procesar la intro.");
+    }
+  }
+
+  function bindQuickIntro(kind) {
+    const prefix = kind === "dj" ? "quickIntroDj" : "quickIntroSecondary";
+    const area = $(prefix + "Drop"), input = $(prefix + "File");
+    area.ondragover = event => { event.preventDefault(); area.classList.add("over"); };
+    area.ondragleave = () => area.classList.remove("over");
+    area.ondrop = event => {
+      event.preventDefault(); area.classList.remove("over");
+      if (!input.disabled && event.dataTransfer.files[0]) loadQuickIntro(kind, event.dataTransfer.files[0]);
+    };
+    input.onchange = () => {
+      const selected = input.files[0]; input.value = "";
+      if (selected) loadQuickIntro(kind, selected);
+    };
+    $(prefix + "Clear").onclick = () => loadQuickIntro(kind, null);
+  }
+
+  bindQuickIntro("dj");
+  bindQuickIntro("secondary");
+
+  // Protección extra del orden visual: las intros siempre van antes de la tarjeta
+  // principal, incluso si el HTML cambia de orden en una publicación futura.
+  const quickIntrosCard = $("quickIntrosCard");
+  const mainSongCard = $("drop").closest(".card");
+  if (quickIntrosCard && mainSongCard && mainSongCard.parentNode) {
+    mainSongCard.parentNode.insertBefore(quickIntrosCard, mainSongCard);
+  }
+
+  // ---------- lectura por pedazos (así aguantan audios de horas) ----------
+  // Un audio de 1 hora decodificado de golpe ocupa más de 1 GB de memoria y el navegador lo rechaza.
+  // Por eso se lee y se procesa en trozos de pocos minutos y solo se guarda el resultado ya editado.
+  const dctx = new OfflineAudioContext(2, 1, SR);
+  const decode = ab => dctx.decodeAudioData(ab);
+  const readBytes = async (f, a, b) => new Uint8Array(await f.slice(a, b).arrayBuffer());
+
+  // <<MP3-PURE
+  const MP3_BR = {
+    1: [0,32,40,48,56,64,80,96,112,128,160,192,224,256,320],
+    2: [0,8,16,24,32,40,48,56,64,80,96,112,128,144,160]
+  };
+  const MP3_SR = { 3: [44100,48000,32000], 2: [22050,24000,16000], 0: [11025,12000,8000] };
+  function mp3Header(b, i){
+    if (i + 4 > b.length || b[i] !== 0xFF || (b[i+1] & 0xE0) !== 0xE0) return null;
+    const ver = (b[i+1] >> 3) & 3, layer = (b[i+1] >> 1) & 3;
+    if (ver === 1 || layer !== 1) return null;                 // solo MPEG capa III
+    const bi = b[i+2] >> 4, si = (b[i+2] >> 2) & 3, pad = (b[i+2] >> 1) & 1;
+    if (bi === 0 || bi === 15 || si === 3) return null;
+    const v1 = ver === 3;
+    const br = MP3_BR[v1 ? 1 : 2][bi] * 1000, rate = MP3_SR[ver][si];
+    return { len: Math.floor((v1 ? 144 : 72) * br / rate) + pad, rate, spf: v1 ? 1152 : 576 };
+  }
+  // ¿hay una trama de verdad en i? (que la siguiente también lo parezca, para no confundirse con basura)
+  function mp3Valid(b, i){
+    const h = mp3Header(b, i); if (!h) return null;
+    const n = i + h.len;
+    return (n + 4 > b.length || mp3Header(b, n) || (b[n] === 0x54 && b[n+1] === 0x41 && b[n+2] === 0x47)) ? h : null;
+  }
+  // Recorre tramas desde 'from' hasta pasar de 'target' bytes. Devuelve inicios de trama y dónde termina.
+  function mp3Walk(b, from, target){
+    const starts = []; let i = from, h0 = null;
+    while (i + 4 <= b.length && i < target){
+      const h = mp3Valid(b, i);
+      if (!h){                                                   // perdió sincronía: buscar la siguiente trama
+        let j = i + 1; while (j + 4 <= b.length && !mp3Valid(b, j)) j++;
+        if (j + 4 > b.length) break;
+        i = j; continue;
+      }
+      if (i + h.len > b.length) break;                           // trama cortada al final de la ventana
+      if (!h0) h0 = h;
+      starts.push(i); i += h.len;
+    }
+    return { starts, end: i, h: h0 };
+  }
+  // MP3 en pedazos: cada pedazo repite 4 tramas del anterior (el decodificador las necesita para arrancar bien)
+  async function* mp3Chunks(f, prog, overlapSeconds = 0){
+    const DEFAULT_OVER = 4;
+    const WIN = overlapSeconds > 0 ? 2 * 1024 * 1024 : 6 * 1024 * 1024;
+    let pos = 0;
+    const head = await readBytes(f, 0, 10);
+    if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33){
+      pos = 10 + (((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f));
+      if (head[5] & 0x10) pos += 10;
+    }
+    let first = true;
+    while (pos < f.size){
+      const b = await readBytes(f, pos, Math.min(f.size, pos + WIN + 16384));
+      const atEnd = pos + b.length >= f.size;
+      const w = mp3Walk(b, 0, atEnd ? Infinity : WIN);
+      if (w.starts.length === 0) break;
+      const overlapFrames = overlapSeconds > 0 && w.h
+        ? Math.max(DEFAULT_OVER, Math.ceil(overlapSeconds * w.h.rate / w.h.spf))
+        : DEFAULT_OVER;
+      const skip = first ? 0 : Math.round(overlapFrames * w.h.spf * SR / w.h.rate);
+      yield { bytes: b.slice(0, w.end), skip };
+      first = false;
+      prog(Math.min(1, (pos + w.end) / f.size));
+      if (atEnd || w.starts.length <= overlapFrames) break;
+      pos += w.starts[w.starts.length - overlapFrames];
+    }
+  }
+  // MP3-PURE>>
+
+  // WAV en pedazos de 4 minutos (cada uno se arma como un WAV chiquito y el navegador lo decodifica)
+  async function* wavChunks(f, prog, overlapSeconds = 0){
+    let p = 12, fmt = null, dataPos = 0, dataLen = 0;
+    while (p + 8 <= f.size){
+      const hd = await readBytes(f, p, p + 8), dv = new DataView(hd.buffer);
+      const id = String.fromCharCode(hd[0], hd[1], hd[2], hd[3]); let sz = dv.getUint32(4, true);
+      if (id === "fmt ") fmt = await readBytes(f, p + 8, p + 8 + sz);
+      else if (id === "data"){ dataPos = p + 8; if (!sz || dataPos + sz > f.size) sz = f.size - dataPos; dataLen = sz; break; }
+      p += 8 + sz + (sz & 1);
+    }
+    if (!fmt || !dataLen) throw new Error("wav");
+    const fv = new DataView(fmt.buffer), rate = fv.getUint32(4, true), align = fv.getUint16(12, true);
+    const chunkSeconds = overlapSeconds > 0 ? 60 : 240;
+    const chunkBytes = Math.floor(rate * chunkSeconds) * align;
+    const overlapBytes = Math.floor(rate * overlapSeconds) * align;
+    const step = Math.max(align, chunkBytes - overlapBytes);
+    for (let o = 0; o < dataLen; o += step){
+      const n = Math.min(chunkBytes, dataLen - o) - (Math.min(chunkBytes, dataLen - o) % align);
+      if (n <= 0) break;
+      const raw = await readBytes(f, dataPos + o, dataPos + o + n);
+      const fl = fmt.length + (fmt.length & 1);
+      const out = new Uint8Array(12 + 8 + fl + 8 + n), v = new DataView(out.buffer);
+      out.set([82,73,70,70], 0); v.setUint32(4, out.length - 8, true); out.set([87,65,86,69], 8);
+      out.set([102,109,116,32], 12); v.setUint32(16, fmt.length, true); out.set(fmt, 20);
+      out.set([100,97,116,97], 20 + fl); v.setUint32(24 + fl, n, true); out.set(raw, 28 + fl);
+      yield { bytes: out, skip: o === 0 ? 0 : Math.round(overlapSeconds * SR) };
+      prog(Math.min(1, (o + n) / dataLen));
+    }
+  }
+
+  // Cualquier otro formato (M4A, OGG, FLAC…): se abre completo; si es larguísimo puede no caber en memoria.
+  async function* wholeChunks(f, prog){
+    yield { bytes: new Uint8Array(await f.arrayBuffer()), skip: 0 };
+    prog(1);
+  }
+
+  async function sniff(f){
+    const b = await readBytes(f, 0, Math.min(12, f.size));
+    const name = String(f.name || "").trim().toLowerCase();
+    const type = String(f.type || "").trim().toLowerCase();
+    const riffWave = b.length >= 12 &&
+      String.fromCharCode(b[0],b[1],b[2],b[3]) === "RIFF" &&
+      String.fromCharCode(b[8],b[9],b[10],b[11]) === "WAVE";
+    if (riffWave || /\.wav$/.test(name) || type === "audio/wav" || type === "audio/x-wav") return "wav";
+
+    const id3 = b.length >= 3 && b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33;
+    const mpegSync = b.length >= 2 && b[0] === 0xFF && (b[1] & 0xE0) === 0xE0;
+    const mp3Mime = type === "audio/mpeg" || type === "audio/mp3" ||
+      type === "audio/x-mpeg" || type === "audio/mpeg3" || type === "audio/x-mp3";
+    if (id3 || mpegSync || /\.mp3$/.test(name) || mp3Mime) return "mp3";
+
+    // Algunos MP3 incluyen etiquetas o bytes privados antes de la primera trama.
+    // Busca una cabecera MPEG válida en el primer MiB antes de clasificarlos como otro formato.
+    const scan = await readBytes(f, 0, Math.min(f.size, 1024 * 1024));
+    for (let i = 0; i + 4 <= scan.length; i++) {
+      if (mp3Valid(scan, i)) return "mp3";
+    }
+    return "other";
+  }
+
+  async function handle(f){
+    $("card2").classList.add("hide"); $("card3").classList.add("hide");
+    $("parts").innerHTML = ""; $("encStatus").textContent = "";
+    origName = f.name.replace(/\.[^.]+$/, "");
+    mainAudioFile = f;
+    processed = null;
+    processedPrefixSegments = [];
+    lastPack = null;
+    processedMethod = $("quickMethod").value;
+    $("quickMethod").disabled = true;
+    setQuickIntroControlsDisabled(true);
+    let kind = "other";
+    try{
+      status("Leyendo " + f.name + "…"); setBar(.02);
+      kind = await sniff(f);
+      let srcSecs = 0;
+
+      if (processedMethod === "tempoPitch") {
+        const result = await processTempoPitchAudio(f, kind);
+        processed = result.processed;
+        srcSecs = result.srcSecs;
+      } else {
+        let proc = null;
+        const run = async gen => {
+          proc = makeProcessor(); srcSecs = 0;
+          const prog = p => { setBar(.02 + .96 * p); };
+          for await (const c of gen(f, prog)){
+            const buf = await decode(c.bytes.buffer.byteLength === c.bytes.length ? c.bytes.buffer : c.bytes.slice().buffer);
+            srcSecs += proc.push(buf, c.skip) / SR;
+            status("Procesando… llevo " + fmt(srcSecs) + " de audio original");
+            await sleep();
+          }
+        };
+        try{
+          await run(kind === "mp3" ? mp3Chunks : kind === "wav" ? wavChunks : wholeChunks);
+        }catch(e){
+          // si el método por pedazos no pudo con ese archivo, se intenta abrirlo completo
+          if (kind === "other" || f.size > 400 * 1048576) throw e;
+          console.warn("por pedazos falló, abro completo", e);
+          await run(wholeChunks);
+        }
+        processed = proc.finish();
+      }
+
+      if (!processed || !processed.length) throw new Error("El procesamiento no generó audio.");
+      processedPrefixSegments = ["dj", "secondary"].map(kind => quickIntros[kind].pcm).filter(Boolean);
+      const finalLength = getFinalAudioLength();
+      const introCount = processedPrefixSegments.length;
+      setBar(1);
+      status(introCount
+        ? "¡Listo! " + introCount + " intro(s) original(es) antes de la canción procesada."
+        : "¡Listo! Canción procesada sin intros.");
+      $("durOrig").textContent = fmt(srcSecs);
+      $("durNew").textContent = fmt(finalLength / SR);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      try{
+        previewUrl = URL.createObjectURL(wavBlobFromSegments(getFinalAudioSegments(), SR));
+        const p = $("player"); p.src = previewUrl; setRate(1);
+      }catch(e){ console.warn("sin vista previa", e); }
+      $("btnFast").textContent = processedMethod === "tempoPitch" ? "▶ Escuchar resultado (1.0×)" : "▶ Como quedó (rápido)";
+      $("btnRoblox").textContent = processedMethod === "tempoPitch" ? "▶ Como sonará en Roblox (1.0)" : "▶ Como sonará en Roblox (0.4)";
+      $("card2").classList.remove("hide"); $("card3").classList.remove("hide");
+    }catch(err){
+      console.error(err); setBar(0);
+      status("❌ " + ((err && (err.message || err.name)) || "No pude procesar el audio."));
+    }finally{
+      $("quickMethod").disabled = false;
+      setQuickIntroControlsDisabled(false);
+      quickIntroUi("dj");
+      quickIntroUi("secondary");
+    }
+  }
+
+  // Igual que Audacity "Change Speed and Pitch" (+150 % = 2.5x) y Amplify (−3 dB), pero en streaming:
+  // las muestras se leen 2.5x más rápido, se filtra (anti-aliasing) y se baja a 44.1 kHz con interpolación.
+  function makeProcessor(){
+    const f0 = 18500, fs = SR * FACTOR, Qdb = 0.707;
+    const w0 = 2 * Math.PI * f0 / fs, cs = Math.cos(w0), al = Math.sin(w0) / (2 * Math.pow(10, Qdb / 20));
+    const a0 = 1 + al;
+    const B0 = (1 - cs) / 2 / a0, B1 = (1 - cs) / a0, B2 = B0, A1 = -2 * cs / a0, A2 = (1 - al) / a0;
+    const STAGES = 6;
+    let ch = 0, st = null, prev = null, out = null, g = 0, nextOut = 0, total = 0;
+    return {
+      push(buf, skip){
+        if (!ch){
+          ch = Math.min(2, buf.numberOfChannels);
+          st = Array.from({ length: ch }, () => Array.from({ length: STAGES }, () => new Float64Array(4)));
+          prev = new Float64Array(ch); out = Array.from({ length: ch }, () => []);
+        }
+        const n = buf.length - skip;
+        if (n <= 0) return 0;
+        const ys = [];
+        for (let c = 0; c < ch; c++){
+          const x = buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)), y = new Float32Array(n);
+          for (let s = 0; s < STAGES; s++){
+            const S = st[c][s]; let x1 = S[0], x2 = S[1], y1 = S[2], y2 = S[3];
+            const src = s === 0 ? x : y, off = s === 0 ? skip : 0;
+            for (let i = 0; i < n; i++){
+              const xi = src[i + off];
+              const yi = B0 * xi + B1 * x1 + B2 * x2 - A1 * y1 - A2 * y2;
+              x2 = x1; x1 = xi; y2 = y1; y1 = yi; y[i] = yi;
+            }
+            S[0] = x1; S[1] = x2; S[2] = y1; S[3] = y2;
+          }
+          ys.push(y);
+        }
+        // salidas posibles en este trozo: posición k*2.5 con i0+1 dentro de lo ya filtrado
+        let k = nextOut; const lastIdx = g + n - 1;
+        const cap = Math.ceil(n / FACTOR) + 4;
+        const pieces = ys.map(() => new Int16Array(cap)); let m = 0;
+        for (;; k++, m++){
+          const p = k * FACTOR, i0 = Math.floor(p);
+          if (i0 + 1 > lastIdx) break;
+          const fr = p - i0;
+          for (let c = 0; c < ch; c++){
+            const y = ys[c];
+            const s0 = i0 >= g ? y[i0 - g] : prev[c], s1 = y[i0 + 1 - g];
+            let v = (s0 + (s1 - s0) * fr) * GAIN;
+            v = v < -1 ? -1 : v > 1 ? 1 : v;
+            pieces[c][m] = Math.round(v < 0 ? v * 0x8000 : v * 0x7fff);
+          }
+        }
+        for (let c = 0; c < ch; c++){ out[c].push(pieces[c].slice(0, m)); prev[c] = ys[c][n - 1]; }
+        g += n; nextOut = k; total += m;
+        return n;
+      },
+      finish(){
+        const chans = out.map(list => {
+          const all = new Int16Array(total); let o = 0;
+          for (let i = 0; i < list.length; i++){ all.set(list[i], o); o += list[i].length; list[i] = null; }
+          return all;
+        });
+        out = null;
+        return { chans, length: total, sampleRate: SR };
+      }
+    };
+  }
+
+  async function processTempoPitchAudio(fileItem, kind) {
+    if (kind === "other" && fileItem.size > 60 * 1048576) {
+      throw new Error("Para el método Tempo +8% / Tono −3, los formatos distintos de MP3 o WAV se limitan a 60 MB. Convierte el archivo a MP3 o WAV para procesarlo por bloques.");
+    }
+
+    if (!soundTouchModulePromise) {
+      soundTouchModulePromise = import(SOUND_TOUCH_MODULE_URL).catch(error => {
+        soundTouchModulePromise = null;
+        throw new Error("No pude cargar el procesador de tempo y tono. Comprueba tu conexión e inténtalo otra vez.");
+      });
+    }
+    const soundTouch = await soundTouchModulePromise;
+    if (typeof soundTouch.processOffline !== "function") {
+      throw new Error("El procesador de audio cargó una versión incompatible.");
+    }
+
+    const outputLists = [[], []];
+    let outputChannels = 0;
+    let outputFrames = 0;
+    let sourceSeconds = 0;
+    let completedChunks = 0;
+
+    const progress = p => {
+      setBar(.02 + .30 * p);
+      status("Leyendo el audio por bloques… " + Math.round(p * 100) + "%");
+    };
+    const generator = kind === "mp3"
+      ? mp3Chunks(fileItem, progress, 12)
+      : kind === "wav"
+        ? wavChunks(fileItem, progress, 12)
+        : wholeChunks(fileItem, progress);
+
+    for await (const chunk of generator) {
+      const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+        ? chunk.bytes.buffer
+        : chunk.bytes.slice().buffer;
+      const inputBuffer = await decode(bytes);
+      if (kind === "other" && inputBuffer.duration > 900) {
+        throw new Error("Para archivos OGG, M4A o FLAC, este método admite hasta 15 minutos. Para audios más largos, usa MP3 o WAV.");
+      }
+
+      status("Aplicando tempo +8% y tono −3 semitonos al bloque " + (completedChunks + 1) + "…");
+      const rendered = await soundTouch.processOffline({
+        input: inputBuffer,
+        processorUrl: SOUND_TOUCH_PROCESSOR_URL,
+        pitchSemitones: PITCH_SEMITONES,
+        playbackRate: TEMPO_CHANGE,
+        stretchParameters: { overlapMs: 12 }
+      });
+
+      const converted = floatBufferToInt16(rendered);
+      if (!outputChannels) {
+        outputChannels = converted.length;
+        for (let channel = 0; channel < outputChannels; channel++) outputLists[channel] = [];
+      }
+
+      // MP3/WAV se leen con 12 s de solapamiento para que SoundTouch tenga contexto
+      // al comenzar cada bloque. Se elimina esa repetición de la salida ya comprimida.
+      const inputOverlap = Math.max(0, Number(chunk.skip) || 0);
+      const outputOverlap = completedChunks === 0 ? 0 : Math.min(
+        converted[0].length,
+        Math.round(inputOverlap / TEMPO_CHANGE)
+      );
+      const emittedLength = Math.max(0, converted[0].length - outputOverlap);
+      for (let channel = 0; channel < outputChannels; channel++) {
+        outputLists[channel].push(converted[channel].subarray(outputOverlap));
+      }
+      outputFrames += emittedLength;
+      sourceSeconds += Math.max(0, inputBuffer.duration - inputOverlap / SR);
+      completedChunks++;
+      setBar(.32 + .66 * Math.min(1, sourceSeconds / Math.max(sourceSeconds, fileItem.size / (192 * 1024 / 8))));
+      status("Tempo +8% · Tono −3 semitonos · procesados " + fmt(sourceSeconds) + " de audio…");
+      await sleep();
+    }
+
+    if (!outputFrames || !outputChannels) {
+      throw new Error("No pude extraer audio válido del archivo.");
+    }
+
+    const channels = outputLists.slice(0, outputChannels).map(list => {
+      const merged = new Int16Array(outputFrames);
+      let offset = 0;
+      for (const part of list) {
+        merged.set(part, offset);
+        offset += part.length;
+      }
+      return merged;
+    });
+
+    return {
+      processed: { chans: channels, length: outputFrames, sampleRate: SR },
+      srcSecs: sourceSeconds
+    };
+  }
+
+  // ---------- preview ----------
+  function setRate(r){
+    const p = $("player");
+    p.preservesPitch = false; p.mozPreservesPitch = false; p.webkitPreservesPitch = false;
+    p.playbackRate = r; p.defaultPlaybackRate = r;
+  }
+  $("btnFast").onclick = () => { setRate(1); $("player").play().catch(()=>{}); };
+  $("btnRoblox").onclick = () => {
+    setRate(processedMethod === "tempoPitch" ? 1 : 0.4);
+    $("player").play().catch(()=>{});
+  };
+
+  // ---------- entregar ----------
+  $("btnDeliver").onclick = () => {
+    if (!processed) return;
+    $("inName").value = lastPack ? lastPack.name : origName;
+    $("nameErr").textContent = "";
+    $("mName").classList.remove("hide");
+    setTimeout(() => $("inName").focus(), 30);
+  };
+  $("nameCancel").onclick = () => $("mName").classList.add("hide");
+  $("fName").onsubmit = e => {
+    e.preventDefault();
+    const n = safeName($("inName").value);
+    if (!n){ $("nameErr").textContent = "Ponle un nombre a tu audio."; return; }
+    $("mName").classList.add("hide");
+    const secs = getFinalAudioLength() / SR, max = +$("maxLen").value;
+    if (secs > max) askParts(n, secs, max);
+    else build(n, 1);
+  };
+
+  function askParts(name, secs, max){
+    const min = Math.ceil(secs / max);
+    $("partsMsg").textContent = "Ya editado dura " + fmt(secs) + " (más de " + fmt(max) + "). ¿Lo quieres en partes? Parte 1, Parte 2, Parte 3…";
+    const sel = $("partsCount"); sel.innerHTML = "";
+    for (let k = Math.max(2, min); k <= Math.max(2, min) + 4; k++){
+      const o = document.createElement("option"); o.value = k; o.textContent = k + " partes"; sel.appendChild(o);
+    }
+    const each = () => $("partsEach").textContent = "≈ " + fmt(secs / +sel.value) + " cada una";
+    sel.onchange = each; each();
+    $("fParts").querySelector('input[value="parts"]').checked = true;
+    $("mParts").classList.remove("hide");
+    $("fParts").onsubmit = e => {
+      e.preventDefault();
+      $("mParts").classList.add("hide");
+      const mode = $("fParts").querySelector('input[name="mode"]:checked').value;
+      build(name, mode === "parts" ? +sel.value : 1);
+    };
+  }
+  $("partsCancel").onclick = () => $("mParts").classList.add("hide");
+
+  async function build(name, nParts){
+    const btn = $("btnDeliver"); btn.disabled = true;
+    $("encBarWrap").classList.remove("hide"); $("parts").innerHTML = "";
+    const total = getFinalAudioLength();
+    const per = Math.ceil(total / nParts);
+    const files = [];
+    try{
+      if (typeof lamejs === "undefined") throw new Error("lamejs");
+      $("encBar").style.width = "0%";
+      const segs = [];
+      for (let k = 0; k < nParts; k++){
+        const a = k * per, b = Math.min(total, a + per);
+        segs.push({ a, b, label: nParts > 1 ? "Parte " + (k+1) + " - " + name : name });
+      }
+      $("encStatus").textContent = "Preparando…";
+      const blobs = await encodeAll(segs,
+        p => { $("encBar").style.width = Math.round(p * 100) + "%"; },
+        msg => { $("encStatus").textContent = msg; });
+      segs.forEach((s, k) => files.push({ name: s.label + ".mp3", blob: blobs[k], secs: (s.b - s.a) / SR }));
+      $("encBar").style.width = "100%";
+      lastPack = {
+        name,
+        files,
+        method: processedMethod,
+        robloxPlaybackSpeed: processedMethod === "tempoPitch" ? 1 : 0.4,
+        robloxDurationFactor: processedMethod === "tempoPitch" ? 1 : FACTOR
+      };
+      renderParts();
+      $("encStatus").textContent = files.length > 1
+        ? "✅ Tus " + files.length + " MP3 están listos. Pulsa «Bajar todas las partes» y elige ZIP o carpeta normal."
+        : "✅ Tu MP3 está listo. Pulsa «Bajar solo esta» para descargarlo.";
+    }catch(err){
+      console.error(err);
+      $("encStatus").textContent = err && err.message === "lamejs"
+        ? "No cargó el creador de MP3. Recarga la página e inténtalo de nuevo."
+        : "Algo falló al crear el audio (" + ((err && (err.message || err.name)) || "error desconocido") + "). Inténtalo de nuevo.";
+    }finally{ btn.disabled = false; }
+  }
+
+  function renderParts(){
+    const box = $("parts"); box.innerHTML = "";
+    lastPack.files.forEach(f => {
+      const d = document.createElement("div"); d.className = "part";
+      d.innerHTML = '<div><div></div><div class="t"></div></div>';
+      d.firstElementChild.firstElementChild.textContent = "🎵 " + f.name;
+      const gameDuration = f.secs * (lastPack.robloxDurationFactor || FACTOR);
+      const gameSpeed = lastPack.robloxPlaybackSpeed || 0.4;
+      d.querySelector(".t").textContent = fmt(f.secs) + " exportado · " + fmt(gameDuration) +
+        " en Roblox (PlaybackSpeed " + gameSpeed + ") · " + (f.blob.size/1048576).toFixed(1) + " MB";
+      const b = document.createElement("button"); b.className = "ghost"; b.type = "button"; b.textContent = "Bajar solo esta";
+      b.onclick = () => {
+        try {
+          downloadBlob(f.blob, f.name);
+          $("encStatus").textContent = "✅ Descarga iniciada: " + f.name + ". Revisa Descargas de Chrome.";
+        } catch (err) {
+          console.error(err);
+          $("encStatus").textContent = "No se pudo iniciar la descarga. Revisa los permisos de Chrome.";
+        }
+      };
+      d.appendChild(b);
+      box.appendChild(d);
+    });
+    if (lastPack.files.length > 1){
+      const all = document.createElement("button"); all.type = "button"; all.className = "cyan";
+      all.textContent = "💾 Bajar todas las partes (" + lastPack.files.length + ")";
+      all.onclick = () => downloadAll(lastPack.name + ".zip", lastPack.files);
+      box.appendChild(all);
+    }
+  }
+
+  function askDelivery(files){
+    return new Promise(resolve => {
+      $("delivMsg").textContent = "Tienes " + files.length + " archivos MP3. Elige un ZIP o descárgalos separados en la carpeta de Descargas de Chrome.";
+      $("fDeliv").querySelector('input[value="zip"]').checked = true;
+      $("mDeliv").classList.remove("hide");
+
+      $("delivCancel").onclick = () => {
+        $("mDeliv").classList.add("hide");
+        resolve(null);
+      };
+
+      $("fDeliv").onsubmit = e => {
+        e.preventDefault();
+        const mode = $("fDeliv").querySelector('input[name="dm"]:checked').value;
+        $("mDeliv").classList.add("hide");
+        resolve({ mode });
+      };
+    });
+  }
+
+  async function downloadAll(zipName, files){
+    const btn = $("parts").querySelector("button.cyan");
+    if (btn) btn.disabled = true;
+
+    try {
+      const choice = await askDelivery(files);
+      if (!choice) {
+        $("encStatus").textContent = "Descarga cancelada. Puedes volver a intentarlo cuando quieras.";
+        return;
+      }
+
+      if (choice.mode === "files") {
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          $("encStatus").textContent = "Descargando MP3 separado " + (i + 1) + " de " + files.length + ": " + f.name;
+          downloadBlob(f.blob, f.name);
+          // Espacia las descargas para que Chrome pueda pedir y registrar el permiso de descargas múltiples.
+          if (i < files.length - 1) await new Promise(resolve => setTimeout(resolve, 700));
+        }
+        $("encStatus").textContent = "✅ Se iniciaron " + files.length + " descargas MP3 separadas. Revisa Descargas de Chrome. Si Chrome pregunta, permite las descargas múltiples de este sitio.";
+        return;
+      }
+
+      if (choice.mode === "zip") {
+        if (typeof JSZip === "undefined") throw new Error("jszip");
+        $("encStatus").textContent = "Preparando ZIP con " + files.length + " MP3…";
+        const zip = new JSZip();
+        files.forEach(f => zip.file(f.name, f.blob, { compression: "STORE" }));
+        const blob = await zip.generateAsync(
+          { type: "blob", compression: "STORE" },
+          meta => { $("encStatus").textContent = "Empaquetando ZIP: " + Math.round(meta.percent) + "%"; }
+        );
+        downloadBlob(blob, zipName);
+        $("encStatus").textContent = "✅ Descarga iniciada: " + zipName + ". Revisa la carpeta Descargas de Chrome.";
+      }
+    } catch (err) {
+      console.error("Error al descargar las partes:", err);
+      if (err && err.message === "jszip") {
+        $("encStatus").textContent = "No cargó el creador ZIP. Recarga con Ctrl + F5 e inténtalo otra vez.";
+      } else {
+        $("encStatus").textContent = "No se pudieron iniciar las descargas. Revisa los permisos de descargas de Chrome para este sitio.";
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  // ---------- MP3 en paralelo (Web Workers): varias partes a la vez y sin congelar la página ----------
+  function mp3WorkerMain(){
+    self.onmessage = function(e){
+      const m = e.data;
+      if (m.type === "init"){
+        try{ importScripts(m.url); self.postMessage({ type: "ready", ok: typeof lamejs !== "undefined" }); }
+        catch(err){ self.postMessage({ type: "ready", ok: false }); }
+        return;
+      }
+      try{
+        const ch = m.chans, nch = ch.length, len = ch[0].length;
+        const enc = new lamejs.Mp3Encoder(nch, m.sr, m.kbps);
+        const BLOCK = 1152 * 20, out = []; let last = 0;
+        for (let i = 0; i < len; i += BLOCK){
+          const e2 = Math.min(len, i + BLOCK), l = ch[0].subarray(i, e2);
+          const mp3 = nch > 1 ? enc.encodeBuffer(l, ch[1].subarray(i, e2)) : enc.encodeBuffer(l);
+          if (mp3.length) out.push(new Uint8Array(mp3));
+          if (i / len - last > 0.01){ last = i / len; self.postMessage({ type: "prog", id: m.id, p: last }); }
+        }
+        const end = enc.flush(); if (end.length) out.push(new Uint8Array(end));
+        self.postMessage({ type: "done", id: m.id, out: out }, out.map(function(o){ return o.buffer; }));
+      }catch(err){ self.postMessage({ type: "err", id: m.id, msg: String(err && err.message || err) }); }
+    };
+  }
+  async function startPool(n){
+    if (typeof Worker === "undefined") return null;
+    const tag = document.querySelector('script[src*="lame"]');
+    if (!tag) return null;
+    const ws = []; let url = null;
+    try{
+      url = URL.createObjectURL(new Blob(["(" + mp3WorkerMain.toString() + ")()"], { type: "text/javascript" }));
+      for (let i = 0; i < n; i++) ws.push(new Worker(url));
+      await Promise.all(ws.map(w => new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error("timeout")), 8000);
+        w.onerror = () => { clearTimeout(t); rej(new Error("worker")); };
+        w.onmessage = e => { clearTimeout(t); e.data.ok ? res() : rej(new Error("lame")); };
+        w.postMessage({ type: "init", url: tag.src });
+      })));
+      URL.revokeObjectURL(url);
+      return ws;
+    }catch(e){
+      console.warn("sin workers", e);
+      ws.forEach(w => w.terminate());
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    }
+  }
+  async function encodeAll(segs, onProg, onMsg){
+    const cores = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+    const prog = segs.map(() => 0), upd = () => onProg(prog.reduce((a, b) => a + b, 0) / segs.length);
+    const ws = await startPool(Math.min(segs.length, cores));
+    if (ws){
+      try{
+        onMsg("Creando MP3" + (ws.length > 1 ? " (" + ws.length + " partes a la vez)" : "") + "…");
+        const blobs = new Array(segs.length); let next = 0;
+        await Promise.all(ws.map(w => new Promise((res, rej) => {
+          const run = () => {
+            if (next >= segs.length){ res(); return; }
+            const k = next++, s = segs[k];
+            const chans = getFinalAudioSlice(s.a, s.b);
+            w.onmessage = e => {
+              const m = e.data;
+              if (m.type === "prog"){ prog[k] = m.p; upd(); }
+              else if (m.type === "done"){ prog[k] = 1; upd(); blobs[k] = new Blob(m.out, { type: "audio/mpeg" }); run(); }
+              else if (m.type === "err") rej(new Error(m.msg));
+            };
+            w.onerror = () => rej(new Error("worker"));
+            w.postMessage({ id: k, chans: chans, sr: SR, kbps: KBPS }, chans.map(c => c.buffer));
+          };
+          run();
+        })));
+        ws.forEach(w => w.terminate());
+        return blobs;
+      }catch(err){
+        console.warn("falló en paralelo, sigo sin workers", err);
+        ws.forEach(w => w.terminate());
+        prog.fill(0); upd();
+        onMsg("Sigo en modo normal (más lento)…");
+      }
+    }
+    const blobs = [];
+    for (let k = 0; k < segs.length; k++){
+      const s = segs[k];
+      onMsg("Creando MP3: " + s.label + "…");
+      blobs.push(await encodeMp3(getFinalAudioSlice(s.a, s.b), p => { prog[k] = p; upd(); }));
+      prog[k] = 1; upd();
+    }
+    return blobs;
+  }
+
+  // ---------- MP3 ----------
+  async function encodeMp3(chans, onProg){
+    const nch = chans.length, len = chans[0].length;
+    const enc = new lamejs.Mp3Encoder(nch, SR, KBPS);
+    const BLOCK = 1152 * 20, out = [];
+    let t = performance.now();
+    for (let i = 0; i < len; i += BLOCK){
+      const e = Math.min(len, i + BLOCK);
+      const l = chans[0].subarray(i, e);
+      const mp3 = nch > 1 ? enc.encodeBuffer(l, chans[1].subarray(i, e)) : enc.encodeBuffer(l);
+      if (mp3.length) out.push(new Uint8Array(mp3));
+      if (performance.now() - t > 120){ onProg(i / len); await sleep(); t = performance.now(); }
+    }
+    const end = enc.flush(); if (end.length) out.push(new Uint8Array(end));
+    onProg(1);
+    return new Blob(out, { type: "audio/mpeg" });
+  }
+  // ---------- WAV (solo para escuchar) ----------
+  function wavBlob(chans, sr){
+    const nch = chans.length, len = chans[0].length, bytes = len * nch * 2;
+    if (bytes > 0xFFFFFFF0 - 44) throw new Error("grande");
+    const hd = new ArrayBuffer(44), v = new DataView(hd);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0,"RIFF"); v.setUint32(4, 36 + bytes, true); w(8,"WAVE"); w(12,"fmt ");
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nch,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*nch*2,true); v.setUint16(32,nch*2,true); v.setUint16(34,16,true);
+    w(36,"data"); v.setUint32(40, bytes, true);
+    const parts = [hd], STEP = 1 << 20;
+    for (let i = 0; i < len; i += STEP){
+      const n = Math.min(STEP, len - i);
+      if (nch === 1){ parts.push(chans[0].slice(i, i + n)); continue; }
+      const p = new Int16Array(n * 2);
+      for (let j = 0; j < n; j++){ p[2*j] = chans[0][i + j]; p[2*j + 1] = chans[1][i + j]; }
+      parts.push(p);
+    }
+    return new Blob(parts, { type: "audio/wav" });
+  }
+
+  // ---------- PERMISOS ROBLOX: panel privado ----------
+  // Cambia esta dirección cuando publiques el Worker privado de Cloudflare.
+  const PERMISSIONS_API_URL = "https://djs-chamba-permissions.jnew123gta5.workers.dev";
+  let permissionsSession = null;
+
+  function parsePermissionIds(){
+    const values = $("permissionIds").value
+      .split(/[,\s;]+/)
+      .map(value => value.trim())
+      .filter(value => /^\d+$/.test(value));
+    return [...new Set(values)];
+  }
+
+  function updatePermissionCount(){
+    $("permissionCount").textContent = parsePermissionIds().length;
+  }
+
+  let pendingPrivateDestination = "permissions";
+
+  function showPermissionLogin(destination){
+    pendingPrivateDestination = destination;
+    $("permissionPassword").value = "";
+    $("permissionLoginError").textContent = "";
+    $("mPermissionLogin").classList.remove("hide");
+    setTimeout(() => $("permissionPassword").focus(), 30);
+  }
+
+  function setMainTab(tab){
+    const upload = tab === "upload";
+    const normal = tab === "normal";
+    const effects = tab === "effects";
+    const split = tab === "split";
+    const audacity = tab === "audacity";
+    const detector = tab === "detector";
+    const bot = tab === "bot";
+    $("editorPanel").classList.toggle("hide", upload || normal || effects || split || detector || bot);
+    $("uploadPanel").classList.toggle("hide", !upload);
+    $("normalPanel").classList.toggle("hide", !normal);
+    $("effectsPanel").classList.toggle("hide", !effects);
+    $("splitPanel").classList.toggle("hide", !split);
+    $("detectorPanel").classList.toggle("hide", !detector);
+    $("bridgePanel").classList.toggle("hide", !bot);
+    $("tabEditor").classList.toggle("active", !upload && !normal && !effects && !split && !audacity && !detector && !bot);
+    $("tabAudacity").classList.toggle("active", audacity);
+    $("tabNormal").classList.toggle("active", normal);
+    $("tabEffects").classList.toggle("active", effects);
+    $("tabSplit").classList.toggle("active", split);
+    $("tabDetector").classList.toggle("active", detector);
+    $("tabBot").classList.toggle("active", bot);
+    $("tabUpload").classList.toggle("active", upload);
+  }
+
+  function updateQuickMethodLabels() {
+    const alternative = $("quickMethod").value === "tempoPitch";
+    $("methodSpeedLabel").textContent = alternative ? "Cambiar tempo" : "Velocidad y tono";
+    $("methodSpeedValue").textContent = alternative ? "+8 % (1.08×; audio más corto)" : "+150 % (2.5× más rápido)";
+    $("methodVolumeLabel").textContent = alternative ? "Cambiar tono" : "Volumen (Amplify)";
+    $("methodVolumeValue").textContent = alternative ? "−3 semitonos (sin bajar volumen)" : "× 0.708 (−3 dB)";
+    if (!processed) {
+      $("btnFast").textContent = alternative ? "▶ Escuchar resultado (1.0×)" : "▶ Como quedó (rápido)";
+      $("btnRoblox").textContent = alternative ? "▶ Como sonará en Roblox (1.0)" : "▶ Como sonará en Roblox (0.4)";
+      $("quickMethodNote").innerHTML = alternative
+        ? "Este método deja el audio aproximadamente 7.4% más corto y baja el tono 3 semitonos. En Roblox usa <code>PlaybackSpeed = 1</code>; no necesita el 0.4 del método principal."
+        : "En Roblox ponle al Sound <code>PlaybackSpeed = 0.4</code> para que se escuche a velocidad normal.";
+    }
+  }
+
+  $("quickMethod").addEventListener("change", updateQuickMethodLabels);
+  updateQuickMethodLabels();
+
+  $("tabEditor").onclick = () => setMainTab("editor");
+  $("tabAudacity").onclick = () => {
+    $("quickMethod").value = "tempoPitch";
+    updateQuickMethodLabels();
+    setMainTab("audacity");
+    status("🎚️ Método Audacity seleccionado: Tempo +8 % y tono −3 semitonos. Ahora sube tu audio.");
+    $("drop").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  $("tabNormal").onclick = () => setMainTab("normal");
+  $("tabEffects").onclick = () => setMainTab("effects");
+  $("tabSplit").onclick = () => setMainTab("split");
+  $("tabDetector").onclick = () => {
+    setMainTab("detector");
+    if (!permissionsSession) showPermissionLogin("detector");
+    else {
+      detectorRenderSongs();
+      detectorRenderMarkers();
+      detectorUpdateEstimate();
+    }
+  };
+  $("tabUpload").onclick = () => {
+    setMainTab("upload");
+    if (!permissionsSession) showPermissionLogin("upload");
+    else renderRobloxUploadHistory();
+  };
+  $("tabBot").onclick = () => {
+    setMainTab("bot");
+    if (!permissionsSession) showPermissionLogin("bot");
+    else {
+      $("bridgePanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (webBridgeToken) bridgeCheckConnection();
+    }
+  };
+
+  $("openPermissions").onclick = () => {
+    setMainTab("editor");
+    showPermissionLogin("permissions");
+  };
+
+  $("cancelPermissionLogin").onclick = () => $("mPermissionLogin").classList.add("hide");
+
+  $("permissionIds").addEventListener("input", updatePermissionCount);
+
+  $("permissionJsFile").onchange = async () => {
+    const selected = $("permissionJsFile").files[0];
+    if (!selected) return;
+    try {
+      const source = await selected.text();
+      const match = source.match(/const\s+textoConIds\s*=\s*\x60([\s\S]*?)\x60\s*;/);
+      if (!match) throw new Error("No encontré la sección textoConIds dentro del archivo.");
+      const ids = [...new Set((match[1].match(/\b\d+\b/g) || []))];
+      $("permissionIds").value = ids.join(", ");
+      updatePermissionCount();
+      $("permissionsStatus").textContent = "✅ Se importaron " + ids.length + " IDs. Las API keys del archivo no se han leído ni enviado.";
+    } catch (err) {
+      $("permissionsStatus").textContent = "No pude leer las IDs: " + (err.message || "archivo inválido");
+    } finally {
+      $("permissionJsFile").value = "";
+    }
+  };
+
+  $("fPermissionLogin").onsubmit = async e => {
+    e.preventDefault();
+    const button = $("permissionLoginButton");
+    const password = $("permissionPassword").value;
+    $("permissionLoginError").textContent = "";
+
+    if (PERMISSIONS_API_URL.includes("REEMPLAZA-CON-TU-WORKER")) {
+      $("permissionLoginError").textContent = "Falta publicar y conectar el servidor privado de permisos. La contraseña todavía no se puede validar.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Verificando…";
+    try {
+      const response = await fetch(PERMISSIONS_API_URL + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.token) throw new Error(data.error || "No se pudo validar la contraseña.");
+      permissionsSession = data.token;
+      $("mPermissionLogin").classList.add("hide");
+      if (pendingPrivateDestination === "permissions") {
+        setMainTab("editor");
+        $("permissionsCard").classList.remove("hide");
+        $("permissionsStatus").textContent = "🔓 Acceso concedido. La sesión privada dura 30 minutos.";
+        updatePermissionCount();
+        $("permissionsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (pendingPrivateDestination === "detector") {
+        setMainTab("detector");
+        detectorUpdateEstimate();
+        $("detectorStatus").textContent = "🔓 Acceso concedido. Ya puedes analizar conciertos.";
+        $("detectorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (pendingPrivateDestination === "bot") {
+        setMainTab("bot");
+        $("bridgeStatus").textContent = "🔓 Acceso concedido. Conecta el puente local de tu PC.";
+        $("bridgePanel").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (webBridgeToken) bridgeCheckConnection();
+      } else {
+        setMainTab("upload");
+        $("robloxUploadStatus").textContent = "🔓 Acceso concedido. Ya puedes subir audios y consultar su revisión.";
+        renderRobloxUploadHistory();
+        $("uploadPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } catch (err) {
+      $("permissionLoginError").textContent = err.message || "No se pudo conectar con el servidor privado.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Entrar";
+    }
+  };
+
+  $("logoutPermissions").onclick = () => {
+    permissionsSession = null;
+    $("permissionsCard").classList.add("hide");
+    $("permissionsResults").innerHTML = "";
+    $("permissionsStatus").textContent = "Sesión cerrada.";
+    $("robloxUploadStatus").textContent = "Sesión cerrada. Vuelve a entrar para subir audios o consultar estados.";
+    setMainTab("editor");
+  };
+
+  $("sendPermissions").onclick = async () => {
+    if (!permissionsSession) {
+      $("permissionsStatus").textContent = "Tu sesión venció. Vuelve a entrar con tu contraseña.";
+      return;
+    }
+    const ids = parsePermissionIds();
+    if (!ids.length) {
+      $("permissionsStatus").textContent = "Pega o importa al menos una ID válida.";
+      return;
+    }
+    if (ids.length > 500) {
+      $("permissionsStatus").textContent = "Hay " + ids.length + " IDs. Divide la lista en envíos de máximo 500.";
+      return;
+    }
+    if (!confirm("¿Autorizar " + ids.length + " IDs de audio para la experiencia 6475547874 en las dos cuentas configuradas?")) return;
+
+    const button = $("sendPermissions");
+    button.disabled = true;
+    $("permissionsResults").innerHTML = "";
+    $("permissionsStatus").textContent = "⏳ Enviando " + ids.length + " IDs a Roblox en bloques de 25. No cierres esta pestaña…";
+
+    try {
+      const response = await fetch(PERMISSIONS_API_URL + "/permissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + permissionsSession
+        },
+        body: JSON.stringify({ ids })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        permissionsSession = null;
+        throw new Error(data.error || "La sesión venció. Vuelve a ingresar la contraseña.");
+      }
+      if (!response.ok) throw new Error(data.error || "Roblox rechazó la solicitud.");
+      const totalAuthorized = Number(data.autorizadasTotal ?? 0);
+      const totalFailed = Number(data.fallidasTotal ?? Math.max(0, data.totalIds - totalAuthorized));
+      $("permissionsStatus").textContent = totalFailed === 0
+        ? "✅ Las " + totalAuthorized + " de " + data.totalIds + " IDs quedaron autorizadas por al menos una cuenta. Experiencia: " + data.universeId + "."
+        : "⚠️ " + totalAuthorized + " de " + data.totalIds + " IDs autorizadas por alguna cuenta. " + totalFailed + " no pudieron ser autorizadas por ninguna. Experiencia: " + data.universeId + ".";
+
+      (data.resultados || []).forEach(result => {
+        const item = document.createElement("div");
+        item.className = "part";
+        const label = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = result.nombre;
+        const detail = document.createElement("div");
+        detail.className = "t";
+        detail.textContent =
+          "Autorizó: " + result.autorizadas +
+          " · No administra (la otra cuenta sí): " + (result.noGestiona || 0) +
+          " · Sin acceso en ninguna: " + (result.fallidasReales || 0) +
+          " · Bloques: " + result.totalBloques;
+        label.appendChild(title);
+        label.appendChild(detail);
+        item.appendChild(label);
+        $("permissionsResults").appendChild(item);
+
+        if (Array.isArray(result.errores) && result.errores.length) {
+          const errorBox = document.createElement("div");
+          errorBox.className = "tip";
+          errorBox.textContent = "Errores que requieren revisión: " + JSON.stringify(result.errores.slice(0, 3));
+          $("permissionsResults").appendChild(errorBox);
+        }
+      });
+
+      if (Array.isArray(data.idsSinAcceso) && data.idsSinAcceso.length) {
+        const failedBox = document.createElement("div");
+        failedBox.className = "tip";
+        failedBox.textContent = "IDs que ninguna cuenta pudo autorizar: " + data.idsSinAcceso.slice(0, 50).join(", ") +
+          (data.idsSinAcceso.length > 50 ? " … y " + (data.idsSinAcceso.length - 50) + " más." : "");
+        $("permissionsResults").appendChild(failedBox);
+      }
+    } catch (err) {
+      $("permissionsStatus").textContent = "❌ " + (err.message || "No se pudo completar el envío.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+
+  // ---------- SUBIR AUDIO A ROBLOX Y SEGUIR MODERACIÓN ----------
+  const UPLOAD_HISTORY_KEY = "djsChambaRobloxAudioHistoryV1";
+  let selectedRobloxFiles = [];
+
+  function loadRobloxUploadHistory(){
+    try {
+      const value = JSON.parse(localStorage.getItem(UPLOAD_HISTORY_KEY) || "[]");
+      return Array.isArray(value) ? value.slice(0, 100) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  let robloxUploadHistory = loadRobloxUploadHistory();
+
+  function saveRobloxUploadHistory(){
+    try {
+      localStorage.setItem(UPLOAD_HISTORY_KEY, JSON.stringify(robloxUploadHistory.slice(0, 100)));
+    } catch (err) {
+      $("robloxHistoryStatus").textContent = "No se pudo guardar el historial en este navegador.";
+    }
+  }
+
+  function formatFileSize(bytes){
+    return bytes >= 1048576
+      ? (bytes / 1048576).toFixed(1) + " MB"
+      : Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+
+  function updateSelectedRobloxFiles(){
+    const box = $("robloxUploadFileList");
+    box.innerHTML = "";
+    selectedRobloxFiles.forEach(fileItem => {
+      const item = document.createElement("div");
+      item.className = "upload-file-item";
+      const name = document.createElement("span");
+      name.textContent = fileItem.name;
+      const size = document.createElement("small");
+      size.textContent = formatFileSize(fileItem.size);
+      item.appendChild(name);
+      item.appendChild(size);
+      box.appendChild(item);
+    });
+    $("robloxUploadStatus").textContent = selectedRobloxFiles.length
+      ? selectedRobloxFiles.length + " archivo(s) seleccionado(s). Se subirán uno por uno."
+      : "Selecciona uno o varios audios para comenzar.";
+  }
+
+  function setRobloxUploadFiles(files){
+    selectedRobloxFiles = Array.from(files || []);
+    updateSelectedRobloxFiles();
+  }
+
+  const robloxUploadDrop = $("robloxUploadDrop");
+  const robloxUploadInput = $("robloxUploadFiles");
+  robloxUploadDrop.onclick = () => robloxUploadInput.click();
+  robloxUploadDrop.ondragover = event => {
+    event.preventDefault();
+    robloxUploadDrop.classList.add("over");
+  };
+  robloxUploadDrop.ondragleave = () => robloxUploadDrop.classList.remove("over");
+  robloxUploadDrop.ondrop = event => {
+    event.preventDefault();
+    robloxUploadDrop.classList.remove("over");
+    setRobloxUploadFiles(event.dataTransfer.files);
+  };
+  robloxUploadInput.onchange = () => {
+    setRobloxUploadFiles(robloxUploadInput.files);
+    robloxUploadInput.value = "";
+  };
+
+  $("clearRobloxUpload").onclick = () => setRobloxUploadFiles([]);
+
+  function getBrowserAudioDuration(fileItem){
+    return new Promise(resolve => {
+      const objectUrl = URL.createObjectURL(fileItem);
+      const audio = new Audio();
+      audio.preload = "metadata";
+      const finish = value => {
+        URL.revokeObjectURL(objectUrl);
+        audio.removeAttribute("src");
+        resolve(value);
+      };
+      audio.onloadedmetadata = () => finish(Number.isFinite(audio.duration) ? audio.duration : null);
+      audio.onerror = () => finish(null);
+      audio.src = objectUrl;
+    });
+  }
+
+  function moderationText(state){
+    if (state === "APPROVED") return "Aceptado";
+    if (state === "REJECTED") return "Rechazado";
+    if (state === "REVIEWING") return "En revisión";
+    if (state === "PROCESSING") return "Procesando en Roblox";
+    if (state === "FAILED") return "Error de subida";
+    return "Pendiente de revisión";
+  }
+
+  function moderationClass(state){
+    if (state === "APPROVED") return "approved";
+    if (state === "REJECTED" || state === "FAILED") return "rejected";
+    if (state === "REVIEWING" || state === "PROCESSING") return "reviewing";
+    return "";
+  }
+
+  function renderRobloxUploadHistory(){
+    const box = $("robloxUploadHistory");
+    box.innerHTML = "";
+    if (!robloxUploadHistory.length) {
+      const empty = document.createElement("div");
+      empty.className = "status";
+      empty.textContent = "Todavía no has subido audios desde este navegador.";
+      box.appendChild(empty);
+      return;
+    }
+
+    robloxUploadHistory.forEach(record => {
+      const item = document.createElement("div");
+      item.className = "part";
+      const left = document.createElement("div");
+      left.style.minWidth = "0";
+      const title = document.createElement("strong");
+      title.textContent = record.name || "Audio de Roblox";
+      const meta = document.createElement("div");
+      meta.className = "t";
+      meta.textContent = (record.assetId ? "ID: " + record.assetId : "Esperando ID de Roblox") +
+        (record.updatedAt ? " · " + new Date(record.updatedAt).toLocaleString() : "");
+      const badge = document.createElement("span");
+      badge.className = "status-pill " + moderationClass(record.state);
+      badge.textContent = moderationText(record.state);
+      left.appendChild(title);
+      left.appendChild(meta);
+      left.appendChild(badge);
+      item.appendChild(left);
+
+      const actions = document.createElement("div");
+      actions.className = "row";
+      if (record.assetId) {
+        const copy = document.createElement("button");
+        copy.className = "ghost";
+        copy.type = "button";
+        copy.textContent = "Copiar ID";
+        copy.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(record.assetId);
+            $("robloxHistoryStatus").textContent = "ID copiada: " + record.assetId;
+          } catch (_) {
+            $("robloxHistoryStatus").textContent = "No pude copiar automáticamente. ID: " + record.assetId;
+          }
+        };
+        actions.appendChild(copy);
+      }
+      const refresh = document.createElement("button");
+      refresh.className = "ghost";
+      refresh.type = "button";
+      refresh.textContent = "Actualizar";
+      refresh.onclick = async () => {
+        refresh.disabled = true;
+        await refreshOneRobloxUpload(record);
+        refresh.disabled = false;
+      };
+      actions.appendChild(refresh);
+      item.appendChild(actions);
+      box.appendChild(item);
+    });
+  }
+
+  async function callAudioWorker(path, payload, isForm){
+    if (!permissionsSession) throw new Error("Tu sesión venció. Vuelve a entrar con tu contraseña.");
+    const headers = { "Authorization": "Bearer " + permissionsSession };
+    if (!isForm) headers["Content-Type"] = "application/json";
+    const response = await fetch(PERMISSIONS_API_URL + path, {
+      method: "POST",
+      headers,
+      body: isForm ? payload : JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      permissionsSession = null;
+      throw new Error(data.error || "Sesión vencida. Vuelve a ingresar.");
+    }
+    if (!response.ok) {
+      let message = data.error || "Error del servidor (" + response.status + ").";
+      if (response.status === 429) {
+        const wait = Number(data.retryAfterSeconds || 0);
+        message += wait > 0
+          ? " Vuelve a probar dentro de aproximadamente " + wait + " segundos."
+          : " Espera un rato antes de volver a intentarlo; no repitas la carga varias veces seguidas.";
+        if (data.cfRay) message += " Referencia: " + data.cfRay + ".";
+      }
+      throw new Error(message);
+    }
+    return data;
+  }
+
+  async function refreshOneRobloxUpload(record){
+    try {
+      if (!record.assetId) {
+        if (!record.operationId) throw new Error("No hay Operation ID para consultar.");
+        const operation = await callAudioWorker("/audio/operation", { operationId: record.operationId }, false);
+        if (!operation.done) {
+          record.state = "PROCESSING";
+          record.updatedAt = new Date().toISOString();
+          saveRobloxUploadHistory();
+          renderRobloxUploadHistory();
+          return false;
+        }
+        if (operation.error) {
+          record.state = "FAILED";
+          record.error = operation.error.message || "Roblox no pudo completar la subida.";
+          throw new Error(record.error);
+        }
+        if (operation.assetId) record.assetId = String(operation.assetId);
+        if (operation.moderationState && operation.moderationState !== "PENDING") {
+          record.state = operation.moderationState;
+        }
+      }
+
+      if (record.assetId) {
+        const status = await callAudioWorker("/audio/status", { assetId: record.assetId }, false);
+        record.state = status.moderationState || "PENDING";
+        record.rawModerationState = status.rawModerationState || "";
+        record.displayName = status.displayName || record.displayName || "";
+        record.updatedAt = new Date().toISOString();
+      }
+
+      saveRobloxUploadHistory();
+      renderRobloxUploadHistory();
+      return record.state === "APPROVED" || record.state === "REJECTED" || record.state === "FAILED";
+    } catch (err) {
+      record.error = err.message || "No se pudo consultar el estado.";
+      if (!record.assetId) record.state = "FAILED";
+      record.updatedAt = new Date().toISOString();
+      saveRobloxUploadHistory();
+      renderRobloxUploadHistory();
+      $("robloxHistoryStatus").textContent = record.error;
+      return record.state === "FAILED";
+    }
+  }
+
+  async function watchRobloxUpload(record){
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const finished = await refreshOneRobloxUpload(record);
+      if (finished) return;
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    $("robloxHistoryStatus").textContent = "La revisión puede tardar más. Puedes volver a pulsar «Actualizar» cuando quieras.";
+  }
+
+  $("startRobloxUpload").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    if (!selectedRobloxFiles.length) {
+      $("robloxUploadStatus").textContent = "Primero selecciona uno o varios archivos.";
+      return;
+    }
+
+    const files = selectedRobloxFiles.slice();
+    const button = $("startRobloxUpload");
+    button.disabled = true;
+    $("robloxUploadProgress").style.width = "0%";
+    let uploaded = 0;
+
+    try {
+      for (let index = 0; index < files.length; index++) {
+        const fileItem = files[index];
+        const extension = (fileItem.name.split(".").pop() || "").toLowerCase();
+        if (!["mp3", "ogg", "wav", "flac"].includes(extension)) {
+          $("robloxUploadStatus").textContent = "❌ Formato no admitido: " + fileItem.name + ". Usa MP3, OGG, WAV o FLAC.";
+          continue;
+        }
+        if (fileItem.size <= 0 || fileItem.size >= 20 * 1024 * 1024) {
+          $("robloxUploadStatus").textContent = "❌ " + fileItem.name + " debe pesar menos de 20 MB.";
+          continue;
+        }
+
+        $("robloxUploadStatus").textContent = "Revisando duración de " + fileItem.name + "…";
+        const duration = await getBrowserAudioDuration(fileItem);
+        if (duration !== null && duration > 420) {
+          $("robloxUploadStatus").textContent = "❌ " + fileItem.name + " dura más de 7 minutos. Roblox no lo admite.";
+          continue;
+        }
+
+        const defaultName = fileItem.name.replace(/\.[^.]+$/, "").slice(0, 50);
+        const displayName = files.length === 1 && $("robloxUploadName").value.trim()
+          ? $("robloxUploadName").value.trim()
+          : defaultName;
+        const description = $("robloxUploadDescription").value.trim() || "Audio subido mediante DJS DE LA CHAMBA.";
+        const form = new FormData();
+        form.append("file", fileItem, fileItem.name);
+        form.append("displayName", displayName);
+        form.append("description", description);
+        if (duration !== null) form.append("durationSeconds", String(duration));
+
+        $("robloxUploadStatus").textContent = "Subiendo " + fileItem.name + " a Roblox (" + (index + 1) + " de " + files.length + ")…";
+        const result = await callAudioWorker("/audio/upload", form, true);
+        const record = {
+          id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + index),
+          name: displayName,
+          fileName: fileItem.name,
+          operationId: result.operationId,
+          assetId: "",
+          state: "PROCESSING",
+          updatedAt: new Date().toISOString()
+        };
+        robloxUploadHistory.unshift(record);
+        robloxUploadHistory = robloxUploadHistory.slice(0, 100);
+        saveRobloxUploadHistory();
+        renderRobloxUploadHistory();
+        uploaded++;
+        $("robloxUploadProgress").style.width = Math.round(((index + 1) / files.length) * 100) + "%";
+        watchRobloxUpload(record);
+      }
+
+      $("robloxUploadStatus").textContent = uploaded
+        ? "✅ " + uploaded + " archivo(s) enviado(s) a Roblox. El estado de cada uno aparecerá en la lista de revisión."
+        : "No se envió ningún archivo. Revisa los formatos, tamaño y duración.";
+      selectedRobloxFiles = [];
+      $("robloxUploadFileList").innerHTML = "";
+      $("robloxUploadFiles").value = "";
+    } catch (err) {
+      $("robloxUploadStatus").textContent = "❌ " + (err.message || "No se pudo subir el audio.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("refreshAllUploads").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const button = $("refreshAllUploads");
+    button.disabled = true;
+    $("robloxHistoryStatus").textContent = "Consultando estados con Roblox…";
+    for (const record of robloxUploadHistory) {
+      await refreshOneRobloxUpload(record);
+    }
+    $("robloxHistoryStatus").textContent = "Consulta terminada.";
+    button.disabled = false;
+  };
+
+  renderRobloxUploadHistory();
+
+
+  // ---------- EDITOR NORMAL: VELOCIDAD 1x, RECORTE, VOLUMEN Y FUNDIDOS ----------
+  let normalDecodedBuffer = null;
+  let normalSourceFile = null;
+  let normalPreviewUrl = null;
+
+  function normalStatus(message){ $("normalStatus").textContent = message; }
+  function normalSeconds(value){ return Number.isFinite(value) ? Math.max(0, value) : 0; }
+
+  function normalSelection(){
+    if (!normalDecodedBuffer) throw new Error("Primero selecciona un audio.");
+    const duration = normalDecodedBuffer.duration;
+    const start = normalSeconds(Number($("normalStart").value));
+    const endRaw = Number($("normalEnd").value);
+    const end = Number.isFinite(endRaw) ? Math.min(duration, endRaw) : duration;
+    if (start >= end) throw new Error("El inicio debe ser menor que el final.");
+    if (start >= duration || end <= 0) throw new Error("El recorte está fuera de la duración del audio.");
+    const durationOut = end - start;
+    return {
+      start, end, durationOut,
+      fadeIn: Math.min(normalSeconds(Number($("normalFadeIn").value)), durationOut / 2),
+      fadeOut: Math.min(normalSeconds(Number($("normalFadeOut").value)), durationOut / 2),
+      volume: Math.min(200, Math.max(0, Number($("normalVolume").value) || 0)) / 100
+    };
+  }
+
+  function updateNormalSummary(){
+    $("normalVolumeValue").textContent = $("normalVolume").value + " %";
+    if (!normalDecodedBuffer) return;
+    try {
+      const selected = normalSelection();
+      $("normalFinalDuration").textContent = fmt(selected.durationOut);
+      normalStatus("Recorte listo · Velocidad 1× · Duración final " + fmt(selected.durationOut) + ".");
+    } catch (err) {
+      $("normalFinalDuration").textContent = "—";
+      normalStatus("⚠️ " + err.message);
+    }
+  }
+
+  function makeNormalEditedChannels(){
+    const selected = normalSelection();
+    const buffer = normalDecodedBuffer;
+    const firstFrame = Math.max(0, Math.floor(selected.start * SR));
+    const lastFrame = Math.min(buffer.length, Math.floor(selected.end * SR));
+    const frameCount = lastFrame - firstFrame;
+    if (frameCount <= 0) throw new Error("El recorte no contiene audio.");
+
+    const output = [];
+    const channelCount = Math.max(1, Math.min(2, buffer.numberOfChannels));
+    for (let channel = 0; channel < channelCount; channel++) {
+      const source = buffer.getChannelData(channel);
+      const samples = new Int16Array(frameCount);
+      for (let i = 0; i < frameCount; i++) {
+        const elapsed = i / SR;
+        const remaining = (frameCount - i) / SR;
+        let envelope = 1;
+        if (selected.fadeIn > 0) envelope = Math.min(envelope, elapsed / selected.fadeIn);
+        if (selected.fadeOut > 0) envelope = Math.min(envelope, remaining / selected.fadeOut);
+        const value = source[firstFrame + i] * selected.volume * envelope;
+        const clipped = Math.max(-1, Math.min(1, value));
+        samples[i] = clipped < 0 ? Math.round(clipped * 32768) : Math.round(clipped * 32767);
+      }
+      output.push(samples);
+    }
+    return { channels: output, duration: frameCount / SR };
+  }
+
+  function clearNormalPreview(){
+    if (normalPreviewUrl) {
+      URL.revokeObjectURL(normalPreviewUrl);
+      normalPreviewUrl = null;
+    }
+    $("normalPlayer").pause();
+    $("normalPlayer").removeAttribute("src");
+    $("normalPlayer").classList.add("hide");
+    $("normalPlayer").load();
+  }
+
+  async function loadNormalAudio(fileItem){
+    clearNormalPreview();
+    normalDecodedBuffer = null;
+    normalSourceFile = null;
+    $("normalPreviewButton").disabled = true;
+    $("normalExportButton").disabled = true;
+    $("normalResetButton").disabled = true;
+    $("normalProgressWrap").classList.add("hide");
+    $("normalProgress").style.width = "0%";
+    $("normalFileName").textContent = "Ninguno";
+    $("normalDuration").textContent = "–";
+    $("normalFinalDuration").textContent = "–";
+    if (!fileItem) return;
+
+    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
+      normalStatus("El archivo debe pesar entre 1 byte y 100 MB para este editor normal.");
+      return;
+    }
+
+    try {
+      normalStatus("Leyendo " + fileItem.name + "…");
+      $("normalProgressWrap").classList.remove("hide");
+      $("normalProgress").style.width = "12%";
+      const bytes = await fileItem.arrayBuffer();
+      $("normalProgress").style.width = "35%";
+      const decoded = await decode(bytes);
+      if (!decoded || !decoded.length || !decoded.duration) throw new Error("No se pudo decodificar el audio.");
+      if (decoded.duration > 1800) throw new Error("Este editor normal admite hasta 30 minutos por archivo.");
+
+      normalDecodedBuffer = decoded;
+      normalSourceFile = fileItem;
+      const baseName = fileItem.name.replace(/\.[^.]+$/, "");
+      $("normalFileName").textContent = fileItem.name;
+      $("normalDuration").textContent = fmt(decoded.duration);
+      $("normalStart").value = "0";
+      $("normalEnd").value = decoded.duration.toFixed(1);
+      $("normalVolume").value = "100";
+      $("normalFadeIn").value = "0";
+      $("normalFadeOut").value = "0";
+      $("normalOutputName").value = baseName.slice(0, 80);
+      $("normalPreviewButton").disabled = false;
+      $("normalExportButton").disabled = false;
+      $("normalResetButton").disabled = false;
+      $("normalProgress").style.width = "100%";
+      updateNormalSummary();
+      normalStatus("✅ Audio cargado. Velocidad y tono originales: 1×. Ajusta el recorte o volumen y previsualiza.");
+    } catch (err) {
+      console.error("Editor normal:", err);
+      normalDecodedBuffer = null;
+      normalSourceFile = null;
+      $("normalProgress").style.width = "0%";
+      normalStatus("❌ " + (err.message || "No pude abrir el audio."));
+    }
+  }
+
+  const normalDrop = $("normalDrop");
+  const normalFileInput = $("normalFile");
+  normalDrop.onclick = () => normalFileInput.click();
+  normalDrop.ondragover = event => {
+    event.preventDefault();
+    normalDrop.classList.add("over");
+  };
+  normalDrop.ondragleave = () => normalDrop.classList.remove("over");
+  normalDrop.ondrop = event => {
+    event.preventDefault();
+    normalDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) loadNormalAudio(event.dataTransfer.files[0]);
+  };
+  normalFileInput.onchange = () => {
+    if (normalFileInput.files[0]) loadNormalAudio(normalFileInput.files[0]);
+    normalFileInput.value = "";
+  };
+
+  ["normalStart","normalEnd","normalVolume","normalFadeIn","normalFadeOut"].forEach(id => {
+    $(id).addEventListener("input", updateNormalSummary);
+    $(id).addEventListener("change", updateNormalSummary);
+  });
+
+  $("normalResetButton").onclick = () => {
+    if (!normalDecodedBuffer || !normalSourceFile) return;
+    $("normalStart").value = "0";
+    $("normalEnd").value = normalDecodedBuffer.duration.toFixed(1);
+    $("normalVolume").value = "100";
+    $("normalFadeIn").value = "0";
+    $("normalFadeOut").value = "0";
+    $("normalOutputName").value = normalSourceFile.name.replace(/\.[^.]+$/, "").slice(0, 80);
+    clearNormalPreview();
+    updateNormalSummary();
+    normalStatus("Ajustes restablecidos. Velocidad 1×.");
+  };
+
+  $("normalPreviewButton").onclick = async () => {
+    const button = $("normalPreviewButton");
+    button.disabled = true;
+    try {
+      normalStatus("Preparando previsualización a velocidad normal…");
+      const edited = makeNormalEditedChannels();
+      const wav = wavBlob(edited.channels, SR);
+      clearNormalPreview();
+      normalPreviewUrl = URL.createObjectURL(wav);
+      $("normalPlayer").src = normalPreviewUrl;
+      $("normalPlayer").classList.remove("hide");
+      $("normalPlayer").playbackRate = 1;
+      await $("normalPlayer").play();
+      normalStatus("▶ Previsualizando a 1× · " + fmt(edited.duration) + ". El audio no se acelera.");
+    } catch (err) {
+      normalStatus("❌ " + (err.message || "No se pudo preparar la vista previa."));
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("normalExportButton").onclick = async () => {
+    const button = $("normalExportButton");
+    button.disabled = true;
+    $("normalPreviewButton").disabled = true;
+    $("normalProgressWrap").classList.remove("hide");
+    $("normalProgress").style.width = "0%";
+    try {
+      if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página e inténtalo de nuevo.");
+      normalStatus("Aplicando recorte, volumen y fundidos…");
+      const edited = makeNormalEditedChannels();
+      normalStatus("Exportando MP3 a velocidad normal (1×)…");
+      const blob = await encodeMp3(edited.channels, progress => {
+        $("normalProgress").style.width = Math.round(progress * 100) + "%";
+      });
+      const typedName = safeName($("normalOutputName").value || "Audio editado");
+      const outputName = (typedName || "Audio editado") + ".mp3";
+      downloadBlob(blob, outputName);
+      normalStatus("✅ MP3 exportado: " + outputName + " · " + fmt(edited.duration) + " · 1× · " + (blob.size / 1048576).toFixed(1) + " MB. Revisa Descargas.");
+    } catch (err) {
+      console.error("Exportar editor normal:", err);
+      normalStatus("❌ " + (err.message || "No se pudo exportar el MP3."));
+    } finally {
+      button.disabled = false;
+      $("normalPreviewButton").disabled = !normalDecodedBuffer;
+    }
+  };
+
+  // ---------- EDITOR DE EFECTOS: VELOCIDAD, TONO, REVERB, ECO Y RUIDO ----------
+  let effectsDecodedBuffer = null;
+  let effectsSourceFile = null;
+  let effectsPreviewUrl = null;
+
+  const EFFECT_IDS = [
+    "effectsSpeed","effectsPitch","effectsReverb","effectsDecay",
+    "effectsEcho","effectsEchoTime","effectsEchoFeedback",
+    "effectsBass","effectsTreble","effectsDistortion",
+    "effectsVolume","effectsWhiteNoise"
+  ];
+
+  function effectsStatus(message){
+    $("effectsStatus").textContent = message;
+  }
+
+  function effectsSettings(){
+    return {
+      speed: Number($("effectsSpeed").value),
+      pitch: Number($("effectsPitch").value),
+      reverb: Number($("effectsReverb").value) / 100,
+      decay: Number($("effectsDecay").value),
+      echo: Number($("effectsEcho").value) / 100,
+      echoTime: Number($("effectsEchoTime").value) / 1000,
+      echoFeedback: Number($("effectsEchoFeedback").value) / 100,
+      bass: Number($("effectsBass").value),
+      treble: Number($("effectsTreble").value),
+      distortion: Number($("effectsDistortion").value),
+      volume: Number($("effectsVolume").value) / 100,
+      whiteNoise: Number($("effectsWhiteNoise").value) / 100
+    };
+  }
+
+  function updateEffectsLabels(){
+    $("effectsSpeedValue").textContent = Number($("effectsSpeed").value).toFixed(2) + "×";
+    const pitch = Number($("effectsPitch").value);
+    $("effectsPitchValue").textContent = (pitch > 0 ? "+" : "") + pitch + " semitonos";
+    $("effectsReverbValue").textContent = $("effectsReverb").value + " %";
+    $("effectsDecayValue").textContent = Number($("effectsDecay").value).toFixed(1) + " s";
+    $("effectsEchoValue").textContent = $("effectsEcho").value + " %";
+    $("effectsEchoTimeValue").textContent = $("effectsEchoTime").value + " ms";
+    $("effectsEchoFeedbackValue").textContent = $("effectsEchoFeedback").value + " %";
+    $("effectsBassValue").textContent = (Number($("effectsBass").value) > 0 ? "+" : "") + $("effectsBass").value + " dB";
+    $("effectsTrebleValue").textContent = (Number($("effectsTreble").value) > 0 ? "+" : "") + $("effectsTreble").value + " dB";
+    $("effectsDistortionValue").textContent = $("effectsDistortion").value + " %";
+    $("effectsVolumeValue").textContent = $("effectsVolume").value + " %";
+    $("effectsWhiteNoiseValue").textContent = $("effectsWhiteNoise").value + " %";
+
+    if (effectsDecodedBuffer) {
+      const settings = effectsSettings();
+      const rate = settings.speed * Math.pow(2, settings.pitch / 12);
+      $("effectsOutputDuration").textContent = fmt(effectsDecodedBuffer.duration / rate);
+    }
+  }
+
+  function clearEffectsPreview(){
+    if (effectsPreviewUrl) {
+      URL.revokeObjectURL(effectsPreviewUrl);
+      effectsPreviewUrl = null;
+    }
+    $("effectsPlayer").pause();
+    $("effectsPlayer").removeAttribute("src");
+    $("effectsPlayer").classList.add("hide");
+    $("effectsPlayer").load();
+  }
+
+  async function loadEffectsAudio(fileItem){
+    clearEffectsPreview();
+    effectsDecodedBuffer = null;
+    effectsSourceFile = null;
+    $("effectsPreview").disabled = true;
+    $("effectsExport").disabled = true;
+    $("effectsReset").disabled = true;
+    $("effectsProgressWrap").classList.add("hide");
+    $("effectsProgress").style.width = "0%";
+    $("effectsFileName").textContent = "Ninguno";
+    $("effectsOriginalDuration").textContent = "–";
+    $("effectsOutputDuration").textContent = "–";
+    if (!fileItem) return;
+
+    if (fileItem.size <= 0 || fileItem.size > 100 * 1024 * 1024) {
+      effectsStatus("El archivo debe pesar entre 1 byte y 100 MB.");
+      return;
+    }
+
+    try {
+      effectsStatus("Leyendo " + fileItem.name + "…");
+      $("effectsProgressWrap").classList.remove("hide");
+      $("effectsProgress").style.width = "15%";
+      const bytes = await fileItem.arrayBuffer();
+      $("effectsProgress").style.width = "35%";
+      const decoded = await decode(bytes);
+      if (!decoded || !decoded.length || !decoded.duration) throw new Error("No se pudo decodificar el audio.");
+      if (decoded.duration > 900) throw new Error("El editor de efectos admite hasta 15 minutos por audio.");
+
+      effectsDecodedBuffer = decoded;
+      effectsSourceFile = fileItem;
+      $("effectsFileName").textContent = fileItem.name;
+      $("effectsOriginalDuration").textContent = fmt(decoded.duration);
+      $("effectsOutputName").value = fileItem.name.replace(/\.[^.]+$/, "").slice(0, 80);
+      $("effectsProgress").style.width = "100%";
+      $("effectsPreview").disabled = false;
+      $("effectsExport").disabled = false;
+      $("effectsReset").disabled = false;
+      updateEffectsLabels();
+      effectsStatus("✅ Audio cargado. Elige los efectos y pulsa «Escuchar efectos» para previsualizar.");
+    } catch (err) {
+      console.error("Editor de efectos:", err);
+      effectsDecodedBuffer = null;
+      effectsSourceFile = null;
+      $("effectsProgress").style.width = "0%";
+      effectsStatus("❌ " + (err.message || "No pude abrir el audio."));
+    }
+  }
+
+  function makeDistortionCurve(amount){
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const k = Math.max(0, amount) * 3;
+    if (k <= 0) {
+      for (let i = 0; i < samples; i++) curve[i] = (i * 2 / (samples - 1)) - 1;
+      return curve;
+    }
+    const norm = Math.tanh(1 + k);
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2 / (samples - 1)) - 1;
+      curve[i] = Math.tanh((1 + k) * x) / norm;
+    }
+    return curve;
+  }
+
+  function makeReverbImpulse(context, channelCount, seconds){
+    const length = Math.max(1, Math.floor(context.sampleRate * seconds));
+    const impulse = context.createBuffer(channelCount, length, context.sampleRate);
+    for (let channel = 0; channel < channelCount; channel++) {
+      const data = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        const remaining = 1 - i / length;
+        data[i] = (Math.random() * 2 - 1) * remaining * remaining;
+      }
+    }
+    return impulse;
+  }
+
+  function floatBufferToInt16(buffer){
+    const channels = [];
+    for (let channel = 0; channel < Math.min(2, buffer.numberOfChannels); channel++) {
+      const source = buffer.getChannelData(channel);
+      const output = new Int16Array(source.length);
+      for (let i = 0; i < source.length; i++) {
+        const sample = Math.max(-1, Math.min(1, source[i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return channels;
+  }
+
+  async function renderEffectsAudio(){
+    if (!effectsDecodedBuffer) throw new Error("Primero selecciona un audio.");
+    const settings = effectsSettings();
+    const effectiveRate = settings.speed * Math.pow(2, settings.pitch / 12);
+    if (!Number.isFinite(effectiveRate) || effectiveRate <= 0) throw new Error("La velocidad o el tono no son válidos.");
+
+    const baseDuration = effectsDecodedBuffer.duration / effectiveRate;
+    const tailSeconds = Math.max(settings.reverb > 0 ? settings.decay : 0, settings.echo > 0 ? settings.echoTime * 4 : 0);
+    const outputDuration = baseDuration + tailSeconds;
+    if (outputDuration > 900) {
+      throw new Error("La combinación de velocidad y tono genera un audio de más de 15 minutos. Sube la velocidad o reduce el cambio de tono.");
+    }
+    const frameCount = Math.ceil(outputDuration * SR);
+    const channelCount = Math.max(1, Math.min(2, effectsDecodedBuffer.numberOfChannels));
+    const context = new OfflineAudioContext(channelCount, frameCount, SR);
+
+    const source = context.createBufferSource();
+    source.buffer = effectsDecodedBuffer;
+    source.playbackRate.value = settings.speed;
+    source.detune.value = settings.pitch * 100;
+
+    const bass = context.createBiquadFilter();
+    bass.type = "lowshelf";
+    bass.frequency.value = 120;
+    bass.gain.value = settings.bass;
+
+    const treble = context.createBiquadFilter();
+    treble.type = "highshelf";
+    treble.frequency.value = 8000;
+    treble.gain.value = settings.treble;
+
+    let postEq = treble;
+    const chainNodes = [bass, treble];
+    if (settings.distortion > 0) {
+      const shaper = context.createWaveShaper();
+      shaper.curve = makeDistortionCurve(settings.distortion / 100);
+      shaper.oversample = "4x";
+      treble.connect(shaper);
+      postEq = shaper;
+      chainNodes.push(shaper);
+    }
+
+    // Ruta seca principal: fuente → graves → agudos → (distorsión opcional) → volumen.
+    // Sin esta conexión, el audio original no llegaba al destino y el MP3 exportado podía quedar silencioso.
+    bass.connect(treble);
+
+    const master = context.createGain();
+    master.gain.value = settings.volume;
+
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = -3;
+    compressor.knee.value = 5;
+    compressor.ratio.value = 10;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.16;
+    master.connect(compressor);
+    compressor.connect(context.destination);
+
+    source.connect(bass);
+    postEq.connect(master);
+
+    if (settings.reverb > 0) {
+      const convolver = context.createConvolver();
+      convolver.normalize = true;
+      convolver.buffer = makeReverbImpulse(context, channelCount, settings.decay);
+      const reverbGain = context.createGain();
+      reverbGain.gain.value = settings.reverb * 0.75;
+      postEq.connect(convolver);
+      convolver.connect(reverbGain);
+      reverbGain.connect(master);
+    }
+
+    if (settings.echo > 0) {
+      const delay = context.createDelay(1);
+      delay.delayTime.value = settings.echoTime;
+      const feedback = context.createGain();
+      feedback.gain.value = Math.min(0.8, settings.echoFeedback);
+      const echoGain = context.createGain();
+      echoGain.gain.value = settings.echo * 0.7;
+      postEq.connect(delay);
+      delay.connect(feedback);
+      feedback.connect(delay);
+      delay.connect(echoGain);
+      echoGain.connect(master);
+    }
+
+    if (settings.whiteNoise > 0) {
+      const noiseBuffer = context.createBuffer(1, frameCount, SR);
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+      const noiseSource = context.createBufferSource();
+      const noiseGain = context.createGain();
+      noiseGain.gain.value = settings.whiteNoise * 0.35;
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.connect(noiseGain);
+      noiseGain.connect(master);
+      noiseSource.start(0);
+    }
+
+    source.start(0);
+    effectsStatus("Procesando audio y aplicando efectos…");
+    const rendered = await context.startRendering();
+    return {
+      channels: floatBufferToInt16(rendered),
+      duration: rendered.duration
+    };
+  }
+
+  const effectsDrop = $("effectsDrop");
+  const effectsFileInput = $("effectsFile");
+  effectsDrop.onclick = () => effectsFileInput.click();
+  effectsDrop.ondragover = event => {
+    event.preventDefault();
+    effectsDrop.classList.add("over");
+  };
+  effectsDrop.ondragleave = () => effectsDrop.classList.remove("over");
+  effectsDrop.ondrop = event => {
+    event.preventDefault();
+    effectsDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) loadEffectsAudio(event.dataTransfer.files[0]);
+  };
+  effectsFileInput.onchange = () => {
+    if (effectsFileInput.files[0]) loadEffectsAudio(effectsFileInput.files[0]);
+    effectsFileInput.value = "";
+  };
+
+  EFFECT_IDS.forEach(id => {
+    $(id).addEventListener("input", updateEffectsLabels);
+    $(id).addEventListener("change", updateEffectsLabels);
+  });
+
+  $("effectsReset").onclick = () => {
+    const defaults = {
+      effectsSpeed:1,effectsPitch:0,effectsReverb:25,effectsDecay:1.8,
+      effectsEcho:0,effectsEchoTime:300,effectsEchoFeedback:35,
+      effectsBass:0,effectsTreble:0,effectsDistortion:0,
+      effectsVolume:100,effectsWhiteNoise:0
+    };
+    Object.entries(defaults).forEach(([id,value]) => $(id).value = String(value));
+    clearEffectsPreview();
+    updateEffectsLabels();
+    effectsStatus("Efectos restablecidos a sus valores iniciales.");
+  };
+
+  $("effectsPreview").onclick = async () => {
+    const button = $("effectsPreview");
+    button.disabled = true;
+    try {
+      $("effectsProgressWrap").classList.remove("hide");
+      $("effectsProgress").style.width = "15%";
+      const rendered = await renderEffectsAudio();
+      $("effectsProgress").style.width = "85%";
+      const wav = wavBlob(rendered.channels, SR);
+      clearEffectsPreview();
+      effectsPreviewUrl = URL.createObjectURL(wav);
+      $("effectsPlayer").src = effectsPreviewUrl;
+      $("effectsPlayer").classList.remove("hide");
+      $("effectsPlayer").playbackRate = 1;
+      $("effectsProgress").style.width = "100%";
+      await $("effectsPlayer").play();
+      $("effectsOutputDuration").textContent = fmt(rendered.duration);
+      effectsStatus("▶ Vista previa lista · " + fmt(rendered.duration) + ". Si te gusta, exporta el MP3.");
+    } catch (err) {
+      console.error("Previsualización de efectos:", err);
+      effectsStatus("❌ " + (err.message || "No se pudieron aplicar los efectos."));
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("effectsExport").onclick = async () => {
+    const button = $("effectsExport");
+    button.disabled = true;
+    $("effectsPreview").disabled = true;
+    $("effectsProgressWrap").classList.remove("hide");
+    $("effectsProgress").style.width = "10%";
+    try {
+      if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página.");
+      const rendered = await renderEffectsAudio();
+      $("effectsProgress").style.width = "45%";
+      effectsStatus("Codificando MP3 con los efectos…");
+      const blob = await encodeMp3(rendered.channels, progress => {
+        $("effectsProgress").style.width = Math.round(45 + progress * 55) + "%";
+      });
+      const name = safeName($("effectsOutputName").value || "Audio con efectos") || "Audio con efectos";
+      const outputName = name + ".mp3";
+      downloadBlob(blob, outputName);
+      $("effectsOutputDuration").textContent = fmt(rendered.duration);
+      effectsStatus("✅ Exportado: " + outputName + " · " + fmt(rendered.duration) + " · MP3 · " + (blob.size / 1048576).toFixed(1) + " MB.");
+    } catch (err) {
+      console.error("Exportar efectos:", err);
+      effectsStatus("❌ " + (err.message || "No se pudo exportar el audio."));
+    } finally {
+      button.disabled = false;
+      $("effectsPreview").disabled = !effectsDecodedBuffer;
+    }
+  };
+
+  // ---------- DIVISOR DE AUDIO: SOLO CORTES, SIN EFECTOS ----------
+  let splitFileObject = null;
+  let splitBuffer = null;
+  let splitStreamKind = null;
+  let splitObjectUrl = null;
+  let splitBusy = false;
+
+  function splitStatus(message) {
+    $("splitStatus").textContent = message;
+  }
+
+  function splitFormatTime(seconds) {
+    const value = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(value / 3600);
+    const minutes = Math.floor((value % 3600) / 60);
+    const secs = value % 60;
+    return hours > 0 ? hours + ":" + String(minutes).padStart(2,"0") + ":" + String(secs).padStart(2,"0")
+      : minutes + ":" + String(secs).padStart(2,"0");
+  }
+
+  function splitWaitForMetadata(player) {
+    if (player.readyState >= 1 && Number.isFinite(player.duration)) return Promise.resolve(player.duration);
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        player.removeEventListener("loadedmetadata", loaded);
+        player.removeEventListener("error", failed);
+      };
+      const loaded = () => {
+        cleanup();
+        if (!Number.isFinite(player.duration) || player.duration <= 0) reject(new Error("No pude leer la duración del audio."));
+        else resolve(player.duration);
+      };
+      const failed = () => { cleanup(); reject(new Error("El navegador no pudo abrir este audio.")); };
+      player.addEventListener("loadedmetadata", loaded, { once: true });
+      player.addEventListener("error", failed, { once: true });
+      player.load();
+    });
+  }
+
+  function splitUpdatePlan() {
+    const duration = splitBuffer ? splitBuffer.duration : 0;
+    const minutes = Number($("splitMinutes").value) || 7;
+    const count = duration > 0 ? Math.ceil(duration / (minutes * 60)) : 0;
+    $("splitCount").textContent = duration > 0 ? String(count) : "–";
+    $("splitStart").disabled = !splitFileObject || splitBusy || count < 1;
+  }
+
+  async function splitLoadFile(fileItem) {
+    splitFileObject = null;
+    splitBuffer = null;
+    splitStreamKind = null;
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    $("splitProgress").style.width = "0%";
+    $("splitFileName").textContent = "Ninguno";
+    $("splitDuration").textContent = "–";
+    $("splitCount").textContent = "–";
+    if (!fileItem) return;
+
+    try {
+      const kind = await sniff(fileItem);
+      const isLongFormat = kind === "mp3" || kind === "wav";
+      const sizeLimit = isLongFormat ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
+      if (fileItem.size <= 0 || fileItem.size > sizeLimit) {
+        throw new Error("El archivo supera el límite de " + (isLongFormat ? "500 MB" : "100 MB") + ".");
+      }
+
+      splitStatus("Preparando el reproductor…");
+      if (splitObjectUrl) URL.revokeObjectURL(splitObjectUrl);
+      splitObjectUrl = URL.createObjectURL(fileItem);
+      const player = $("splitPlayer");
+      player.src = splitObjectUrl;
+      player.classList.remove("hide");
+      const duration = await splitWaitForMetadata(player);
+
+      if (duration > (isLongFormat ? 7200 : 900)) {
+        throw new Error(isLongFormat
+          ? "El límite es de 2 horas por archivo."
+          : "Para este formato el límite es de 15 minutos. Convierte el audio a MP3 o WAV para dividir grabaciones largas.");
+      }
+
+      if (isLongFormat) {
+        splitStreamKind = kind;
+        splitBuffer = { duration };
+      } else {
+        splitStatus("Leyendo el audio compatible…");
+        const decoded = await decode(await fileItem.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No pude decodificar el audio.");
+        splitBuffer = decoded;
+      }
+
+      splitFileObject = fileItem;
+      $("splitFileName").textContent = fileItem.name;
+      $("splitDuration").textContent = splitFormatTime(duration);
+      $("splitClear").disabled = false;
+      splitUpdatePlan();
+      splitStatus("✅ Audio listo. Elige cuánto debe durar cada parte.");
+    } catch (error) {
+      splitFileObject = null;
+      splitBuffer = null;
+      splitStreamKind = null;
+      $("splitPlayer").classList.add("hide");
+      splitStatus("❌ " + (error.message || "No pude abrir el audio."));
+    }
+  }
+
+  function splitBufferToInt16(buffer, start, length, channelCount) {
+    const channels = [];
+    for (let channel = 0; channel < channelCount; channel++) {
+      const source = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1));
+      const output = new Int16Array(length);
+      for (let i = 0; i < length; i++) {
+        const sample = Math.max(-1, Math.min(1, source[start + i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return channels;
+  }
+
+  async function splitRun() {
+    if (!splitFileObject || !splitBuffer || splitBusy) return;
+    if (typeof JSZip === "undefined" || typeof lamejs === "undefined") {
+      splitStatus("❌ No cargaron los módulos ZIP/MP3. Recarga con Ctrl + F5.");
+      return;
+    }
+
+    splitBusy = true;
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    $("splitMinutes").disabled = true;
+    $("splitProgress").style.width = "0%";
+
+    const file = splitFileObject;
+    const duration = splitBuffer.duration;
+    const partSeconds = Number($("splitMinutes").value) * 60;
+    const targetFrames = Math.round(partSeconds * SR);
+    const expectedParts = Math.ceil(duration / partSeconds);
+    const baseName = safeName(file.name.replace(/.[^.]+$/, "")) || "Audio";
+    const zip = new JSZip();
+    let channelCount = 0;
+    let partChunks = [];
+    let partFrames = 0;
+    let totalFrames = 0;
+    let partNumber = 0;
+
+    const flushPart = async () => {
+      if (!partFrames) return;
+      partNumber++;
+      const channels = partChunks.map(chunks => {
+        const result = new Int16Array(partFrames);
+        let offset = 0;
+        for (const chunk of chunks) {
+          result.set(chunk, offset);
+          offset += chunk.length;
+        }
+        return result;
+      });
+      splitStatus("Creando parte " + partNumber + " de " + expectedParts + " sin aplicar efectos…");
+      const blob = await encodeMp3(channels, progress => {
+        const overall = (totalFrames + partFrames * progress) / Math.max(1, Math.round(duration * SR));
+        $("splitProgress").style.width = Math.min(99, Math.round(overall * 100)) + "%";
+      });
+      const suffix = String(partNumber).padStart(2, "0");
+      zip.file(baseName + "_Parte_" + suffix + ".mp3", blob, { compression: "STORE" });
+      totalFrames += partFrames;
+      partFrames = 0;
+      partChunks = Array.from({ length: channelCount }, () => []);
+      await sleep();
+    };
+
+    const consumeBuffer = async (buffer, skipFrames = 0) => {
+      const availableChannels = Math.min(2, buffer.numberOfChannels);
+      if (!channelCount) {
+        channelCount = availableChannels;
+        partChunks = Array.from({ length: channelCount }, () => []);
+      }
+      let position = Math.max(0, Math.floor(skipFrames));
+      while (position < buffer.length) {
+        const take = Math.min(targetFrames - partFrames, buffer.length - position);
+        const sampleChannels = splitBufferToInt16(buffer, position, take, channelCount);
+        for (let channel = 0; channel < channelCount; channel++) {
+          partChunks[channel].push(sampleChannels[channel]);
+        }
+        partFrames += take;
+        position += take;
+        if (partFrames >= targetFrames) await flushPart();
+      }
+    };
+
+    try {
+      if (splitStreamKind === "mp3" || splitStreamKind === "wav") {
+        const report = p => {
+          splitStatus("Leyendo el archivo por bloques… " + Math.round(p * 100) + "%");
+        };
+        const chunks = splitStreamKind === "mp3"
+          ? mp3Chunks(file, report)
+          : wavChunks(file, report);
+        for await (const chunk of chunks) {
+          const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+            ? chunk.bytes.buffer
+            : chunk.bytes.slice().buffer;
+          const decoded = await decode(bytes);
+          await consumeBuffer(decoded, Number(chunk.skip) || 0);
+          await sleep();
+        }
+      } else {
+        await consumeBuffer(splitBuffer, 0);
+      }
+
+      await flushPart();
+      if (!partNumber) throw new Error("No se pudo extraer audio del archivo.");
+      splitStatus("Empaquetando " + partNumber + " partes en un ZIP…");
+      const blob = await zip.generateAsync(
+        { type: "blob", compression: "STORE" },
+        meta => { $("splitProgress").style.width = Math.min(99, Math.round(meta.percent)) + "%"; }
+      );
+      downloadBlob(blob, baseName + "_Partes.zip");
+      $("splitProgress").style.width = "100%";
+      splitStatus("✅ Listo: " + partNumber + " partes MP3 descargadas en un ZIP. No se aplicaron cambios de velocidad, tono, volumen ni efectos.");
+    } catch (error) {
+      console.error("Dividir audio:", error);
+      splitStatus("❌ " + (error.message || "No se pudo dividir el audio."));
+    } finally {
+      splitBusy = false;
+      $("splitMinutes").disabled = false;
+      $("splitClear").disabled = !splitFileObject;
+      splitUpdatePlan();
+    }
+  }
+
+  const splitDrop = $("splitDrop");
+  const splitFileInput = $("splitFile");
+  splitDrop.onclick = () => splitFileInput.click();
+  splitDrop.ondragover = event => { event.preventDefault(); splitDrop.classList.add("over"); };
+  splitDrop.ondragleave = () => splitDrop.classList.remove("over");
+  splitDrop.ondrop = event => {
+    event.preventDefault();
+    splitDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) splitLoadFile(event.dataTransfer.files[0]);
+  };
+  splitFileInput.onchange = () => {
+    if (splitFileInput.files[0]) splitLoadFile(splitFileInput.files[0]);
+    splitFileInput.value = "";
+  };
+  $("splitMinutes").onchange = splitUpdatePlan;
+  $("splitStart").onclick = splitRun;
+  $("splitClear").onclick = () => {
+    if (splitBusy) return;
+    if (splitObjectUrl) URL.revokeObjectURL(splitObjectUrl);
+    splitObjectUrl = null;
+    $("splitPlayer").pause();
+    $("splitPlayer").removeAttribute("src");
+    $("splitPlayer").load();
+    $("splitPlayer").classList.add("hide");
+    splitFileObject = null;
+    splitBuffer = null;
+    splitStreamKind = null;
+    $("splitFileName").textContent = "Ninguno";
+    $("splitDuration").textContent = "–";
+    $("splitCount").textContent = "–";
+    $("splitProgress").style.width = "0%";
+    $("splitStart").disabled = true;
+    $("splitClear").disabled = true;
+    splitStatus("Audio eliminado. Selecciona otro para comenzar.");
+  };
+
+  // ---------- DETECTOR DE CONCIERTOS ----------
+  let detectorFileObject = null;
+  let detectorBuffer = null;
+  let detectorStreamKind = null;
+  let detectorObjectUrl = null;
+  let detectorSongs = [];
+  let detectorVoiceMarkers = [];
+  let detectorBusy = false;
+
+  function detectorFormatTime(seconds) {
+    const value = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(value / 3600);
+    const minutes = Math.floor((value % 3600) / 60);
+    const secs = value % 60;
+    return hours > 0 ? hours + ":" + String(minutes).padStart(2,"0") + ":" + String(secs).padStart(2,"0")
+      : minutes + ":" + String(secs).padStart(2,"0");
+  }
+
+  function detectorOffsets() {
+    if (!detectorBuffer) return [];
+    const step = Number($("detectorInterval").value);
+    const offsets = [];
+    for (let seconds = 0; seconds < detectorBuffer.duration; seconds += step) {
+      if (detectorBuffer.duration - seconds >= 5) offsets.push(seconds);
+    }
+    return offsets;
+  }
+
+  function detectorStatus(message) {
+    $("detectorStatus").textContent = message;
+  }
+
+  function detectorRenderSongs() {
+    const box = $("detectorResults");
+    box.innerHTML = "";
+    if (!detectorSongs.length) {
+      box.textContent = "Todavía no hay canciones detectadas.";
+      return;
+    }
+    detectorSongs.forEach(song => {
+      const row = document.createElement("div");
+      row.className = "detector-result";
+      const time = document.createElement("strong");
+      time.className = "detector-time";
+      time.textContent = detectorFormatTime(song.startSeconds);
+      const info = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = song.title;
+      const artist = document.createElement("div");
+      artist.className = "detector-meta";
+      artist.textContent = song.artist + (song.album ? " · " + song.album : "");
+      const count = document.createElement("div");
+      count.className = "detector-meta";
+      count.textContent = "Primera muestra reconocida · " + song.samples + " coincidencias";
+      info.append(title, artist, count);
+      if (song.songLink) {
+        const link = document.createElement("a");
+        link.href = song.songLink;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Abrir canción";
+        info.appendChild(link);
+      }
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "ghost";
+      jump.textContent = "▶ Ir al tiempo";
+      jump.onclick = () => {
+        $("detectorPlayer").currentTime = song.startSeconds;
+        $("detectorPlayer").play().catch(() => {});
+      };
+      row.append(time, info, jump);
+      box.appendChild(row);
+    });
+  }
+
+  function detectorRenderMarkers() {
+    const box = $("detectorMarkers");
+    box.innerHTML = "";
+    if (!detectorVoiceMarkers.length) {
+      box.textContent = "No hay marcas manuales todavía.";
+      return;
+    }
+    detectorVoiceMarkers.slice().sort((a,b) => a.seconds - b.seconds).forEach(marker => {
+      const row = document.createElement("div");
+      row.className = "detector-marker";
+      const time = document.createElement("strong");
+      time.className = "detector-time";
+      time.textContent = detectorFormatTime(marker.seconds);
+      const label = document.createElement("span");
+      label.className = "detector-meta";
+      label.textContent = (marker.type === "voice" ? "🎙️ Entrada de voz" : "🎵 Inicio de canción") + (marker.note ? " · " + marker.note : "");
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "ghost";
+      jump.textContent = "Ir";
+      jump.onclick = () => {
+        $("detectorPlayer").currentTime = marker.seconds;
+        $("detectorPlayer").play().catch(() => {});
+      };
+      row.append(time, label, jump);
+      box.appendChild(row);
+    });
+  }
+
+  function detectorUpdateEstimate() {
+    const offsets = detectorOffsets();
+    $("detectorRequestCount").textContent = detectorBuffer ? String(offsets.length) : "–";
+    if (!detectorBuffer) return;
+    const step = Number($("detectorInterval").value);
+    $("detectorEstimate").textContent = offsets.length + " solicitudes aproximadas para " +
+      (detectorBuffer.duration / 60).toFixed(1) + " minutos. Se analiza hasta 12 segundos cada " +
+      step + " segundos. La prueba de AudD puede incluir 300 solicitudes totales; comprueba el saldo de tu cuenta.";
+    $("detectorStart").disabled = !permissionsSession || detectorBusy || offsets.length === 0 || offsets.length > 250;
+    if (offsets.length > 250) detectorStatus("Este análisis necesita " + offsets.length + " solicitudes. Elige un intervalo mayor (máximo 250 por análisis).");
+  }
+
+  function detectorMakeClipFromBuffer(buffer, startSeconds) {
+    const first = Math.max(0, Math.floor(startSeconds * SR));
+    const frames = Math.min(12 * SR, buffer.length - first);
+    if (frames < 5 * SR) return null;
+    const channels = [];
+    for (let channel = 0; channel < Math.min(2, buffer.numberOfChannels); channel++) {
+      const source = buffer.getChannelData(channel);
+      const output = new Int16Array(frames);
+      for (let i = 0; i < frames; i++) {
+        const sample = Math.max(-1, Math.min(1, source[first + i]));
+        output[i] = sample < 0 ? Math.round(sample * 32768) : Math.round(sample * 32767);
+      }
+      channels.push(output);
+    }
+    return { channels, duration: frames / SR };
+  }
+
+  function detectorMakeClip(startSeconds) {
+    return detectorBuffer && detectorBuffer.getChannelData
+      ? detectorMakeClipFromBuffer(detectorBuffer, startSeconds)
+      : null;
+  }
+
+  function detectorWaitForMetadata(player) {
+    if (player.readyState >= 1 && Number.isFinite(player.duration)) return Promise.resolve(player.duration);
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        player.removeEventListener("loadedmetadata", loaded);
+        player.removeEventListener("error", failed);
+      };
+      const loaded = () => {
+        cleanup();
+        if (!Number.isFinite(player.duration) || player.duration <= 0) {
+          reject(new Error("El navegador no pudo determinar la duración del archivo."));
+        } else resolve(player.duration);
+      };
+      const failed = () => { cleanup(); reject(new Error("El navegador no pudo abrir el audio. Prueba con MP3 o WAV.")); };
+      player.addEventListener("loadedmetadata", loaded, { once: true });
+      player.addEventListener("error", failed, { once: true });
+      player.load();
+    });
+  }
+
+  async function detectorLoadFile(fileItem) {
+    detectorFileObject = null;
+    detectorBuffer = null;
+    detectorStreamKind = null;
+    detectorSongs = [];
+    detectorVoiceMarkers = [];
+    detectorRenderSongs();
+    detectorRenderMarkers();
+    $("detectorStart").disabled = true;
+    $("detectorClear").disabled = true;
+    $("detectorMarkVoice").disabled = true;
+    $("detectorMarkSong").disabled = true;
+    $("detectorExport").disabled = true;
+    $("detectorProgress").style.width = "0%";
+    if (!fileItem) return;
+    if (fileItem.size <= 0 || fileItem.size > 500 * 1024 * 1024) {
+      detectorStatus("El archivo debe pesar entre 1 byte y 500 MB.");
+      return;
+    }
+    try {
+      detectorStatus("Preparando el reproductor y leyendo los datos del archivo…");
+      const kind = await sniff(fileItem);
+      if (kind === "other" && fileItem.size > 100 * 1024 * 1024) {
+        throw new Error("Para archivos OGG, M4A, FLAC o AAC se conserva el límite de 100 MB y 30 minutos. Convierte el concierto a MP3 o WAV para analizar hasta 2 horas.");
+      }
+      if (detectorObjectUrl) URL.revokeObjectURL(detectorObjectUrl);
+      detectorObjectUrl = URL.createObjectURL(fileItem);
+      const player = $("detectorPlayer");
+      player.src = detectorObjectUrl;
+      player.classList.remove("hide");
+      const duration = await detectorWaitForMetadata(player);
+      if (duration > 7200) throw new Error("El límite es de 2 horas por concierto.");
+
+      if (kind === "other") {
+        if (duration > 1800) throw new Error("Para conciertos de más de 30 minutos, convierte el archivo a MP3 o WAV para procesarlo por bloques sin llenar la memoria.");
+        detectorStatus("Decodificando el archivo (formato corto)…");
+        const decoded = await decode(await fileItem.arrayBuffer());
+        if (!decoded || !decoded.duration) throw new Error("No se pudo decodificar el archivo.");
+        detectorBuffer = decoded;
+      } else {
+        detectorStreamKind = kind;
+        detectorBuffer = { duration };
+      }
+
+      detectorFileObject = fileItem;
+      $("detectorFileName").textContent = fileItem.name;
+      $("detectorDuration").textContent = detectorFormatTime(duration);
+      detectorUpdateEstimate();
+      $("detectorClear").disabled = false;
+      $("detectorMarkVoice").disabled = false;
+      $("detectorMarkSong").disabled = false;
+      detectorStatus("✅ Concierto listo. Se leerá por bloques pequeños al iniciar el reconocimiento.");
+    } catch (error) {
+      detectorFileObject = null;
+      detectorBuffer = null;
+      detectorStreamKind = null;
+      $("detectorFileName").textContent = "Ninguno";
+      $("detectorDuration").textContent = "–";
+      $("detectorPlayer").classList.add("hide");
+      detectorStatus("❌ " + (error.message || "No pude leer el concierto."));
+    }
+  }
+
+  async function* detectorAudioSamples(offsets) {
+    if (!detectorStreamKind) {
+      for (const offset of offsets) {
+        const clip = detectorMakeClip(offset);
+        if (clip) yield { offset, clip };
+      }
+      return;
+    }
+
+    let timelineEnd = 0;
+    let nextIndex = 0;
+    const report = progress => {
+      detectorStatus("Preparando bloques de audio… " + Math.round(progress * 100) + "%");
+    };
+    const chunks = detectorStreamKind === "mp3"
+      ? mp3Chunks(detectorFileObject, report, 12)
+      : wavChunks(detectorFileObject, report, 12);
+
+    for await (const chunk of chunks) {
+      const bytes = chunk.bytes.buffer.byteLength === chunk.bytes.length
+        ? chunk.bytes.buffer
+        : chunk.bytes.slice().buffer;
+      const decoded = await decode(bytes);
+      const chunkStart = timelineEnd - (Number(chunk.skip) || 0) / SR;
+      const chunkEnd = chunkStart + decoded.duration;
+
+      while (nextIndex < offsets.length) {
+        const offset = offsets[nextIndex];
+        let localSeconds = offset - chunkStart;
+        if (localSeconds < -0.05) {
+          nextIndex++;
+          continue;
+        }
+        if (localSeconds < 0) localSeconds = 0;
+        if (localSeconds + 5 > decoded.duration) break;
+        const clip = detectorMakeClipFromBuffer(decoded, localSeconds);
+        if (!clip) break;
+        yield { offset, clip };
+        nextIndex++;
+      }
+
+      timelineEnd = chunkEnd;
+      await sleep();
+    }
+
+    if (nextIndex < offsets.length) {
+      throw new Error("No pude extraer todas las muestras del archivo. Comprueba que sea un MP3 o WAV válido e inténtalo de nuevo.");
+    }
+  }
+
+  function detectorAddMarker(type) {
+    const seconds = $("detectorPlayer").currentTime;
+    const note = $("detectorMarkerLabel").value.trim();
+    detectorVoiceMarkers.push({ type, seconds, note });
+    detectorRenderMarkers();
+    $("detectorExport").disabled = false;
+    detectorStatus((type === "voice" ? "Entrada de voz" : "Inicio de canción") + " marcada en " + detectorFormatTime(seconds) + ".");
+  }
+
+  function detectorCsv() {
+    const quote = value => '"' + String(value || "").replace(/"/g, '""') + '"';
+    const rows = [["Tipo", "Tiempo", "Canción", "Artista", "Nota"]];
+    detectorSongs.forEach(song => rows.push(["Canción detectada", detectorFormatTime(song.startSeconds), song.title, song.artist, song.album]));
+    detectorVoiceMarkers.forEach(marker => rows.push([
+      marker.type === "voice" ? "Entrada de voz (manual)" : "Inicio de canción (manual)",
+      detectorFormatTime(marker.seconds), "", "", marker.note
+    ]));
+    const csv = "\uFEFF" + rows.map(row => row.map(quote).join(",")).join("\r\n");
+    const base = safeName(detectorFileObject ? detectorFileObject.name.replace(/\.[^.]+$/, "") : "Concierto");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), (base || "Concierto") + "_detector.csv");
+  }
+
+  const detectorDrop = $("detectorDrop");
+  const detectorFileInput = $("detectorFile");
+  detectorDrop.onclick = () => detectorFileInput.click();
+  detectorDrop.ondragover = event => { event.preventDefault(); detectorDrop.classList.add("over"); };
+  detectorDrop.ondragleave = () => detectorDrop.classList.remove("over");
+  detectorDrop.ondrop = event => {
+    event.preventDefault();
+    detectorDrop.classList.remove("over");
+    if (event.dataTransfer.files[0]) detectorLoadFile(event.dataTransfer.files[0]);
+  };
+  detectorFileInput.onchange = () => {
+    if (detectorFileInput.files[0]) detectorLoadFile(detectorFileInput.files[0]);
+    detectorFileInput.value = "";
+  };
+  $("detectorInterval").onchange = detectorUpdateEstimate;
+  $("detectorMarkVoice").onclick = () => detectorAddMarker("voice");
+  $("detectorMarkSong").onclick = () => detectorAddMarker("song");
+  $("detectorExport").onclick = detectorCsv;
+
+  $("detectorClear").onclick = () => {
+    if (detectorObjectUrl) URL.revokeObjectURL(detectorObjectUrl);
+    detectorObjectUrl = null;
+    $("detectorPlayer").pause();
+    $("detectorPlayer").removeAttribute("src");
+    $("detectorPlayer").classList.add("hide");
+    $("detectorPlayer").load();
+    detectorFileObject = null;
+    detectorBuffer = null;
+    detectorStreamKind = null;
+    detectorSongs = [];
+    detectorVoiceMarkers = [];
+    $("detectorFileName").textContent = "Ninguno";
+    $("detectorDuration").textContent = "–";
+    $("detectorRequestCount").textContent = "–";
+    $("detectorProgress").style.width = "0%";
+    $("detectorStart").disabled = true;
+    $("detectorClear").disabled = true;
+    $("detectorMarkVoice").disabled = true;
+    $("detectorMarkSong").disabled = true;
+    $("detectorExport").disabled = true;
+    detectorRenderSongs();
+    detectorRenderMarkers();
+    detectorStatus("Grabación eliminada. Selecciona otra para comenzar.");
+  };
+
+  $("detectorStart").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("detector");
+      return;
+    }
+    if (!detectorBuffer || detectorBusy) return;
+    const offsets = detectorOffsets();
+    if (!offsets.length || offsets.length > 250) {
+      detectorStatus("El análisis debe tener entre 1 y 250 muestras. Elige un intervalo mayor.");
+      return;
+    }
+    const step = Number($("detectorInterval").value);
+    if (!confirm("Se enviarán " + offsets.length + " muestras de hasta 12 segundos a AudD. La prueba gratuita puede incluir 300 solicitudes totales. ¿Continuar?")) return;
+
+    detectorBusy = true;
+    detectorSongs = [];
+    detectorRenderSongs();
+    $("detectorStart").disabled = true;
+    $("detectorProgress").style.width = "0%";
+    let noMatch = 0;
+    let failed = 0;
+
+    try {
+      let completed = 0;
+      for await (const sample of detectorAudioSamples(offsets)) {
+        const offset = sample.offset;
+        const clip = sample.clip;
+        if (typeof lamejs === "undefined") throw new Error("No cargó el codificador MP3. Recarga la página.");
+        const clipMp3 = await encodeMp3(clip.channels, () => {});
+        const form = new FormData();
+        form.append("file", new File([clipMp3], "concert-sample.mp3", { type: "audio/mpeg" }));
+        form.append("durationSeconds", String(clip.duration));
+        detectorStatus("Reconociendo muestra " + (completed + 1) + " de " + offsets.length + " · " + detectorFormatTime(offset) + "…");
+
+        try {
+          const data = await callAudioWorker("/detector/recognize", form, true);
+          if (data.matched && data.result) {
+            const result = data.result;
+            const title = result.title || "Canción desconocida";
+            const artist = result.artist || "Artista desconocido";
+            const previous = detectorSongs[detectorSongs.length - 1];
+            if (previous &&
+                previous.title.toLowerCase() === title.toLowerCase() &&
+                previous.artist.toLowerCase() === artist.toLowerCase() &&
+                offset - previous.lastSampleSeconds <= step * 2) {
+              previous.lastSampleSeconds = offset;
+              previous.samples++;
+              if (!previous.album && result.album) previous.album = result.album;
+              if (!previous.songLink && result.songLink) previous.songLink = result.songLink;
+            } else {
+              detectorSongs.push({
+                title,
+                artist,
+                album: result.album || "",
+                songLink: result.songLink || "",
+                startSeconds: offset,
+                lastSampleSeconds: offset,
+                samples: 1,
+                auddTimecode: result.timecode || ""
+              });
+            }
+            detectorRenderSongs();
+            $("detectorExport").disabled = false;
+          } else {
+            noMatch++;
+          }
+        } catch (error) {
+          failed++;
+          console.warn("Concert sample error", error);
+          throw error;
+        }
+
+        completed++;
+        $("detectorProgress").style.width = Math.round(completed / offsets.length * 100) + "%";
+        detectorStatus("Analizadas " + completed + " de " + offsets.length + " muestras · " +
+          detectorSongs.length + " segmentos reconocidos…");
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (completed !== offsets.length) {
+        throw new Error("El análisis solo pudo extraer " + completed + " de " + offsets.length + " muestras. Usa MP3 o WAV y vuelve a intentarlo.");
+      }
+
+      detectorStatus("✅ Análisis terminado: " + detectorSongs.length + " segmentos reconocidos, " +
+        noMatch + " muestras sin coincidencia y " + failed + " errores. Los tiempos son aproximados al primer reconocimiento.");
+    } catch (error) {
+      detectorStatus("❌ " + (error.message || "No se pudo terminar el análisis."));
+    } finally {
+      detectorBusy = false;
+      detectorUpdateEstimate();
+      $("detectorClear").disabled = !detectorFileObject;
+      $("detectorMarkVoice").disabled = !detectorFileObject;
+      $("detectorMarkSong").disabled = !detectorFileObject;
+      $("detectorExport").disabled = detectorSongs.length === 0 && detectorVoiceMarkers.length === 0;
+    }
+  };
+
+  detectorRenderSongs();
+  detectorRenderMarkers();
+
+  // ---------- IMPORTAR ASSET SUBIDO MANUALMENTE EN CREATOR DASHBOARD ----------
+  function getManualAssetId(){
+    return $("manualRobloxAssetId").value.trim();
+  }
+
+  function saveManualAssetToHistory(assetId, status){
+    let record = robloxUploadHistory.find(item => String(item.assetId || "") === String(assetId));
+    if (!record) {
+      record = {
+        id: "manual-" + assetId,
+        name: status.displayName || "Audio subido desde Creator Dashboard",
+        fileName: "",
+        operationId: "",
+        assetId: String(assetId),
+        state: status.moderationState || "PENDING",
+        updatedAt: new Date().toISOString(),
+        manual: true
+      };
+      robloxUploadHistory.unshift(record);
+    } else {
+      record.name = status.displayName || record.name;
+      record.state = status.moderationState || record.state;
+      record.updatedAt = new Date().toISOString();
+      record.manual = record.manual || true;
+    }
+    robloxUploadHistory = robloxUploadHistory.slice(0, 100);
+    saveRobloxUploadHistory();
+    renderRobloxUploadHistory();
+  }
+
+  $("checkManualRobloxAsset").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const assetId = getManualAssetId();
+    if (!/^\d+$/.test(assetId)) {
+      $("manualRobloxAssetStatus").textContent = "Escribe un Asset ID numérico válido.";
+      return;
+    }
+    const button = $("checkManualRobloxAsset");
+    button.disabled = true;
+    $("manualRobloxAssetStatus").textContent = "Consultando el estado en Roblox…";
+    try {
+      const status = await callAudioWorker("/audio/status", { assetId }, false);
+      saveManualAssetToHistory(assetId, status);
+      $("manualRobloxAssetStatus").textContent =
+        "✅ " + (status.displayName || "Audio " + assetId) +
+        " · Estado: " + moderationText(status.moderationState) +
+        " · ID: " + assetId;
+    } catch (err) {
+      $("manualRobloxAssetStatus").textContent = "❌ " + (err.message || "No se pudo consultar el audio.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  $("grantManualRobloxAsset").onclick = async () => {
+    if (!permissionsSession) {
+      showPermissionLogin("upload");
+      return;
+    }
+    const assetId = getManualAssetId();
+    if (!/^\d+$/.test(assetId)) {
+      $("manualRobloxAssetStatus").textContent = "Escribe un Asset ID numérico válido.";
+      return;
+    }
+    if (!confirm("¿Conceder permiso de uso del audio " + assetId + " a la experiencia La Chamba (6475547874)?")) return;
+
+    const button = $("grantManualRobloxAsset");
+    button.disabled = true;
+    $("manualRobloxAssetStatus").textContent = "Concediendo permiso con las dos cuentas…";
+    try {
+      const data = await callAudioWorker("/permissions", { ids: [assetId] }, false);
+      const authorized = Number(data.autorizadasTotal || 0);
+      const failed = Number(data.fallidasTotal || 0);
+      if (authorized > 0) {
+        $("manualRobloxAssetStatus").textContent =
+          "✅ Permiso concedido a La Chamba para el ID " + assetId +
+          ". " + authorized + " cuenta(s) lo autorizaron.";
+      } else {
+        $("manualRobloxAssetStatus").textContent =
+          "❌ Ninguna de las dos cuentas pudo conceder permiso a este audio. Revisa que la cuenta que lo subió tenga acceso de administración.";
+      }
+      const existing = robloxUploadHistory.find(item => String(item.assetId || "") === assetId);
+      if (existing) {
+        existing.permissionGranted = authorized > 0;
+        existing.permissionCheckAt = new Date().toISOString();
+        saveRobloxUploadHistory();
+        renderRobloxUploadHistory();
+      }
+    } catch (err) {
+      $("manualRobloxAssetStatus").textContent = "❌ " + (err.message || "No se pudo conceder el permiso.");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+
+  // ---------- PUENTE LOCAL PARA LA CHAMBA STUDIOS ----------
+  const LOCAL_BRIDGE_URL = "http://127.0.0.1:3001";
+  let webBridgeToken = sessionStorage.getItem("djsLocalBridgeToken") || "";
+  $("bridgeToken").value = webBridgeToken;
+
+  function bridgeSetStatus(message, isError=false) {
+    $("bridgeStatus").textContent = message;
+    $("bridgeStatus").style.color = isError ? "#ff8b8b" : "";
+  }
+  function bridgeSetCommandStatus(message, isError=false) {
+    $("bridgeCommandStatus").textContent = message;
+    $("bridgeCommandStatus").style.color = isError ? "#ff8b8b" : "";
+  }
+  async function bridgeRequest(path, method="GET", payload=null) {
+    if (!webBridgeToken) throw new Error("Pega el token local del conector y pulsa Conectar.");
+    const headers = { "Authorization": "Bearer " + webBridgeToken };
+    const options = { method, headers, cache: "no-store" };
+    if (payload !== null) {
+      headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(payload);
+    }
+    let response;
+    try { response = await fetch(LOCAL_BRIDGE_URL + path, options); }
+    catch {
+      throw new Error("No pude acceder a 127.0.0.1:3001. Inicia el conector local, revisa el permiso de red local del navegador y vuelve a probar.");
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "El puente local respondió con HTTP " + response.status + ".");
+    return data;
+  }
+  async function bridgeCheckConnection() {
+    bridgeSetStatus("Conectando con el conector local…");
+    try {
+      const data = await bridgeRequest("/health");
+      bridgeSetStatus("✅ Conector local activo. " + (data.message || "Listo para enviar comandos al puente Roblox."));
+      bridgeSetCommandStatus("Conectado. Puedes enviar comandos a Roblox.");
+      return true;
+    } catch (error) {
+      bridgeSetStatus("❌ " + error.message, true);
+      return false;
+    }
+  }
+  async function bridgeSendCommand(command) {
+    if (!permissionsSession) {
+      bridgeSetCommandStatus("Tu sesión de administrador venció. Vuelve a entrar.", true);
+      showPermissionLogin("bot");
+      return;
+    }
+    try {
+      if (!webBridgeToken) {
+        bridgeSetCommandStatus("Primero conecta el puente local.", true);
+        return;
+      }
+      const data = await bridgeRequest("/comando", "POST", { comando: command });
+      bridgeSetCommandStatus("✅ " + command + " · " + (data.message || "Enviado al puente de Roblox."));
+      bridgeConsoleLog(command, true, data.message || "El puente recibió el comando.");
+    } catch (error) {
+      bridgeSetCommandStatus("❌ " + error.message, true);
+      bridgeConsoleLog(command, false, error.message);
+    }
+  }
+  const bridgeConsoleAllowed = new Set(["chamba","m2","musica","force","multimusica","volumen","pitch","realista","norealista","tocando","skip","pause","resume","resetear","mododj","nomododj","loop","unloop"]);
+  function bridgeConsoleLog(command, ok, message) {
+    const history = $("bridgeConsoleHistory");
+    if (!history) return;
+    const empty = history.querySelector(".tip");
+    if (empty) history.innerHTML = "";
+    const item = document.createElement("div");
+    item.style.cssText = "padding:9px 11px;border-radius:10px;background:var(--panel2,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.08));font-size:13px";
+    const top = document.createElement("div");
+    top.style.cssText = "display:flex;justify-content:space-between;gap:8px;margin-bottom:4px";
+    const state = document.createElement("strong");
+    state.textContent = (ok ? "✅ Enviado" : "❌ Error");
+    state.style.color = ok ? "#54d68b" : "#ff7373";
+    const time = document.createElement("span");
+    time.textContent = new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+    time.style.opacity = ".65";
+    top.append(state,time);
+    const cmd = document.createElement("code");
+    cmd.textContent = command;
+    cmd.style.cssText = "display:block;overflow-wrap:anywhere";
+    const detail = document.createElement("div");
+    detail.textContent = message;
+    detail.style.cssText = "margin-top:4px;opacity:.75";
+    item.append(top,cmd,detail);
+    history.prepend(item);
+    while(history.children.length>30) history.lastElementChild.remove();
+  }
+  async function bridgeConsoleSubmit() {
+    const input = $("bridgeConsoleInput");
+    let raw = input.value.trim();
+    if (!raw) return;
+    raw = raw.replace(/^\//,"");
+    const commandName = raw.split(/\s+/,1)[0].toLowerCase();
+    if (!bridgeConsoleAllowed.has(commandName)) {
+      bridgeConsoleLog(raw,false,"Comando no reconocido. Revisa los accesos rápidos.");
+      return;
+    }
+    if (!permissionsSession) {
+      bridgeConsoleLog(raw,false,"Tu sesión de administrador venció. Vuelve a iniciar sesión.");
+      showPermissionLogin("bot");
+      return;
+    }
+    if (!webBridgeToken) {
+      bridgeConsoleLog(raw,false,"Primero conecta el puente de Roblox.");
+      bridgeSetCommandStatus("Conecta el puente antes de enviar comandos.",true);
+      return;
+    }
+    $("bridgeConsoleSend").disabled = true;
+    try {
+      const data = await bridgeRequest("/comando","POST",{comando:raw});
+      bridgeConsoleLog(raw,true,data.message || "El puente recibió el comando.");
+      bridgeSetCommandStatus("✅ " + raw + " · " + (data.message || "Enviado al puente de Roblox."));
+      input.value = "";
+    } catch(error) {
+      bridgeConsoleLog(raw,false,error.message);
+      bridgeSetCommandStatus("❌ " + error.message,true);
+    } finally {
+      $("bridgeConsoleSend").disabled = false;
+      input.focus();
+    }
+  }
+  $("bridgeConsoleSend").onclick = bridgeConsoleSubmit;
+  $("bridgeConsoleInput").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();bridgeConsoleSubmit();}});
+  document.querySelectorAll("[data-console-fill]").forEach(button=>button.addEventListener("click",()=>{
+    const input=$("bridgeConsoleInput"); input.value=button.dataset.consoleFill; input.focus();
+  }));
+  $("bridgeConsoleClear").onclick=()=>{$("bridgeConsoleHistory").innerHTML='<div class="tip">Historial limpiado.</div>';};
+
+  function bridgeNumber(value, min, max, label) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < min || number > max) throw new Error(label + " debe estar entre " + min + " y " + max + ".");
+    return number;
+  }
+
+  $("bridgeConnect").onclick = async () => {
+    const token = $("bridgeToken").value.trim();
+    if (!token) {
+      bridgeSetStatus("Pega el WEB_BRIDGE_TOKEN configurado en el conector de tu PC.", true);
+      return;
+    }
+    webBridgeToken = token;
+    sessionStorage.setItem("djsLocalBridgeToken", token);
+    $("bridgeConnect").disabled = true;
+    await bridgeCheckConnection();
+    $("bridgeConnect").disabled = false;
+  };
+  $("bridgeDisconnect").onclick = () => {
+    webBridgeToken = "";
+    sessionStorage.removeItem("djsLocalBridgeToken");
+    $("bridgeToken").value = "";
+    bridgeSetStatus("Desconectado.");
+    bridgeSetCommandStatus("Conecta el puente local para continuar.");
+  };
+
+  $("bridgeM2Send").onclick = () => {
+    const dj = $("bridgeDjName").value.trim();
+    const message = $("bridgeM2Text").value.trim();
+    if (!dj || !message) return bridgeSetCommandStatus("Escribe el nombre del DJ y el mensaje M2.", true);
+    bridgeSendCommand("m2 " + dj.replace(/[|\r\n]/g, " ").slice(0,50) + "|" + message.slice(0,350));
+  };
+  $("bridgeChambaSend").onclick = () => {
+    const message = $("bridgeChambaText").value.trim();
+    if (!message) return bridgeSetCommandStatus("Escribe el anuncio de La Chamba.", true);
+    bridgeSendCommand("chamba " + message.slice(0,350));
+  };
+  function bridgeReadMusicCommand(prefix) {
+    const id = $("bridgeMusicId").value.trim();
+    const pitchText = $("bridgeMusicPitch").value.trim();
+    if (!/^\d+$/.test(id)) throw new Error("El ID de audio debe contener solo números.");
+    let command = prefix + " " + id;
+    if (pitchText) command += " " + bridgeNumber(pitchText, 0.1, 3, "Pitch");
+    return command;
+  }
+  $("bridgeMusicSend").onclick = () => {
+    try { bridgeSendCommand(bridgeReadMusicCommand("musica")); }
+    catch (error) { bridgeSetCommandStatus("❌ " + error.message, true); }
+  };
+  $("bridgeForceSend").onclick = () => {
+    try { bridgeSendCommand(bridgeReadMusicCommand("force")); }
+    catch (error) { bridgeSetCommandStatus("❌ " + error.message, true); }
+  };
+  $("bridgeMultiSend").onclick = () => {
+    const ids = $("bridgeMultiIds").value.split(/[,\s;]+/).map(v=>v.trim()).filter(Boolean);
+    if (!ids.length || ids.length > 25 || ids.some(id=>!/^\d+$/.test(id))) {
+      bridgeSetCommandStatus("Introduce entre 1 y 25 IDs numéricas separadas por comas.", true);
+      return;
+    }
+    bridgeSendCommand("multimusica " + ids.join(","));
+  };
+  document.querySelectorAll("[data-bridge-command]").forEach(button => {
+    button.addEventListener("click", () => bridgeSendCommand(button.dataset.bridgeCommand));
+  });
+  $("bridgeVolumeSend").onclick = () => {
+    try { bridgeSendCommand("volumen " + bridgeNumber($("bridgeVolume").value, 0, 10, "Volumen")); }
+    catch (error) { bridgeSetCommandStatus("❌ " + error.message, true); }
+  };
+  $("bridgePitchSend").onclick = () => {
+    try { bridgeSendCommand("pitch " + bridgeNumber($("bridgePitch").value, 0.1, 3, "Pitch")); }
+    catch (error) { bridgeSetCommandStatus("❌ " + error.message, true); }
+  };
+  $("bridgeRealistaOn").onclick = () => {
+    const mode = $("bridgeRealistaMode").value;
+    bridgeSendCommand(mode === "normal" ? "realista" : "realista " + mode);
+  };
+  $("bridgeRealistaOff").onclick = () => {
+    const mode = $("bridgeRealistaMode").value;
+    bridgeSendCommand(mode === "normal" ? "norealista" : "norealista " + mode);
+  };
+  $("bridgeNowSend").onclick = () => {
+    const dj = $("bridgeNowDj").value.trim();
+    if (!dj) return bridgeSetCommandStatus("Escribe el nombre del DJ.", true);
+    bridgeSendCommand("tocando " + dj.slice(0,80));
+  };
+
+})();
+</script>
+</body>
+</html>
