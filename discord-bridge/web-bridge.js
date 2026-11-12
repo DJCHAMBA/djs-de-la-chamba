@@ -17,7 +17,8 @@ if (TARGET.protocol !== "http:" || !["127.0.0.1", "localhost", "::1"].includes(T
   process.exit(1);
 }
 
-const SIMPLE = new Set(["skip", "pause", "resume", "resetear", "mododj", "nomododj", "loop", "unloop"]);
+const SIMPLE = new Set(["skip", "pause", "resume", "resetear", "mododj", "nomododj", "loop", "unloop", "efectos apagar"]);
+const EFFECT_COMMAND = /^efecto .+ (?:on|off)$/i;
 const COMMAND_PATTERNS = [
   /^m2 [^\r\n|]{1,50}\|[^\r\n]{1,350}$/u,
   /^chamba [^\r\n]{1,350}$/u,
@@ -72,7 +73,7 @@ function validCommand(value) {
   if(typeof value!=="string") return false;
   const command=value.trim();
   if(!command||command.length>1000000||/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(command)) return false;
-  return SIMPLE.has(command)||COMMAND_PATTERNS.some(pattern=>pattern.test(command));
+  return SIMPLE.has(command)||EFFECT_COMMAND.test(command)||COMMAND_PATTERNS.some(pattern=>pattern.test(command));
 }
 const server=http.createServer(async(req,res)=>{
   if(!setCors(req,res)) return sendJson(res,403,{ok:false,error:"Origen no autorizado."});
