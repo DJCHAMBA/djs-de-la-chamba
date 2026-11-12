@@ -44,6 +44,7 @@ function validateCommand(raw) {
 }
 
 ipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
+ipcMain.handle("audio-tools:open", () => { createAudioToolsWindow(); return { ok: true }; });
 ipcMain.handle("settings:get", () => readSettings());
 ipcMain.handle("settings:save", (_, value) => saveSettings(value));
 
@@ -109,6 +110,24 @@ function createAudioEditorWindow() {
   audioEditorWindow.on("closed", () => { audioEditorWindow = null; });
   audioEditorWindow.loadFile(path.join(__dirname, "audio-editor.html"));
   return audioEditorWindow;
+}
+
+let audioToolsWindow = null;
+function createAudioToolsWindow() {
+  if (audioToolsWindow && !audioToolsWindow.isDestroyed()) {
+    audioToolsWindow.focus();
+    return audioToolsWindow;
+  }
+  audioToolsWindow = new BrowserWindow({
+    width: 1180, height: 900, minWidth: 760, minHeight: 640,
+    backgroundColor: "#090a0d", title: "Herramientas de audio Roblox · DJS DE LA CHAMBA",
+    autoHideMenuBar: true, show: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  audioToolsWindow.once("ready-to-show", () => audioToolsWindow.show());
+  audioToolsWindow.on("closed", () => { audioToolsWindow = null; });
+  audioToolsWindow.loadFile(path.join(__dirname, "audio-tools.html"));
+  return audioToolsWindow;
 }
 
 function createWindow() {
