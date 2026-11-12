@@ -1,0 +1,9 @@
+{
+  "name":"panel-la-chamba","version":"1.0.0","description":"Panel de comandos de La Chamba para Roblox",
+  "main":"src/main.cjs","scripts":{"start":"electron .","build:win":"electron-builder --win nsis --x64"},
+  "devDependencies":{"electron":"45.2.3","electron-builder":"26.18.1"},
+  "build":{"appId":"com.lachamba.panel","productName":"Panel La Chamba","executableName":"Panel-La-Chamba","asar":true,
+    "directories":{"output":"dist","buildResources":"build"},"files":["src/**/*","build/**/*","package.json"],
+    "win":{"target":[{"target":"nsis","arch":["x64"]}],"artifactName":"PANEL-LA-CHAMBA-Setup-1.0.0-x64.exe"},
+    "nsis":{"oneClick":false,"perMachine":false,"allowElevation":true,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"createStartMenuShortcut":true,"shortcutName":"Panel La Chamba","runAfterFinish":true,"deleteAppDataOnUninstall":false,"language":"Spanish","installerLanguages":["es_ES"]}}
+}
