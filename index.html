@@ -594,6 +594,36 @@
           <button id="bridgeNowSend" class="ghost" type="button">🎧 Anunciar</button>
         </div>
       </div>
+      <div class="card" style="margin-top:16px;border:1px solid rgba(0,220,255,.28)">
+        <div class="step"><span class="num">⌨️</span>Consola de comandos · estilo Discord</div>
+        <p class="tip">Escribe el comando como lo harías en Discord. También puedes usar los accesos rápidos.</p>
+        <label class="lbl" for="bridgeConsoleInput">Comando</label>
+        <div class="row" style="margin-top:7px;align-items:stretch">
+          <input id="bridgeConsoleInput" type="text" autocomplete="off" spellcheck="false" placeholder="Ej. /musica 131242819094093 0.4" style="flex:1;min-width:180px">
+          <button class="cyan" id="bridgeConsoleSend" type="button">Enviar ↗</button>
+        </div>
+        <div class="row" style="margin-top:10px;gap:7px;flex-wrap:wrap">
+          <button class="ghost" type="button" data-console-fill="/chamba ">📢 chamba</button>
+          <button class="ghost" type="button" data-console-fill="/m2 ">💬 m2</button>
+          <button class="ghost" type="button" data-console-fill="/musica ">🎵 musica</button>
+          <button class="ghost" type="button" data-console-fill="/force ">⚡ force</button>
+          <button class="ghost" type="button" data-console-fill="/multimusica ">🎶 multimusica</button>
+          <button class="ghost" type="button" data-console-fill="/skip">⏭️ skip</button>
+          <button class="ghost" type="button" data-console-fill="/pause">⏸️ pause</button>
+          <button class="ghost" type="button" data-console-fill="/resume">▶️ resume</button>
+          <button class="ghost" type="button" data-console-fill="/volumen ">🔊 volumen</button>
+          <button class="ghost" type="button" data-console-fill="/pitch ">🎚️ pitch</button>
+          <button class="ghost" type="button" data-console-fill="/realista">✨ realista</button>
+          <button class="ghost" type="button" data-console-fill="/mododj">🎧 mododj</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px">
+          <strong>Historial de actividad</strong>
+          <button class="ghost" id="bridgeConsoleClear" type="button">Limpiar</button>
+        </div>
+        <div id="bridgeConsoleHistory" aria-live="polite" style="margin-top:9px;max-height:230px;overflow:auto;display:flex;flex-direction:column;gap:7px">
+          <div class="tip">Todavía no hay comandos enviados desde esta consola.</div>
+        </div>
+      </div>
       <div class="status" id="bridgeCommandStatus">Los comandos aparecerán aquí.</div>
       <p class="tip">Los permisos de audios se siguen gestionando desde «Permisos Roblox (Admin)». La clave API de Roblox nunca pasa por este panel.</p>
     </div>
@@ -3954,10 +3984,80 @@
       }
       const data = await bridgeRequest("/comando", "POST", { comando: command });
       bridgeSetCommandStatus("✅ " + command + " · " + (data.message || "Enviado al puente de Roblox."));
+      bridgeConsoleLog(command, true, data.message || "El puente recibió el comando.");
     } catch (error) {
       bridgeSetCommandStatus("❌ " + error.message, true);
+      bridgeConsoleLog(command, false, error.message);
     }
   }
+  const bridgeConsoleAllowed = new Set(["chamba","m2","musica","force","multimusica","volumen","pitch","realista","norealista","tocando","skip","pause","resume","resetear","mododj","nomododj","loop","unloop"]);
+  function bridgeConsoleLog(command, ok, message) {
+    const history = $("bridgeConsoleHistory");
+    if (!history) return;
+    const empty = history.querySelector(".tip");
+    if (empty) history.innerHTML = "";
+    const item = document.createElement("div");
+    item.style.cssText = "padding:9px 11px;border-radius:10px;background:var(--panel2,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.08));font-size:13px";
+    const top = document.createElement("div");
+    top.style.cssText = "display:flex;justify-content:space-between;gap:8px;margin-bottom:4px";
+    const state = document.createElement("strong");
+    state.textContent = (ok ? "✅ Enviado" : "❌ Error");
+    state.style.color = ok ? "#54d68b" : "#ff7373";
+    const time = document.createElement("span");
+    time.textContent = new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+    time.style.opacity = ".65";
+    top.append(state,time);
+    const cmd = document.createElement("code");
+    cmd.textContent = command;
+    cmd.style.cssText = "display:block;overflow-wrap:anywhere";
+    const detail = document.createElement("div");
+    detail.textContent = message;
+    detail.style.cssText = "margin-top:4px;opacity:.75";
+    item.append(top,cmd,detail);
+    history.prepend(item);
+    while(history.children.length>30) history.lastElementChild.remove();
+  }
+  async function bridgeConsoleSubmit() {
+    const input = $("bridgeConsoleInput");
+    let raw = input.value.trim();
+    if (!raw) return;
+    raw = raw.replace(/^\//,"");
+    const commandName = raw.split(/\s+/,1)[0].toLowerCase();
+    if (!bridgeConsoleAllowed.has(commandName)) {
+      bridgeConsoleLog(raw,false,"Comando no reconocido. Revisa los accesos rápidos.");
+      return;
+    }
+    if (!permissionsSession) {
+      bridgeConsoleLog(raw,false,"Tu sesión de administrador venció. Vuelve a iniciar sesión.");
+      showPermissionLogin("bot");
+      return;
+    }
+    if (!webBridgeToken) {
+      bridgeConsoleLog(raw,false,"Primero conecta el puente de Roblox.");
+      bridgeSetCommandStatus("Conecta el puente antes de enviar comandos.",true);
+      return;
+    }
+    $("bridgeConsoleSend").disabled = true;
+    try {
+      const data = await bridgeRequest("/comando","POST",{comando:raw});
+      bridgeConsoleLog(raw,true,data.message || "El puente recibió el comando.");
+      bridgeSetCommandStatus("✅ " + raw + " · " + (data.message || "Enviado al puente de Roblox."));
+      input.value = "";
+    } catch(error) {
+      bridgeConsoleLog(raw,false,error.message);
+      bridgeSetCommandStatus("❌ " + error.message,true);
+    } finally {
+      $("bridgeConsoleSend").disabled = false;
+      input.focus();
+    }
+  }
+  $("bridgeConsoleSend").onclick = bridgeConsoleSubmit;
+  $("bridgeConsoleInput").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();bridgeConsoleSubmit();}});
+  document.querySelectorAll("[data-console-fill]").forEach(button=>button.addEventListener("click",()=>{
+    const input=$("bridgeConsoleInput"); input.value=button.dataset.consoleFill; input.focus();
+  }));
+  $("bridgeConsoleClear").onclick=()=>{$("bridgeConsoleHistory").innerHTML='<div class="tip">Historial limpiado.</div>';};
+
   function bridgeNumber(value, min, max, label) {
     const number = Number(value);
     if (!Number.isFinite(number) || number < min || number > max) throw new Error(label + " debe estar entre " + min + " y " + max + ".");
