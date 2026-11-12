@@ -36,8 +36,10 @@ function validateCommand(raw) {
   if (command.length > 1000000) throw new Error("La solicitud supera el tamaño máximo seguro de 1 MB.");
   if (/[\x00-\x1f]/.test(command)) throw new Error("El comando contiene caracteres no permitidos.");
   const name = command.split(/\s+/, 1)[0].toLowerCase();
-  const allowed = ["chamba", "m2", "musica", "force", "multimusica", "volumen", "pitch", "realista", "norealista", "tocando", "skip", "pause", "resume", "resetear", "mododj", "nomododj", "loop", "unloop", "pinata", "fuegos", "mexico", "lazer", "espuma", "burbujas", "dinero", "temblor", "resetmapa", "explotar", "mapa1", "mapa", "clima", "tematica", "diseno"];
+  const allowed = ["chamba", "m2", "musica", "force", "multimusica", "volumen", "pitch", "realista", "norealista", "tocando", "skip", "pause", "resume", "resetear", "mododj", "nomododj", "loop", "unloop", "pinata", "fuegos", "mexico", "lazer", "espuma", "burbujas", "dinero", "temblor", "resetmapa", "explotar", "mapa1", "mapa", "clima", "tematica", "diseno", "efecto", "efectos"];
   if (!allowed.includes(name)) throw new Error("Comando no reconocido. Usa uno de los accesos rápidos disponibles.");
+  if (name === "efecto" && !/^efecto .+ (on|off)$/i.test(command)) throw new Error("Formato de efecto inválido.");
+  if (name === "efectos" && command !== "efectos apagar") throw new Error("Acción de efectos inválida.");
   return command;
 }
 
