@@ -9,11 +9,12 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/PanelTheme"
         android:supportsRtl="true">
+        <activity android:name=".DesktopPanelActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity android:name=".RobloxToolsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity
-            android:name=".PanelActivity"
+            android:name=".DesktopPanelActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
