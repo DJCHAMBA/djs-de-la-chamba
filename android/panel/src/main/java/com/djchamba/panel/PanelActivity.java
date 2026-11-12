@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 import java.util.regex.*;
 import org.json.JSONObject;
-import org.json.JSONObject;
 
 public class PanelActivity extends Activity {
     private static final int BG=0xFF090817, CARD=0xFF17132B, FIELD=0xFF0D0B1B, LINE=0xFF40305F, WHITE=0xFFF7F2FF, MUTED=0xFFB8AACD, BLUE=0xFF873BFF, GREEN=0xFF4BD49A, RED=0xFFFF6E9B;
@@ -41,7 +40,7 @@ public class PanelActivity extends Activity {
         LinearLayout header=row();android.widget.ImageView logo=new android.widget.ImageView(this);logo.setImageResource(R.drawable.panel_launcher_foreground);logo.setBackground(shape(0xFF241044,0xFF8D42FF,16));logo.setPadding(dp(5),dp(5),dp(5),dp(5));header.addView(logo,new LinearLayout.LayoutParams(dp(58),dp(58)));LinearLayout titles=column();titles.setPadding(dp(12),0,0,0);titles.addView(text("PANEL LA CHAMBA",20,WHITE,true));titles.addView(text("MOBILE  ·  DJ CONTROL SYSTEM",10,PINK,true));header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         TextView hero=text("Tu cabina de comandos.\nLa Chamba en tu bolsillo.",25,WHITE,true);LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.setMargins(0,dp(22),0,dp(6));root.addView(hero,hp);root.addView(text("Controla tu servidor de Roblox desde el teléfono.",13,MUTED,false));
         LinearLayout statusRow=row();status=text("●  Listo para conectar",12,0xFFFFC45C,true);status.setPadding(dp(13),dp(10),dp(13),dp(10));status.setBackground(shape(CARD,LINE,24));LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-2,-2);sp.setMargins(0,dp(18),0,dp(12));root.addView(statusRow);statusRow.addView(status,sp);
-        musicCard();messageCard();announceCard();multiCard();audioCard();playbackCard();connectionCard();historyCard();
+        musicCard();messageCard();announceCard();multiCard();audioCard();playbackCard();mapCommandsCard();connectionCard();historyCard();
         TextView footer=text("PANEL LA CHAMBA · APLICACIÓN ANDROID NATIVA",9,0xFF687991,true);footer.setGravity(Gravity.CENTER);LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-1,-2);fp.setMargins(0,dp(20),0,0);root.addView(footer,fp);
     }
     private LinearLayout card(String title,String subtitle){LinearLayout c=column();c.setPadding(dp(15),dp(15),dp(15),dp(15));c.setBackground(shape(CARD,LINE,17));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,dp(8));root.addView(c,p);c.addView(text(title,15,WHITE,true));if(subtitle!=null&&!subtitle.isEmpty()){TextView sub=text(subtitle,11,MUTED,false);sub.setPadding(0,dp(5),0,dp(8));c.addView(sub);}return c;}
@@ -57,6 +56,22 @@ public class PanelActivity extends Activity {
     private void audioCard(){LinearLayout c=card("🎚️  Audio y DJ","Ajusta parámetros y anuncia quién está tocando.");volume=field(c,"VOLUMEN (0–10)","5",false);volume.setText("5");pitch=field(c,"PITCH (0.1–3)","1",false);pitch.setText("1");addButton(c,"Aplicar volumen",false,()->numberCommand("volumen",volume,0,10));addButton(c,"Aplicar pitch",false,()->numberCommand("pitch",pitch,.1,3));djNow=field(c,"DJ QUE ESTÁ TOCANDO","Nombre del DJ",false);addButton(c,"🎧 Anunciar DJ",false,()->{String n=djNow.getText().toString().trim();if(n.isEmpty()){toast("Escribe el nombre del DJ.");return;}send("tocando "+n);});}
     private void numberCommand(String cmd,EditText e,double min,double max){try{double n=Double.parseDouble(e.getText().toString().trim());if(n<min||n>max)throw new Exception();send(cmd+" "+e.getText().toString().trim());}catch(Exception ex){toast("Valor fuera del rango permitido.");}}
     private void playbackCard(){LinearLayout c=card("⏯️  Reproducción y modos","Controles rápidos para el sistema de música.");String[][] items={{"⏭ Siguiente","skip"},{"⏸ Pausar","pause"},{"▶ Continuar","resume"},{"⏮ Reiniciar","resetear"},{"🎧 Activar modo DJ","mododj"},{"🚫 Desactivar modo DJ","nomododj"},{"🔁 Activar loop","loop"},{"↩ Quitar loop","unloop"},{"✨ Realista","realista"},{"🌙 No realista","norealista"}};for(String[] it:items)addButton(c,it[0],false,()->send(it[1]));}
+    private void mapCommandsCard(){
+        LinearLayout c=card("🗺️  Eventos y control del mapa","Comandos nuevos compatibles con el puente Roblox.");
+        String[] labels={"🎉 Piñata","🎆 Fuegos artificiales","🇲🇽 Evento México","🔦 Show láser","🫧 Fiesta de espuma","🫧 Lluvia de burbujas","💸 Lluvia de dinero","🌎 Terremoto","🧹 Restaurar mapa","💥 Cuenta regresiva de explosión","🏡 Cargar Hacienda La Chamba","🗺️ Mapa","🌦️ Clima","🎨 Temática","🪩 Diseño del piso"};
+        String[] commands={"pinata","fuegos","mexico","lazer","espuma","burbujas","dinero","temblor","resetmapa","explotar","mapa1","mapa","clima","tematica","diseno"};
+        Spinner spinner=new Spinner(this);ArrayAdapter<String> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels);spinner.setAdapter(adapter);c.addView(spinner);
+        EditText args=field(c,"ARGUMENTOS (SI APLICA)","Ej. lluvia · navidad · 12 · off",false);
+        addButton(c,"🚀 Ejecutar comando",true,()->{
+            int index=spinner.getSelectedItemPosition();String name=commands[index],value=args.getText().toString().trim();
+            boolean required=name.equals("mapa")||name.equals("clima")||name.equals("tematica")||name.equals("diseno");
+            if(required&&value.isEmpty()){toast("Este comando necesita argumentos.");return;}
+            if(name.equals("diseno")&&!value.matches("([1-9]|[1-6][0-9]|7[0-5])")){toast("El diseño debe ser un número del 1 al 75.");return;}
+            if(name.equals("clima")&&!value.matches("(?i)(normal|dia|noche|nublado|lluvia|tormenta|nieve)")){toast("Clima: normal, dia, noche, nublado, lluvia, tormenta o nieve.");return;}
+            send(name+(value.isEmpty()?"":" "+value));
+        });
+        TextView note=text("Otros comandos del bot, como fly, god, aura, dj o panelmusica, requieren el contexto de Roblox/Consola Admin y no están disponibles por este puente directo.",10,MUTED,false);note.setPadding(0,dp(6),0,0);c.addView(note);
+    }
     private void connectionCard(){LinearLayout c=card("⚙️  Conexión del servidor","Dirección del puente HTTP de Roblox en Clouding.");endpoint=field(c,"ENDPOINT","http://187.33.156.186:3000/comando",false);endpoint.setText(prefs.getString("endpoint",DEFAULT_URL));addButton(c,"Guardar dirección",false,()->saveEndpoint());}
     private void saveEndpoint(){String s=endpoint.getText().toString().trim();try{URL u=new URL(s);if(!u.getProtocol().equals("http")&&!u.getProtocol().equals("https"))throw new Exception();prefs.edit().putString("endpoint",s).apply();toast("Dirección guardada.");}catch(Exception e){toast("Dirección HTTP/HTTPS inválida.");}}
     private void historyCard(){LinearLayout c=card("📜  Actividad reciente","Últimos resultados de envío.");logList=column();c.addView(logList);TextView empty=text("Aún no has enviado comandos.",11,MUTED,false);logList.addView(empty);}
