@@ -113,20 +113,24 @@ function createAudioEditorWindow() {
 }
 
 let audioToolsWindow = null;
+let audioToolsCorsConfigured = false;
 function createAudioToolsWindow() {
   // El Worker privado solo acepta el origen oficial de GitHub Pages.
   // Para esta ventana local de Electron, reenviamos ese origen y adaptamos
   // únicamente la cabecera CORS de la respuesta dentro de la sesión de escritorio.
-  const workerFilter = { urls: ["https://djs-chamba-permissions.jnew123gta5.workers.dev/*"] };
-  session.defaultSession.webRequest.onBeforeSendHeaders(workerFilter, (details, callback) => {
-    details.requestHeaders.Origin = "https://djchamba.github.io";
-    callback({ requestHeaders: details.requestHeaders });
-  });
-  session.defaultSession.webRequest.onHeadersReceived(workerFilter, (details, callback) => {
-    const headers = details.responseHeaders || {};
-    headers["access-control-allow-origin"] = ["null"];
-    callback({ responseHeaders: headers });
-  });
+  if (!audioToolsCorsConfigured) {
+    const workerFilter = { urls: ["https://djs-chamba-permissions.jnew123gta5.workers.dev/*"] };
+    session.defaultSession.webRequest.onBeforeSendHeaders(workerFilter, (details, callback) => {
+      details.requestHeaders.Origin = "https://djchamba.github.io";
+      callback({ requestHeaders: details.requestHeaders });
+    });
+    session.defaultSession.webRequest.onHeadersReceived(workerFilter, (details, callback) => {
+      const headers = details.responseHeaders || {};
+      headers["access-control-allow-origin"] = ["null"];
+      callback({ responseHeaders: headers });
+    });
+    audioToolsCorsConfigured = true;
+  }
   if (audioToolsWindow && !audioToolsWindow.isDestroyed()) {
     audioToolsWindow.focus();
     return audioToolsWindow;
