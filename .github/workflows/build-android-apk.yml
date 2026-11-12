@@ -43,7 +43,10 @@ jobs:
       - name: Build native debug APK
         run: gradle --no-daemon --stacktrace -p android assembleDebug
 
-      - name: Build native Panel La Chamba APK\n        run: gradle --no-daemon --stacktrace -p android :panel:assembleDebug\n\n      - name: Verify APK
+      - name: Build native Panel La Chamba APK\n        run: gradle --no-daemon --stacktrace -p android :panel:assembleDebug\n\n      - name: Build native Panel La Chamba APK
+        run: gradle --no-daemon --stacktrace -p android :panel:assembleDebug
+
+      - name: Verify APK
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
           ls -lh android/app/build/outputs/apk/debug/app-debug.apk\n          test -s android/panel/build/outputs/apk/debug/panel-debug.apk\n          ls -lh android/panel/build/outputs/apk/debug/panel-debug.apk
@@ -52,7 +55,20 @@ jobs:
             exit 1
           fi
 
-      - name: Upload Panel La Chamba native APK\n        uses: actions/upload-artifact@v4\n        with:\n          name: PANEL-LA-CHAMBA-Native-Android-APK\n          path: android/panel/build/outputs/apk/debug/panel-debug.apk\n          if-no-files-found: error\n          retention-days: 30\n\n      - name: Upload native APK
+      - name: Upload Panel La Chamba native APK\n        uses: actions/upload-artifact@v4\n        with:\n          name: PANEL-LA-CHAMBA-Native-Android-APK\n          path: android/panel/build/outputs/apk/debug/panel-debug.apk\n          if-no-files-found: error\n          retention-days: 30\n\n      - name: Verify Panel La Chamba APK
+        run: |
+          test -s android/panel/build/outputs/apk/debug/panel-debug.apk
+          ls -lh android/panel/build/outputs/apk/debug/panel-debug.apk
+
+      - name: Upload Panel La Chamba native APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PANEL-LA-CHAMBA-Native-Android-APK
+          path: android/panel/build/outputs/apk/debug/panel-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
           name: DJS-DE-LA-CHAMBA-Native-Android-APK
