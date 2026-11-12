@@ -21,7 +21,8 @@ import org.json.JSONObject;
 
 public class PanelActivity extends Activity {
     private static final int BG=0xFF090817, CARD=0xFF17132B, FIELD=0xFF0D0B1B, LINE=0xFF40305F, WHITE=0xFFF7F2FF, MUTED=0xFFB8AACD, BLUE=0xFF873BFF, GREEN=0xFF4BD49A, RED=0xFFFF6E9B;
-    private static final String DEFAULT_URL="http://187.33.156.186:3000/comando";\n    private static final int PINK=0xFFFF4FD8;
+    private static final String DEFAULT_URL="http://187.33.156.186:3000/comando";
+    private static final int PINK=0xFFFF4FD8;
     private final ExecutorService executor=Executors.newSingleThreadExecutor();
     private SharedPreferences prefs;
     private LinearLayout root, logList;
