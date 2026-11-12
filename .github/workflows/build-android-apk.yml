@@ -1,4 +1,4 @@
-name: Build DJS DE LA CHAMBA Native Android APK
+name: Build Native Android Apps
 
 on:
   push:
@@ -15,10 +15,9 @@ permissions:
 
 jobs:
   build:
-    name: Compile native Android APK
+    name: Compile native Android APKs
     runs-on: ubuntu-latest
     timeout-minutes: 45
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,25 +39,22 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Build native debug APK
-        run: gradle --no-daemon --stacktrace -p android assembleDebug
+      - name: Build existing DJS native app
+        run: gradle --no-daemon --stacktrace -p android :app:assembleDebug
 
-      - name: Build native Panel La Chamba APK\n        run: gradle --no-daemon --stacktrace -p android :panel:assembleDebug\n\n      - name: Build native Panel La Chamba APK
+      - name: Build Panel La Chamba native app
         run: gradle --no-daemon --stacktrace -p android :panel:assembleDebug
 
-      - name: Verify APK
+      - name: Verify both APKs
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk\n          test -s android/panel/build/outputs/apk/debug/panel-debug.apk\n          ls -lh android/panel/build/outputs/apk/debug/panel-debug.apk
-          if grep -R "android.webkit.WebView" android/app/src/main/java; then
-            echo "WebView code found in native app source."
+          test -s android/panel/build/outputs/apk/debug/panel-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/panel/build/outputs/apk/debug/panel-debug.apk
+          if grep -R "android.webkit.WebView" android/panel/src/main/java; then
+            echo "WebView code found in native Panel La Chamba app."
             exit 1
           fi
-
-      - name: Upload Panel La Chamba native APK\n        uses: actions/upload-artifact@v4\n        with:\n          name: PANEL-LA-CHAMBA-Native-Android-APK\n          path: android/panel/build/outputs/apk/debug/panel-debug.apk\n          if-no-files-found: error\n          retention-days: 30\n\n      - name: Verify Panel La Chamba APK
-        run: |
-          test -s android/panel/build/outputs/apk/debug/panel-debug.apk
-          ls -lh android/panel/build/outputs/apk/debug/panel-debug.apk
 
       - name: Upload Panel La Chamba native APK
         uses: actions/upload-artifact@v4
@@ -68,7 +64,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload native APK
+      - name: Upload DJS audio native APK
         uses: actions/upload-artifact@v4
         with:
           name: DJS-DE-LA-CHAMBA-Native-Android-APK
