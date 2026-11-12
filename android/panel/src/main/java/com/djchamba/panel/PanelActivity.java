@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 import java.util.regex.*;
 import org.json.JSONObject;
+import org.json.JSONObject;
 
 public class PanelActivity extends Activity {
     private static final int BG=0xFF080D18, CARD=0xFF101A2A, FIELD=0xFF080F1B, LINE=0xFF293A53, WHITE=0xFFF0F5FF, MUTED=0xFF9EACC2, BLUE=0xFF287CFF, GREEN=0xFF4BD49A, RED=0xFFFF6E7D;
@@ -59,7 +60,29 @@ public class PanelActivity extends Activity {
     private void saveEndpoint(){String s=endpoint.getText().toString().trim();try{URL u=new URL(s);if(!u.getProtocol().equals("http")&&!u.getProtocol().equals("https"))throw new Exception();prefs.edit().putString("endpoint",s).apply();toast("Dirección guardada.");}catch(Exception e){toast("Dirección HTTP/HTTPS inválida.");}}
     private void historyCard(){LinearLayout c=card("📜  Actividad reciente","Últimos resultados de envío.");logList=column();c.addView(logList);TextView empty=text("Aún no has enviado comandos.",11,MUTED,false);logList.addView(empty);}
     private void music(boolean force){String id=musicId.getText().toString().trim();if(!id.matches("\\d{1,25}")){toast("Escribe un ID de audio numérico.");return;}String p=musicPitch.getText().toString().trim();String cmd=(force?"force ":"musica ")+id;if(!p.isEmpty())try{double n=Double.parseDouble(p);if(n<.1||n>3)throw new Exception();cmd+=" "+p;}catch(Exception e){toast("Pitch debe estar entre 0.1 y 3.");return;}send(cmd);}
-    private void send(String command){if(pending>0){toast("Espera a que termine el envío anterior.");return;}saveEndpoint();pending++;status.setText("●  Enviando comando…");status.setTextColor(0xFFFFC45C);final String endpointUrl=prefs.getString("endpoint",DEFAULT_URL);executor.execute(()->{HttpURLConnection conn=null;try{URL url=new URL(endpointUrl);conn=(HttpURLConnection)url.openConnection();conn.setRequestMethod("POST");conn.setConnectTimeout(8000);conn.setReadTimeout(15000);conn.setDoOutput(true);conn.setRequestProperty("Content-Type","application/json; charset=utf-8");byte[] body=("{\\"comando\\":\\""+jsonEscape(command)+"\\"}").getBytes(StandardCharsets.UTF_8);conn.getOutputStream().write(body);int code=conn.getResponseCode();InputStream in=code>=200&&code<300?conn.getInputStream():conn.getErrorStream();String response=read(in);if(code<200||code>=300)throw new IOException("HTTP "+code+": "+response);runOnUiThread(()->{pending=0;status.setText("●  Servidor conectado · último envío aceptado");status.setTextColor(GREEN);log(command,true,"HTTP "+code+" · "+response);toast("Comando enviado.");});}catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{pending=0;status.setText("●  Error de envío");status.setTextColor(RED);log(command,false,msg);toast(msg);});}finally{if(conn!=null)conn.disconnect();}});}
+    private void send(String command){
+        if(pending>0){toast("Espera a que termine el envío anterior.");return;}
+        saveEndpoint(); pending++; status.setText("●  Enviando comando…"); status.setTextColor(0xFFFFC45C);
+        final String endpointUrl=prefs.getString("endpoint",DEFAULT_URL);
+        executor.execute(()->{
+            HttpURLConnection conn=null;
+            try{
+                URL url=new URL(endpointUrl); conn=(HttpURLConnection)url.openConnection();
+                conn.setRequestMethod("POST"); conn.setConnectTimeout(8000); conn.setReadTimeout(15000);
+                conn.setDoOutput(true); conn.setRequestProperty("Content-Type","application/json; charset=utf-8");
+                byte[] body=new JSONObject().put("comando",command).toString().getBytes(StandardCharsets.UTF_8);
+                try(OutputStream output=conn.getOutputStream()){output.write(body);}
+                int code=conn.getResponseCode();
+                InputStream in=code>=200&&code<300?conn.getInputStream():conn.getErrorStream();
+                String response=read(in);
+                if(code<200||code>=300)throw new IOException("HTTP "+code+": "+response);
+                runOnUiThread(()->{pending=0;status.setText("●  Servidor conectado · último envío aceptado");status.setTextColor(GREEN);log(command,true,"HTTP "+code+" · "+response);toast("Comando enviado.");});
+            }catch(Exception e){
+                String msg=e.getMessage()==null?"Error de conexión":e.getMessage();
+                runOnUiThread(()->{pending=0;status.setText("●  Error de envío");status.setTextColor(RED);log(command,false,msg);toast(msg);});
+            }finally{if(conn!=null)conn.disconnect();}
+        });
+    }
     private String read(InputStream in)throws IOException{if(in==null)return "";ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1)out.write(b,0,n);return out.toString("UTF-8");}
     private String jsonEscape(String s){return s.replace("\\\\","\\\\\\\\").replace("\\\"","\\\\\\\"").replace("\\n","\\\\n").replace("\\r","\\\\r").replace("\\t","\\\\t");}
     private void log(String cmd,boolean ok,String msg){TextView t=text((ok?"✓  ":"✕  ")+cmd+"\\n"+msg,11,ok?GREEN:RED,false);t.setPadding(dp(9),dp(9),dp(9),dp(9));t.setBackground(shape(FIELD,LINE,10));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(5),0,dp(5));logList.addView(t,0,p);while(logList.getChildCount()>20)logList.removeViewAt(logList.getChildCount()-1);}
