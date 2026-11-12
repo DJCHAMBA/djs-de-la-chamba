@@ -1,7 +1,7 @@
 {
   "name": "panel-la-chamba",
-  "version": "1.2.0",
-  "description": "Panel de comandos de La Chamba para Roblox",
+  "version": "2.0.0",
+  "description": "Panel definitivo de control de La Chamba para Roblox",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",
@@ -34,7 +34,7 @@
           ]
         }
       ],
-      "artifactName": "PANEL-LA-CHAMBA-Setup-1.2.0-x64.exe"
+      "artifactName": "PANEL-LA-CHAMBA-Setup-2.0.0-x64.exe"
     },
     "nsis": {
       "oneClick": false,
