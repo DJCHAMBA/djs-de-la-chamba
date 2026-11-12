@@ -1,0 +1,16 @@
+{
+  "name": "la-chamba-studios-web-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Conector local entre DJS DE LA CHAMBA, Discord y Roblox",
+  "main": "web-bridge.js",
+  "scripts": {
+    "start": "node web-bridge.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}
