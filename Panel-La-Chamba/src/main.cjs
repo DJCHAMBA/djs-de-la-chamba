@@ -43,6 +43,7 @@ function validateCommand(raw) {
   return command;
 }
 
+ipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
 ipcMain.handle("settings:get", () => readSettings());
 ipcMain.handle("settings:save", (_, value) => saveSettings(value));
 
@@ -90,6 +91,25 @@ ipcMain.handle("bridge:check", async () => {
     return { state: "offline", message: "No se pudo conectar. Verifica que el puente esté encendido y revisa la dirección." };
   }
 });
+
+
+let audioEditorWindow = null;
+function createAudioEditorWindow() {
+  if (audioEditorWindow && !audioEditorWindow.isDestroyed()) {
+    audioEditorWindow.focus();
+    return audioEditorWindow;
+  }
+  audioEditorWindow = new BrowserWindow({
+    width: 1100, height: 850, minWidth: 720, minHeight: 600,
+    backgroundColor: "#07050d", title: "Editor Roblox rápido · DJS DE LA CHAMBA",
+    autoHideMenuBar: true, show: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  audioEditorWindow.once("ready-to-show", () => audioEditorWindow.show());
+  audioEditorWindow.on("closed", () => { audioEditorWindow = null; });
+  audioEditorWindow.loadFile(path.join(__dirname, "audio-editor.html"));
+  return audioEditorWindow;
+}
 
 function createWindow() {
   const window = new BrowserWindow({
