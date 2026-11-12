@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "DJSDeLaChamba"
-include(":app")
+include(":app", ":panel")
