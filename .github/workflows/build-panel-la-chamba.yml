@@ -1,0 +1,27 @@
+name: Build Panel La Chamba Windows installer
+on:
+  push:
+    paths:
+      - "Panel-La-Chamba/**"
+      - ".github/workflows/build-panel-la-chamba.yml"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: Panel-La-Chamba
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Panel-La-Chamba/package.json
+      - run: npm install
+      - run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Panel-La-Chamba-Installer-Windows-x64
+          path: Panel-La-Chamba/dist/*.exe
+          if-no-files-found: error
