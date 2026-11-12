@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:allowBackup="false"
-        android:label="Panel La Chamba"
+        android:label="Panel La Chamba"\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@style/PanelTheme"
         android:supportsRtl="true">
