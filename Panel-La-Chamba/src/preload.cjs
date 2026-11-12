@@ -4,5 +4,6 @@ contextBridge.exposeInMainWorld("chamba",{
  saveSettings:v=>ipcRenderer.invoke("settings:save",v),
  sendCommand:c=>ipcRenderer.invoke("bridge:send",c),
  openAudioEditor:()=>ipcRenderer.invoke("audio-editor:open"),
+ openAudioTools:()=>ipcRenderer.invoke("audio-tools:open"),
  checkBridge:()=>ipcRenderer.invoke("bridge:check")
 });
