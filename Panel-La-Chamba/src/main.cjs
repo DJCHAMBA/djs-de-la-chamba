@@ -33,7 +33,7 @@ function saveSettings(value) {
 function validateCommand(raw) {
   const command = String(raw || "").trim().replace(/^\/+/, "");
   if (!command) throw new Error("Escribe un comando antes de enviarlo.");
-  if (command.length > 500) throw new Error("El comando supera el límite de 500 caracteres.");
+  if (command.length > 1000000) throw new Error("La solicitud supera el tamaño máximo seguro de 1 MB.");
   if (/[\x00-\x1f]/.test(command)) throw new Error("El comando contiene caracteres no permitidos.");
   const name = command.split(/\s+/, 1)[0].toLowerCase();
   const allowed = ["chamba", "m2", "musica", "force", "multimusica", "volumen", "pitch", "realista", "norealista", "tocando", "skip", "pause", "resume", "resetear", "mododj", "nomododj", "loop", "unloop"];
