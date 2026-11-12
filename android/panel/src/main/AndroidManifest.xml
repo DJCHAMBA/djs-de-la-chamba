@@ -9,7 +9,6 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/PanelTheme"
         android:supportsRtl="true">
-        <activity android:name=".DesktopPanelActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity android:name=".RobloxToolsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity
             android:name=".DesktopPanelActivity"
