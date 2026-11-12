@@ -40,9 +40,23 @@ public class PanelActivity extends Activity {
         LinearLayout header=row();android.widget.ImageView logo=new android.widget.ImageView(this);logo.setImageResource(R.drawable.panel_launcher_foreground);logo.setBackground(shape(0xFF241044,0xFF8D42FF,16));logo.setPadding(dp(5),dp(5),dp(5),dp(5));header.addView(logo,new LinearLayout.LayoutParams(dp(58),dp(58)));LinearLayout titles=column();titles.setPadding(dp(12),0,0,0);titles.addView(text("PANEL LA CHAMBA",20,WHITE,true));titles.addView(text("MOBILE  ·  DJ CONTROL SYSTEM",10,PINK,true));header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         TextView hero=text("Tu cabina de comandos.\nLa Chamba en tu bolsillo.",25,WHITE,true);LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.setMargins(0,dp(22),0,dp(6));root.addView(hero,hp);root.addView(text("Controla tu servidor de Roblox desde el teléfono.",13,MUTED,false));
         LinearLayout statusRow=row();status=text("●  Listo para conectar",12,0xFFFFC45C,true);status.setPadding(dp(13),dp(10),dp(13),dp(10));status.setBackground(shape(CARD,LINE,24));LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-2,-2);sp.setMargins(0,dp(18),0,dp(12));root.addView(statusRow);statusRow.addView(status,sp);
-        musicCard();messageCard();announceCard();multiCard();audioCard();playbackCard();mapCommandsCard();connectionCard();historyCard();
+        musicCard();messageCard();announceCard();multiCard();audioCard();robloxToolsCard();playbackCard();mapCommandsCard();connectionCard();historyCard();
         TextView footer=text("PANEL LA CHAMBA · APLICACIÓN ANDROID NATIVA",9,0xFF687991,true);footer.setGravity(Gravity.CENTER);LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-1,-2);fp.setMargins(0,dp(20),0,0);root.addView(footer,fp);
     }
+
+    private void robloxToolsCard(){
+        LinearLayout c=card("🛠️  Herramientas Roblox","Abre las herramientas oficiales de La Chamba dentro de esta misma aplicación.");
+        addButton(c,"⬆️ Subir audios a Roblox",true,()->openRobloxTools("upload"));
+        addButton(c,"🎚️ Editor Roblox rápido",false,()->openRobloxTools("editor"));
+        addButton(c,"🔐 Permisos Roblox (Admin)",false,()->openRobloxTools("permissions"));
+        TextView note=text("El inicio de sesión de administrador se valida en el servidor. La app no guarda ni incluye claves API de Roblox.",10,MUTED,false);note.setPadding(0,dp(6),0,0);c.addView(note);
+    }
+    private void openRobloxTools(String section){
+        Intent intent=new Intent(this,RobloxToolsActivity.class);
+        intent.putExtra("section",section);
+        startActivity(intent);
+    }
+
     private LinearLayout card(String title,String subtitle){LinearLayout c=column();c.setPadding(dp(15),dp(15),dp(15),dp(15));c.setBackground(shape(CARD,LINE,17));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,dp(8));root.addView(c,p);c.addView(text(title,15,WHITE,true));if(subtitle!=null&&!subtitle.isEmpty()){TextView sub=text(subtitle,11,MUTED,false);sub.setPadding(0,dp(5),0,dp(8));c.addView(sub);}return c;}
     private EditText field(LinearLayout c,String label,String hint,boolean multi){c.addView(text(label.toUpperCase(),10,0xFF9BB8E0,true));EditText e=new EditText(this);e.setTextColor(WHITE);e.setHintTextColor(0xFF687991);e.setTextSize(14);e.setSingleLine(!multi);e.setHint(hint);e.setPadding(dp(12),dp(10),dp(12),dp(10));e.setBackground(shape(FIELD,LINE,11));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,multi?dp(105):dp(48));p.setMargins(0,dp(6),0,dp(11));c.addView(e,p);return e;}
     private Button button(String label,boolean primary,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(12);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(WHITE);b.setPadding(dp(12),dp(7),dp(12),dp(7));b.setBackground(shape(primary?BLUE:0xFF1A2940,primary?BLUE:LINE,11));b.setOnClickListener(v->action.run());return b;}
