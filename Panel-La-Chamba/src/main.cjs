@@ -44,7 +44,6 @@ function validateCommand(raw) {
 }
 
 ipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
-ipcMain.handle("audio-tools:open", () => { createAudioToolsWindow(); return { ok: true }; });
 ipcMain.handle("settings:get", () => readSettings());
 ipcMain.handle("settings:save", (_, value) => saveSettings(value));
 
@@ -112,39 +111,21 @@ function createAudioEditorWindow() {
   return audioEditorWindow;
 }
 
-let audioToolsWindow = null;
 let audioToolsCorsConfigured = false;
-function createAudioToolsWindow() {
-  // El Worker privado solo acepta el origen oficial de GitHub Pages.
-  // Para esta ventana local de Electron, reenviamos ese origen y adaptamos
-  // únicamente la cabecera CORS de la respuesta dentro de la sesión de escritorio.
-  if (!audioToolsCorsConfigured) {
-    const workerFilter = { urls: ["https://djs-chamba-permissions.jnew123gta5.workers.dev/*"] };
-    session.defaultSession.webRequest.onBeforeSendHeaders(workerFilter, (details, callback) => {
-      details.requestHeaders.Origin = "https://djchamba.github.io";
-      callback({ requestHeaders: details.requestHeaders });
-    });
-    session.defaultSession.webRequest.onHeadersReceived(workerFilter, (details, callback) => {
-      const headers = details.responseHeaders || {};
-      headers["access-control-allow-origin"] = ["null"];
-      callback({ responseHeaders: headers });
-    });
-    audioToolsCorsConfigured = true;
-  }
-  if (audioToolsWindow && !audioToolsWindow.isDestroyed()) {
-    audioToolsWindow.focus();
-    return audioToolsWindow;
-  }
-  audioToolsWindow = new BrowserWindow({
-    width: 1180, height: 900, minWidth: 760, minHeight: 640,
-    backgroundColor: "#090a0d", title: "Herramientas de audio Roblox · DJS DE LA CHAMBA",
-    autoHideMenuBar: true, show: false,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+function configureAudioToolsCors() {
+  if (audioToolsCorsConfigured) return;
+  // El Worker privado conserva su origen oficial; las claves permanecen en Cloudflare.
+  const workerFilter = { urls: ["https://djs-chamba-permissions.jnew123gta5.workers.dev/*"] };
+  session.defaultSession.webRequest.onBeforeSendHeaders(workerFilter, (details, callback) => {
+    details.requestHeaders.Origin = "https://djchamba.github.io";
+    callback({ requestHeaders: details.requestHeaders });
   });
-  audioToolsWindow.once("ready-to-show", () => audioToolsWindow.show());
-  audioToolsWindow.on("closed", () => { audioToolsWindow = null; });
-  audioToolsWindow.loadFile(path.join(__dirname, "audio-tools.html"));
-  return audioToolsWindow;
+  session.defaultSession.webRequest.onHeadersReceived(workerFilter, (details, callback) => {
+    const headers = details.responseHeaders || {};
+    headers["access-control-allow-origin"] = ["null"];
+    callback({ responseHeaders: headers });
+  });
+  audioToolsCorsConfigured = true;
 }
 
 function createWindow() {
@@ -170,6 +151,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   app.setName("Panel La Chamba");
+  configureAudioToolsCors();
   Menu.setApplicationMenu(null);
   createWindow();
   app.on("activate", () => {
