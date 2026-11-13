@@ -1,9 +1,15 @@
 package com.djchamba.panel;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -11,8 +17,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.graphics.Color;
 import android.view.Gravity;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Base64;
 
 public class RobloxToolsActivity extends Activity {
     private static final int PICK_FILE = 771;
@@ -46,6 +58,27 @@ public class RobloxToolsActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        web.addJavascriptInterface(new AndroidDownloads(), "DJSAndroid");
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            try {
+                android.app.DownloadManager.Request request =
+                    new android.app.DownloadManager.Request(Uri.parse(url));
+                request.setMimeType(mimeType);
+                request.setTitle(android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType));
+                request.setDescription("Descargando archivo de La Chamba");
+                request.setNotificationVisibility(
+                    android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType));
+                android.app.DownloadManager manager =
+                    (android.app.DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                manager.enqueue(request);
+                toast("Descarga enviada a Descargas.");
+            } catch (Exception e) {
+                toast("No se pudo iniciar la descarga: " + e.getMessage());
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 String target = section.equals("upload") ? "tabUpload"
@@ -68,6 +101,60 @@ public class RobloxToolsActivity extends Activity {
         root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
         web.loadUrl("https://djchamba.github.io/djs-de-la-chamba/");
+    }
+
+    private class AndroidDownloads {
+        @JavascriptInterface
+        public void saveBase64(String base64, String filename, String mimeType) {
+            runOnUiThread(() -> {
+                try {
+                    String safeName = filename == null ? "audio.mp3" :
+                        filename.replaceAll("[\\\\/:*?\\"<>|]", "_").trim();
+                    if (safeName.isEmpty()) safeName = "archivo";
+                    String type = mimeType == null || mimeType.isEmpty()
+                        ? "application/octet-stream" : mimeType;
+                    byte[] bytes = Base64.getDecoder().decode(base64);
+                    if (bytes.length == 0) throw new IllegalArgumentException("El archivo está vacío.");
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.Downloads.DISPLAY_NAME, safeName);
+                        values.put(MediaStore.Downloads.MIME_TYPE, type);
+                        values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                        values.put(MediaStore.Downloads.IS_PENDING, 1);
+                        Uri uri = getContentResolver().insert(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                        if (uri == null) throw new IllegalStateException("Android no creó el archivo.");
+                        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                            if (out == null) throw new IllegalStateException("No se pudo abrir el archivo.");
+                            out.write(bytes);
+                            out.flush();
+                        } catch (Exception error) {
+                            getContentResolver().delete(uri, null, null);
+                            throw error;
+                        }
+                        ContentValues ready = new ContentValues();
+                        ready.put(MediaStore.Downloads.IS_PENDING, 0);
+                        getContentResolver().update(uri, ready, null, null);
+                    } else {
+                        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("No se pudo crear Descargas.");
+                        File target = new File(dir, safeName);
+                        try (FileOutputStream out = new FileOutputStream(target)) {
+                            out.write(bytes);
+                            out.flush();
+                        }
+                    }
+                    toast("Guardado en Descargas: " + safeName);
+                } catch (Exception error) {
+                    toast("Error al guardar: " + error.getMessage());
+                }
+            });
+        }
+    }
+
+    private void toast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     private int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }
