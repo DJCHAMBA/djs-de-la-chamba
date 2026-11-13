@@ -71,7 +71,7 @@ $("musicQueue").onclick=()=>{const id=$("musicId").value.trim();if(!/^\d+$/.test
 $("musicForce").onclick=()=>{const id=$("musicId").value.trim();if(!/^\d+$/.test(id))return toast("Escribe un ID de audio numérico.");let c="force "+id;if($("musicPitch").value.trim()){try{c+=" "+numberValue("musicPitch",.1,3,"Pitch")}catch(e){return toast(e.message)}}dispatch(c,$("musicForce"))};
 $("sendM2").onclick=()=>{const dj=$("djName").value.trim(),msg=$("m2Text").value.trim();if(!dj||!msg)return toast("Completa el nombre del DJ y el mensaje.");dispatch("m2 "+dj.replace(/[|\r\n]/g," ").slice(0,50)+"|"+msg.slice(0,350),$("sendM2"))};
 $("sendChamba").onclick=()=>{const msg=$("chambaText").value.trim();if(!msg)return toast("Escribe el anuncio primero.");dispatch("chamba "+msg.slice(0,350),$("sendChamba"))};
-function parseMultiIds(){return $("multiIds").value.split(/[ ,;\\n\\t]+/).map(x=>x.trim()).filter(Boolean)}
+function parseMultiIds(){return $("multiIds").value.split(/[ ,;\n\t]+/).map(x=>x.trim()).filter(Boolean)}
 $("multiIds").addEventListener("input",()=>{$("multiCount").textContent=parseMultiIds().length.toLocaleString("es-MX")+" IDs detectados · Sin límite fijo en el panel"});
 $("sendMulti").onclick=()=>{const ids=parseMultiIds();if(!ids.length)return toast("Pega al menos un ID.");if(ids.some(id=>!/^[0-9]+$/.test(id)))return toast("Hay IDs con caracteres no numéricos. Revísalos.");dispatch("multimusica "+ids.join(","),$("sendMulti"))};
 $("applyVolume").onclick=()=>{try{dispatch("volumen "+numberValue("volumeValue",0,10,"Volumen"),$("applyVolume"))}catch(e){toast(e.message)}};
