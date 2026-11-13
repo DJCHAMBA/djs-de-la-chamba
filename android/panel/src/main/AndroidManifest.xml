@@ -10,6 +10,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/PanelTheme"
         android:supportsRtl="true">
+        <activity android:name=".YtMusicActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".RobloxToolsActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PanelActivity"
