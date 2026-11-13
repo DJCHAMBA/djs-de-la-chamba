@@ -28,6 +28,21 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package.json
 
+      - name: Download yt-dlp and FFmpeg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path desktop/bin | Out-Null
+          Invoke-WebRequest "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile desktop/bin/yt-dlp.exe
+          Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-temp -Force
+          $ffmpeg = Get-ChildItem ffmpeg-temp -Filter ffmpeg.exe -Recurse | Select-Object -First 1
+          $ffprobe = Get-ChildItem ffmpeg-temp -Filter ffprobe.exe -Recurse | Select-Object -First 1
+          if (!$ffmpeg) { throw "ffmpeg.exe no encontrado" }
+          Copy-Item $ffmpeg.FullName desktop/bin/ffmpeg.exe
+          if ($ffprobe) { Copy-Item $ffprobe.FullName desktop/bin/ffprobe.exe }
+          & desktop/bin/yt-dlp.exe --version
+          & desktop/bin/ffmpeg.exe -version
+
       - name: Install dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
@@ -40,7 +55,7 @@ jobs:
         working-directory: desktop
         shell: pwsh
         run: |
-          $installer = "dist/DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe"
+          $installer = "dist/DJS-DE-LA-CHAMBA-Setup-1.1.0-x64.exe"
           if (!(Test-Path $installer)) { throw "Installer not found: $installer" }
           $item = Get-Item $installer
           if ($item.Length -lt 10MB) { throw "Installer unexpectedly small: $($item.Length) bytes" }
@@ -50,6 +65,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DJS-DE-LA-CHAMBA-Windows-Installer
-          path: desktop/dist/DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe
+          path: desktop/dist/DJS-DE-LA-CHAMBA-Setup-1.1.0-x64.exe
           if-no-files-found: error
           retention-days: 30
