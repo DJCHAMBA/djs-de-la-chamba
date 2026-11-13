@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, shell, session, Notification, dialog } = require("electron");
+const { app, BrowserWindow, Menu, shell, session, Notification, dialog, ipcMain } = require("electron");
+const { spawn } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
 
@@ -9,6 +10,11 @@ const DOWNLOAD_FOLDER = path.join(app.getPath("downloads"), APP_TITLE);
 const ICON_PATH = path.join(__dirname, "..", "build", "icon.ico");
 
 let mainWindow = null;
+let musicWindow = null;
+const MUSIC_FOLDER = path.join(app.getPath("downloads"), APP_TITLE, "Music");
+const BIN_DIR = app.isPackaged ? path.join(process.resourcesPath, "music-bin") : path.join(__dirname, "..", "bin");
+const YTDLP = path.join(BIN_DIR, "yt-dlp.exe");
+const FFMPEG_DIR = BIN_DIR;
 let isLoadingOfflinePage = false;
 
 app.setName(APP_TITLE);
@@ -83,6 +89,44 @@ function showOfflinePage() {
     isLoadingOfflinePage = false;
   });
 }
+
+function runYtDlp(args, onLine) {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(YTDLP)) return reject(new Error("No se encontró yt-dlp.exe. Reinstala la aplicación."));
+    const child = spawn(YTDLP, args, { windowsHide: true, cwd: MUSIC_FOLDER });
+    let stdout = "", stderr = "";
+    child.stdout.on("data", d => { stdout += d.toString(); if (stdout.length > 2e6) stdout = stdout.slice(-2e6); });
+    child.stderr.on("data", d => { const s=d.toString(); stderr += s; if (stderr.length > 2e6) stderr=stderr.slice(-2e6); if(onLine) onLine(s); });
+    child.on("error", reject);
+    child.on("close", code => code===0 ? resolve({stdout,stderr}) : reject(new Error(stderr.slice(-1200) || "yt-dlp terminó con error " + code)));
+  });
+}
+function openMusicWindow() {
+  if (musicWindow && !musicWindow.isDestroyed()) { musicWindow.show(); musicWindow.focus(); return; }
+  musicWindow = new BrowserWindow({width:900,height:760,minWidth:650,minHeight:560,title:"Pocoyito Music · DJS DE LA CHAMBA",backgroundColor:"#10131c",webPreferences:{preload:path.join(__dirname,"music-preload.cjs"),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  musicWindow.loadFile(path.join(__dirname,"music.html"));
+  musicWindow.on("closed",()=>{musicWindow=null;});
+}
+ipcMain.handle("music:search", async (_event, query) => {
+  const q=String(query||"").trim();
+  if(!q || q.length>180) throw new Error("Escribe una búsqueda válida (máximo 180 caracteres).");
+  const term=/^https?:\/\//i.test(q)?q:"ytsearch10:"+q;
+  const {stdout}=await runYtDlp(["--dump-single-json","--flat-playlist","--no-warnings",term]);
+  let data; try{data=JSON.parse(stdout.trim().split(/\r?\n/).filter(Boolean).pop());}catch{throw new Error("No pude interpretar los resultados de búsqueda.");}
+  const entries=data.entries || [data];
+  return entries.filter(Boolean).slice(0,10).map(v=>({id:v.id,title:v.title||"Sin título",uploader:v.uploader||v.channel||"Artista desconocido",duration:v.duration||0,url:v.webpage_url||v.url||("https://www.youtube.com/watch?v="+v.id),thumbnail:v.thumbnail||""}));
+});
+ipcMain.handle("music:download", async (_event, url) => {
+  const u=String(url||"");
+  if(!/^https?:\/\//i.test(u)) throw new Error("Enlace de canción no válido.");
+  fs.mkdirSync(MUSIC_FOLDER,{recursive:true});
+  const output=path.join(MUSIC_FOLDER,"%(title)s.%(ext)s");
+  await runYtDlp(["--no-playlist","-f","bestaudio/best","--extract-audio","--audio-format","mp3","--audio-quality","0","--ffmpeg-location",FFMPEG_DIR,"--no-keep-video","--windows-filenames","-o",output,u],line=>{if(musicWindow&&!musicWindow.isDestroyed()) musicWindow.webContents.send("music:progress",line.slice(-240));});
+  showDownloadNotice("Pocoyito Music","Descarga MP3 terminada. Guardada en Descargas / DJS DE LA CHAMBA / Music.");
+  return {folder:MUSIC_FOLDER};
+});
+ipcMain.handle("music:update", async ()=>{await runYtDlp(["--update-to","nightly"]);return {ok:true};});
+ipcMain.handle("music:open-folder",()=>shell.openPath(MUSIC_FOLDER));
 
 function installApplicationMenu() {
   const template = [
