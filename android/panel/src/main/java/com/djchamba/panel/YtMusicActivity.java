@@ -105,7 +105,8 @@ public class YtMusicActivity extends Activity {
         String duration=duration(item.optLong("duration",0));
         LinearLayout card=col();card.setPadding(dp(12),dp(12),dp(12),dp(12));card.setBackground(shape(CARD,LINE,13));LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);cp.setMargins(0,dp(6),0,dp(6));results.addView(card,cp);
         card.addView(text(title,14,WHITE,true));TextView meta=text(uploader+" · "+duration,11,MUTED,false);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.setMargins(0,dp(5),0,dp(8));card.addView(meta,mp);
-        Button dl=button("⬇️  Descargar MP3",true,()->download(url,title));card.addView(dl,new LinearLayout.LayoutParams(-1,dp(44)));
+        final String targetUrl=url; final String targetTitle=title;
+        Button dl=button("⬇️  Descargar MP3",true,()->download(targetUrl,targetTitle));card.addView(dl,new LinearLayout.LayoutParams(-1,dp(44)));
     }
     private void addResultError(String message){TextView t=text(message,12,RED,false);t.setPadding(dp(12),dp(12),dp(12),dp(12));results.addView(t);}
     private String duration(long seconds){if(seconds<=0)return "Duración no disponible";return String.format(Locale.US,"%d:%02d",seconds/60,seconds%60);}
