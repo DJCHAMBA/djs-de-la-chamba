@@ -266,11 +266,6 @@ export default {
     if (url.pathname === "/audio/upload") {
       const auth = await requireAdmin(request, env);
       if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
-      let audioAccount;
-      try { audioAccount = audioAccountContext(env, "main"); } catch (error) {
-        // La cuenta se valida después de leer el formulario, que contiene el selector.
-      }
-
       let incoming;
       try { incoming = await request.formData(); }
       catch { return json({ error: "No pude leer el archivo enviado." }, 400, origin); }
