@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pocoyito Music</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10131c;color:#f7f7fb;font:15px Segoe UI,Arial,sans-serif;padding:28px}
+h1{margin:0;font-size:27px}p{color:#aeb5c1}.sub{color:#aeb5c1;margin:6px 0 24px}
+.panel{background:#1b2030;border:1px solid #30384b;border-radius:18px;padding:20px;margin:16px 0}
+form{display:flex;gap:10px}input{flex:1;min-width:0;background:#111722;border:1px solid #414b61;border-radius:11px;padding:14px;color:white;font-size:15px}
+button{background:#8b5cf6;border:0;color:white;padding:12px 17px;border-radius:11px;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#30394d}.result{display:flex;align-items:center;gap:13px;border-top:1px solid #343b4c;padding:13px 0}.result img{width:104px;height:60px;object-fit:cover;border-radius:8px;background:#30394d}.meta{flex:1;min-width:0}.title{font-weight:700}.artist{color:#aeb5c1;font-size:13px;margin-top:5px}.status{color:#b9a4ff;white-space:pre-wrap;min-height:24px}.hint{font-size:12px;color:#929bad}
+@media(max-width:600px){body{padding:16px}form{flex-direction:column}.result img{width:80px}}
+</style></head><body>
+<h1>🎵 POCOYITO MUSIC</h1><div class="sub">Busca canciones por nombre o artista, o pega un enlace. Descarga en MP3.</div>
+<div class="panel"><form id="search"><input id="query" placeholder="Ej. Morat - No se va o pega un enlace de YouTube" autocomplete="off"><button id="searchBtn">BUSCAR</button></form>
+<p class="hint">Busca hasta 10 resultados. Descarga únicamente contenido que tengas derecho a guardar.</p></div>
+<div class="panel"><div id="results"><p>Escribe una canción o artista para comenzar.</p></div></div>
+<div class="panel"><div class="status" id="status">Motor de descargas listo.</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="secondary" id="update">ACTUALIZAR MOTOR YT-DLP</button><button class="secondary" id="folder">ABRIR CARPETA DE MP3</button></div></div>
+<script>
+const $=id=>document.getElementById(id), api=window.pocoyitoMusic;
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function duration(s){if(!s)return "Duración no disponible";s=Math.floor(s);return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].filter((v,i)=>v||i>0).map(v=>String(v).padStart(2,'0')).join(':');}
+$("search").addEventListener("submit",async e=>{e.preventDefault();const q=$("query").value.trim();if(!q)return;$("searchBtn").disabled=true;$("results").innerHTML="<p>Buscando canciones…</p>";$("status").textContent="Consultando yt-dlp…";try{const rows=await api.search(q);if(!rows.length){$("results").innerHTML="<p>No encontré resultados.</p>";return;}$("results").innerHTML=rows.map((r,i)=>'<div class="result"><img src="'+esc(r.thumbnail||"")+'" onerror="this.style.visibility=\'hidden\'"><div class="meta"><div class="title">'+esc(r.title)+'</div><div class="artist">'+esc(r.uploader)+' · '+duration(r.duration)+'</div></div><button data-index="'+i+'">MP3</button></div>').join("");document.querySelectorAll("[data-index]").forEach(b=>b.addEventListener("click",async()=>{b.disabled=true;$("status").textContent="Descargando: "+rows[Number(b.dataset.index)].title;try{await api.download(rows[Number(b.dataset.index)].url);$("status").textContent="¡Listo! MP3 guardado en Descargas / DJS DE LA CHAMBA / Music.";}catch(err){$("status").textContent="Error: "+err.message;}finally{b.disabled=false;}}));$("status").textContent="Se encontraron "+rows.length+" resultados.";}catch(err){$("results").innerHTML="<p>Error al buscar: "+esc(err.message)+"</p>";$("status").textContent="Revisa tu conexión e inténtalo de nuevo.";}finally{$("searchBtn").disabled=false;}});
+$("update").onclick=async()=>{$("update").disabled=true;$("status").textContent="Actualizando yt-dlp a NIGHTLY…";try{await api.update();$("status").textContent="yt-dlp quedó actualizado.";}catch(e){$("status").textContent="No se pudo actualizar: "+e.message;}finally{$("update").disabled=false;}};
+$("folder").onclick=()=>api.openFolder();
+api.onProgress(line=>{$("status").textContent=line;});
+</script></body></html>
