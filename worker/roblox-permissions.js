@@ -112,6 +112,22 @@ function creatorContext(env) {
   throw new Error("Falta configurar ROBLOX_AUDIO_CREATOR_USER_ID o ROBLOX_AUDIO_CREATOR_GROUP_ID en Cloudflare.");
 }
 
+
+function audioAccountContext(env, account) {
+  const selected = account === "second" ? "second" : "main";
+  const suffix = selected === "second" ? "_2" : "";
+  const apiKey = String(env["ROBLOX_AUDIO_API_KEY" + suffix] || "").trim();
+  if (!apiKey) throw new Error(selected === "second"
+    ? "Falta configurar ROBLOX_AUDIO_API_KEY_2 como Secret en Cloudflare."
+    : "Falta configurar ROBLOX_AUDIO_API_KEY como Secret en Cloudflare.");
+  const userId = String(env["ROBLOX_AUDIO_CREATOR_USER_ID" + suffix] || "").trim();
+  const groupId = String(env["ROBLOX_AUDIO_CREATOR_GROUP_ID" + suffix] || "").trim();
+  if (userId && groupId) throw new Error("Configura solo el User ID o Group ID para la cuenta seleccionada.");
+  if (userId && /^\\d+$/.test(userId)) return { account: selected, apiKey, creator: { userId } };
+  if (groupId && /^\\d+$/.test(groupId)) return { account: selected, apiKey, creator: { groupId } };
+  throw new Error("Falta configurar el creador de la cuenta seleccionada en Cloudflare.");
+}
+
 async function readRobloxJson(response) {
   const text = await response.text();
   try { return text ? JSON.parse(text) : {}; }
@@ -250,8 +266,9 @@ export default {
     if (url.pathname === "/audio/upload") {
       const auth = await requireAdmin(request, env);
       if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
-      if (!env.ROBLOX_AUDIO_API_KEY) {
-        return json({ error: "Falta configurar ROBLOX_AUDIO_API_KEY como Secret en Cloudflare." }, 503, origin);
+      let audioAccount;
+      try { audioAccount = audioAccountContext(env, "main"); } catch (error) {
+        // La cuenta se valida después de leer el formulario, que contiene el selector.
       }
 
       let incoming;
@@ -289,9 +306,10 @@ export default {
         return json({ error: "El nombre y la descripción del audio son obligatorios." }, 400, origin);
       }
 
-      let creator;
-      try { creator = creatorContext(env); }
+      let selectedAccount;
+      try { selectedAccount = audioAccountContext(env, String(incoming.get("account") || "main")); }
       catch (error) { return json({ error: error.message }, 503, origin); }
+      const creator = selectedAccount.creator;
 
       // Replica el multipart del bot original: request se envía como JSON,
       // y fileContent lleva el nombre de archivo y su MIME real.
@@ -315,7 +333,7 @@ export default {
       try {
         robloxResponse = await fetch("https://apis.roblox.com/assets/v1/assets", {
           method: "POST",
-          headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY },
+          headers: { "x-api-key": selectedAccount.apiKey },
           body: robloxForm
         });
       } catch (error) {
@@ -377,25 +395,27 @@ export default {
         displayName,
         fileName,
         contentType: contentTypes[extension],
-        creator
+        creator,
+        account: selectedAccount.account
       }, 200, origin);
     }
 
     if (url.pathname === "/audio/operation") {
       const auth = await requireAdmin(request, env);
       if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
-      if (!env.ROBLOX_AUDIO_API_KEY) return json({ error: "Falta ROBLOX_AUDIO_API_KEY en Cloudflare." }, 503, origin);
-
       let body;
       try { body = await request.json(); }
       catch { return json({ error: "Solicitud inválida." }, 400, origin); }
+      let selectedAccount;
+      try { selectedAccount = audioAccountContext(env, String(body.account || "main")); }
+      catch (error) { return json({ error: error.message }, 503, origin); }
       const operationId = String(body.operationId || "");
       if (!/^[A-Za-z0-9._~-]+$/.test(operationId)) {
         return json({ error: "Operation ID inválido." }, 400, origin);
       }
 
       const response = await fetch("https://apis.roblox.com/assets/v1/operations/" + encodeURIComponent(operationId), {
-        headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY }
+        headers: { "x-api-key": selectedAccount.apiKey }
       });
       const data = await readRobloxJson(response);
       if (!response.ok) {
@@ -423,17 +443,18 @@ export default {
     if (url.pathname === "/audio/status") {
       const auth = await requireAdmin(request, env);
       if (!auth.ok) return json({ error: auth.error }, auth.status, origin);
-      if (!env.ROBLOX_AUDIO_API_KEY) return json({ error: "Falta ROBLOX_AUDIO_API_KEY en Cloudflare." }, 503, origin);
-
       let body;
       try { body = await request.json(); }
       catch { return json({ error: "Solicitud inválida." }, 400, origin); }
+      let selectedAccount;
+      try { selectedAccount = audioAccountContext(env, String(body.account || "main")); }
+      catch (error) { return json({ error: error.message }, 503, origin); }
       const assetId = String(body.assetId || "");
       if (!/^\d+$/.test(assetId)) return json({ error: "Asset ID inválido." }, 400, origin);
 
       const readMask = encodeURIComponent("moderationResult,displayName,description");
       const response = await fetch("https://apis.roblox.com/assets/v1/assets/" + encodeURIComponent(assetId) + "?readMask=" + readMask, {
-        headers: { "x-api-key": env.ROBLOX_AUDIO_API_KEY }
+        headers: { "x-api-key": selectedAccount.apiKey }
       });
       const data = await readRobloxJson(response);
       if (!response.ok) {
