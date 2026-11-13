@@ -1,7 +1,7 @@
 {
   "name": "djs-de-la-chamba-desktop",
-  "version": "1.0.0",
-  "description": "DJS DE LA CHAMBA - Estudio de audio para DJs y Roblox",
+  "version": "1.1.0",
+  "description": "DJS DE LA CHAMBA - Aplicación Windows con Pocoyito Music",
   "main": "src/main.cjs",
   "author": "La Chamba",
   "license": "UNLICENSED",
@@ -20,12 +20,26 @@
     "productName": "DJS DE LA CHAMBA",
     "executableName": "DJS-DE-LA-CHAMBA",
     "asar": true,
-    "directories": {"output": "dist", "buildResources": "build"},
-    "files": ["src/**/*", "build/icon.ico", "package.json"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.ico",
+      "package.json"
+    ],
     "win": {
-      "target": [{"target": "nsis", "arch": ["x64"]}],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.ico",
-      "artifactName": "DJS-DE-LA-CHAMBA-Setup-1.0.0-x64.exe"
+      "artifactName": "DJS-DE-LA-CHAMBA-Setup-1.1.0-x64.exe"
     },
     "nsis": {
       "oneClick": false,
@@ -37,6 +51,17 @@
       "shortcutName": "DJS DE LA CHAMBA",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "music-bin",
+        "filter": [
+          "yt-dlp.exe",
+          "ffmpeg.exe",
+          "ffprobe.exe"
+        ]
+      }
+    ]
   }
 }
