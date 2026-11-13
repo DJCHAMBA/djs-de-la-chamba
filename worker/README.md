@@ -15,18 +15,21 @@ Mantén estos secretos:
 
 Añade este secreto para subir y consultar audios:
 
-- `ROBLOX_AUDIO_API_KEY`: API key de Roblox con permisos **Assets Read** y **Assets Write**. La misma clave se usa para subir el audio y consultar su estado de moderación.
+- `ROBLOX_AUDIO_API_KEY`: API key de la cuenta principal con permisos **Assets Read** y **Assets Write**.
+- `ROBLOX_AUDIO_API_KEY_2`: API key de la segunda cuenta con permisos **Assets Read** y **Assets Write**.
 
-Puedes reutilizar una clave existente solamente si tiene ambos permisos `asset:read` y `asset:write` y acceso a los assets del creador. En caso contrario, crea una clave específica para subidas de audio.
+Puedes reutilizar una clave existente solamente si tiene ambos permisos `asset:read` y `asset:write` y acceso a los assets del creador. En caso contrario, crea una clave específica para subidas de audio. La segunda cuenta es opcional hasta que quieras usar el selector «Cuenta 2» en la app.
 
 ### Variables normales (no secretas)
 
 Añade **una sola** de estas variables, según dónde quieras que Roblox cree los audios:
 
-- `ROBLOX_AUDIO_CREATOR_USER_ID`: tu User ID numérico, si los audios serán tuyos.
-- `ROBLOX_AUDIO_CREATOR_GROUP_ID`: Group ID numérico, si los audios serán del grupo.
+- `ROBLOX_AUDIO_CREATOR_USER_ID`: User ID de la cuenta principal, si los audios serán personales.
+- `ROBLOX_AUDIO_CREATOR_GROUP_ID`: Group ID de la cuenta principal, si los audios serán del grupo.
+- `ROBLOX_AUDIO_CREATOR_USER_ID_2`: User ID de la segunda cuenta (opcional).
+- `ROBLOX_AUDIO_CREATOR_GROUP_ID_2`: Group ID para la segunda cuenta (opcional).
 
-No configures las dos al mismo tiempo. Puedes obtener el User ID desde la URL de tu perfil Roblox; el Group ID está en la URL del grupo.
+Para cada cuenta configura solo su User ID o su Group ID, no ambos. Puedes obtener el User ID desde la URL del perfil Roblox; el Group ID está en la URL del grupo.
 
 Después de cambiar secretos o variables, pulsa **Deploy**.
 
@@ -55,7 +58,7 @@ La URL configurada en `index.html` es:
 
 1. Abre la página DJS DE LA CHAMBA.
 2. Entra a **Subir audios a Roblox** e inicia sesión con la contraseña privada.
-3. Selecciona uno o varios audios y pulsa **Subir a Roblox**.
+3. Selecciona «Cuenta 1 · Principal» o «Cuenta 2 · Secundaria», elige uno o varios audios y pulsa **Subir a Roblox**. La consulta de Operation ID y moderación seguirá usando la misma cuenta que realizó la subida.
 4. El panel registra el Operation ID y después el Asset ID que devuelve Roblox.
 5. Pulsa **Actualizar** junto a cada audio o **Actualizar estados** para consultar la moderación.
 
