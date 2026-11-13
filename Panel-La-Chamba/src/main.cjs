@@ -56,7 +56,8 @@ ipcMain.handle("yt:search",async(_,query)=>{const q=String(query||"").trim();if(
 ipcMain.handle("yt:download",async(_,url)=>{const u=String(url||"");if(!/^https?:\/\//i.test(u))throw new Error("Enlace de descarga no válido.");fs.mkdirSync(MUSIC_DIR,{recursive:true});await runYtDlp(["--no-warnings","--no-playlist","-f","bestaudio/best","--extract-audio","--audio-format","mp3","--audio-quality","0","--ffmpeg-location",FFMPEG,"-o",path.join(MUSIC_DIR,"%(title).180B [%(id)s].%(ext)s"),u]);return {file:"Carpeta YT Música"};});
 ipcMain.handle("yt:update",async()=>{await runYtDlp(["--update-to","nightly"]);return {message:"yt-dlp nightly actualizado."};});
 ipcMain.handle("yt:folder",()=>{fs.mkdirSync(MUSIC_DIR,{recursive:true});return shell.openPath(MUSIC_DIR);});
-\nipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
+
+ipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
 ipcMain.handle("settings:get", () => readSettings());
 ipcMain.handle("settings:save", (_, value) => saveSettings(value));
 
