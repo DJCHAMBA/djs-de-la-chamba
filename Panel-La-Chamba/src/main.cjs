@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu, session } = require("electron");
 const path = require("node:path");
-const fs = require("node:fs");
+const fs = require("node:fs");\nconst { spawn } = require("node:child_process");
 
 const DEFAULT_ENDPOINT = "http://127.0.0.1:3000/comando";
 const CONFIG_FILE = () => path.join(app.getPath("userData"), "settings.json");
@@ -43,7 +43,19 @@ function validateCommand(raw) {
   return command;
 }
 
-ipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
+
+const MUSIC_DIR = path.join(app.getPath("downloads"), "Panel La Chamba", "YT Música");
+const BIN_DIR = app.isPackaged ? path.join(process.resourcesPath, "yt-tools") : path.join(__dirname, "..", "bin");
+const YTDLP = path.join(BIN_DIR, "yt-dlp.exe");
+const FFMPEG = path.join(BIN_DIR, "ffmpeg.exe");
+function runYtDlp(args) {
+  return new Promise((resolve,reject)=>{const child=spawn(YTDLP,args,{windowsHide:true});let out="",err="";child.stdout.on("data",d=>out+=d);child.stderr.on("data",d=>err+=d);child.on("error",reject);child.on("close",code=>code===0?resolve(out||err):reject(new Error((err||out||"yt-dlp terminó con error").slice(-900))));});
+}
+ipcMain.handle("yt:search",async(_,query)=>{const q=String(query||"").trim();if(!q||q.length>300)throw new Error("Escribe una búsqueda válida.");const target=/^https?:\/\//i.test(q)?q:"ytsearch10:"+q;const raw=await runYtDlp(["--dump-single-json","--flat-playlist","--no-warnings",target]);const data=JSON.parse(raw);const entries=data.entries||[data];return entries.filter(x=>x&& (x.id||x.url)).slice(0,10).map(x=>({id:x.id,title:x.title||"Sin título",uploader:x.uploader||x.channel||"",duration:x.duration||0,thumbnail:x.thumbnail||((x.thumbnails||[]).slice(-1)[0]||{}).url||"",webpage_url:x.webpage_url||x.url||(x.id?"https://www.youtube.com/watch?v="+x.id:"")}));});
+ipcMain.handle("yt:download",async(_,url)=>{const u=String(url||"");if(!/^https?:\/\//i.test(u))throw new Error("Enlace de descarga no válido.");fs.mkdirSync(MUSIC_DIR,{recursive:true});await runYtDlp(["--no-warnings","--no-playlist","-f","bestaudio/best","--extract-audio","--audio-format","mp3","--audio-quality","0","--ffmpeg-location",FFMPEG,"-o",path.join(MUSIC_DIR,"%(title).180B [%(id)s].%(ext)s"),u]);return {file:"Carpeta YT Música"};});
+ipcMain.handle("yt:update",async()=>{await runYtDlp(["--update-to","nightly"]);return {message:"yt-dlp nightly actualizado."};});
+ipcMain.handle("yt:folder",()=>{fs.mkdirSync(MUSIC_DIR,{recursive:true});return require("node:electron").shell.openPath(MUSIC_DIR);});
+\nipcMain.handle("audio-editor:open", () => { createAudioEditorWindow(); return { ok: true }; });
 ipcMain.handle("settings:get", () => readSettings());
 ipcMain.handle("settings:save", (_, value) => saveSettings(value));
 
