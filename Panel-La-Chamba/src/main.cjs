@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, session, shell } = require("electron");
 const path = require("node:path");
-const fs = require("node:fs");\nconst { spawn } = require("node:child_process");
+const fs = require("node:fs");
+const { spawn } = require("node:child_process");
 
 const DEFAULT_ENDPOINT = "http://127.0.0.1:3000/comando";
 const CONFIG_FILE = () => path.join(app.getPath("userData"), "settings.json");
