@@ -18,7 +18,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: Panel-La-Chamba/package.json
-      - name: Descargar yt-dlp y FFmpeg\n        shell: pwsh\n        run: |\n          New-Item -ItemType Directory -Force -Path bin | Out-Null\n          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"\n          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "$env:RUNNER_TEMP/ffmpeg.zip"\n          Expand-Archive "$env:RUNNER_TEMP/ffmpeg.zip" "$env:RUNNER_TEMP/ffmpeg" -Force\n          $ff = Get-ChildItem "$env:RUNNER_TEMP/ffmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1\n          Copy-Item $ff.FullName "bin/ffmpeg.exe"\n      - run: npm install
+      - name: Descargar yt-dlp y FFmpeg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path bin | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "$env:RUNNER_TEMP/ffmpeg.zip"
+          Expand-Archive "$env:RUNNER_TEMP/ffmpeg.zip" "$env:RUNNER_TEMP/ffmpeg" -Force
+          $ff = Get-ChildItem "$env:RUNNER_TEMP/ffmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $ff.FullName "bin/ffmpeg.exe"
+      - run: npm install
       - run: npm run build:win
       - uses: actions/upload-artifact@v4
         with:
