@@ -80,7 +80,7 @@ Los límites de importación dependen de la verificación de la cuenta y de las 
 - No publiques API keys en GitHub.
 - No compartas `enviar.js` si contiene claves.
 - Protege `ADMIN_PASSWORD` y `SESSION_SECRET`.
-- El Worker solo acepta solicitudes del origen `https://djchamba.github.io` y requiere una sesión válida para subir audios o consultar permisos.
+- El Worker acepta el origen web `https://djchamba.github.io` y el origen opaco `null` usado por el WebView de la APK cuando carga recursos empaquetados `file://`. El origen `null` no identifica una app concreta; por eso la protección real de las operaciones privadas sigue siendo `ADMIN_PASSWORD` + `SESSION_SECRET` y el token de sesión temporal. No compartas esos secretos.
 
 
 ## 7. Detector de conciertos (AudD)
