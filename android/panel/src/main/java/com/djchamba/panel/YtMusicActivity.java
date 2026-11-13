@@ -72,7 +72,7 @@ public class YtMusicActivity extends Activity {
         results=col();root.addView(results);
         LinearLayout tools=col();tools.setPadding(dp(13),dp(13),dp(13),dp(13));tools.setBackground(shape(CARD,LINE,15));LinearLayout.LayoutParams tl=new LinearLayout.LayoutParams(-1,-2);tl.setMargins(0,dp(12),0,0);root.addView(tools,tl);
         tools.addView(text("HERRAMIENTAS",11,PINK,true));
-        Button update=button("Actualizar motor yt-dlp",false,()->updateEngine());LinearLayout.LayoutParams up=new LinearLayout.LayoutParams(-1,dp(44));up.setMargins(0,dp(8),0,0);tools.addView(update,up);
+        TextView updateNote=text("El motor yt-dlp viene integrado en la app y se actualiza al instalar una nueva versión del APK.",10,MUTED,false);updateNote.setPadding(0,dp(8),0,0);tools.addView(updateNote);
         Button folder=button("Abrir carpeta de música",false,()->openDownloads());LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-1,dp(44));fp.setMargins(0,dp(7),0,0);tools.addView(folder,fp);
         root.addView(text("Usa las descargas respetando los derechos y permisos del contenido.",10,MUTED,false));
     }
@@ -84,7 +84,7 @@ public class YtMusicActivity extends Activity {
         worker.execute(()->{
             try{
                 boolean url=q.matches("(?i)^https?://.+");
-                YtDlpRequest req=new YtDlpRequest(url?q:"ytsearch8:"+q).addOption("--dump-single-json").addOption("--flat-playlist").addOption("--skip-download").addOption("--no-warnings");
+                YtDlpRequest req=new YtDlpRequest(url?q:"ytsearch8:"+q).addOption("--dump-single-json").addOption("--flat-playlist").addOption("--skip-download").addOption("--no-warnings").addOption("--force-ipv4").addOption("--extractor-args","youtube:player_client=android");
                 YtDlpResponse response=YtDlp.execute(req,null);
                 if(!response.isSuccess())throw new Exception(response.getErrorOutput());
                 JSONObject data=new JSONObject(response.getOutput().trim());
@@ -117,7 +117,7 @@ public class YtMusicActivity extends Activity {
             try{
                 File dir=new File(getExternalFilesDir(Environment.DIRECTORY_MUSIC),"yt-temp");if(!dir.exists()&&!dir.mkdirs())throw new IOException("No se pudo crear carpeta temporal.");
                 File[] before=dir.listFiles();long stamp=System.currentTimeMillis();
-                YtDlpRequest req=new YtDlpRequest(url).setOutputTemplate(new File(dir,"%(title).160B [%(id)s].%(ext)s").getAbsolutePath()).addOption("-f","bestaudio[ext=m4a]/bestaudio").addOption("--no-playlist").addOption("--no-warnings").addOption("--no-part");
+                YtDlpRequest req=new YtDlpRequest(url).setOutputTemplate(new File(dir,"%(title).160B [%(id)s].%(ext)s").getAbsolutePath()).addOption("-f","bestaudio[ext=m4a]/bestaudio").addOption("--no-playlist").addOption("--no-warnings").addOption("--no-part").addOption("--force-ipv4").addOption("--extractor-args","youtube:player_client=android");
                 YtDlpResponse response=YtDlp.execute(req,(progress,eta,line)->runOnUiThread(()->setStatus(String.format(Locale.US,"Descargando %.0f%% · ETA %ds",progress,eta),0xFFFFC45C)));
                 if(!response.isSuccess())throw new Exception(response.getErrorOutput());
                 File[] files=dir.listFiles();if(files!=null)for(File f:files)if(f.isFile()&&f.lastModified()>=stamp-2000&&(temp==null||f.lastModified()>temp.lastModified()))temp=f;
@@ -148,10 +148,6 @@ public class YtMusicActivity extends Activity {
     }
     private void copy(InputStream in,OutputStream out)throws IOException{byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)out.write(b,0,n);out.flush();}
     private String quote(String p){return "'"+p.replace("'","'\\''")+"'";}
-    private void updateEngine(){
-        if(busy)return;setStatus("Actualizando yt-dlp…",0xFFFFC45C);
-        YtDlp.updateYtDlp(getApplicationContext(),new YtDlp.UpdateCallback(){public void onComplete(String statusText){runOnUiThread(()->setStatus("Motor actualizado · "+statusText,GREEN));}public void onError(String error){runOnUiThread(()->setStatus("No se pudo actualizar: "+error,RED));}});
-    }
     private void openDownloads(){
         try{android.content.Intent intent=new android.content.Intent(android.content.Intent.ACTION_VIEW);intent.setDataAndType(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,"resource/folder");intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(intent);}catch(Exception e){toast("Busca la carpeta Descargas/Panel La Chamba/YT Música en Archivos.");}
     }
