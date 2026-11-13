@@ -1,4 +1,4 @@
-const ALLOWED_ORIGIN = "https://djchamba.github.io";
+const ALLOWED_ORIGINS = new Set(["https://djchamba.github.io", "null"]);
 const UNIVERSE_ID = "6475547874";
 const CHUNK_SIZE = 25;
 const MAX_IDS = 500;
@@ -8,7 +8,7 @@ const decoder = new TextDecoder();
 
 function cors(origin) {
   return {
-    "Access-Control-Allow-Origin": origin === ALLOWED_ORIGIN ? ALLOWED_ORIGIN : "null",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "null",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
@@ -223,11 +223,11 @@ export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
     if (request.method === "OPTIONS") {
-      if (origin !== ALLOWED_ORIGIN) return new Response(null, { status: 403 });
+      if (!ALLOWED_ORIGINS.has(origin)) return new Response(null, { status: 403 });
       return new Response(null, { status: 204, headers: cors(origin) });
     }
 
-    if (origin !== ALLOWED_ORIGIN) return new Response("Origin not allowed", { status: 403 });
+    if (!ALLOWED_ORIGINS.has(origin)) return new Response("Origin not allowed", { status: 403 });
     if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, origin);
 
     const url = new URL(request.url);
