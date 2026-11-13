@@ -109,11 +109,11 @@ public class RobloxToolsActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     String safeName = filename == null ? "audio.mp3" :
-                        filename.replaceAll("[\\\\/:*?\\"<>|]", "_").trim();
+                        filename.replaceAll("[^a-zA-Z0-9._() -]", "_").trim();
                     if (safeName.isEmpty()) safeName = "archivo";
                     String type = mimeType == null || mimeType.isEmpty()
                         ? "application/octet-stream" : mimeType;
-                    byte[] bytes = Base64.getDecoder().decode(base64);
+                    byte[] bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
                     if (bytes.length == 0) throw new IllegalArgumentException("El archivo está vacío.");
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
