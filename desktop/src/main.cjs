@@ -4,6 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 
 const APP_URL = "https://djchamba.github.io/djs-de-la-chamba/";
+const LOCAL_PANEL = path.join(__dirname, "panel.html");
 const APP_HOST = "djchamba.github.io";
 const APP_TITLE = "DJS DE LA CHAMBA";
 const DOWNLOAD_FOLDER = path.join(app.getPath("downloads"), APP_TITLE);
@@ -137,7 +138,7 @@ function installApplicationMenu() {
           label: "Recargar DJS DE LA CHAMBA",
           accelerator: "Ctrl+R",
           click: () => {
-            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(APP_URL);
+            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadFile(LOCAL_PANEL);
           }
         },
         { type: "separator" },
@@ -222,7 +223,7 @@ function createWindow() {
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (isAppUrl(url) || url.startsWith("about:") || url.startsWith("blob:") || url.startsWith("data:")) return;
+    if (isAppUrl(url) || url.startsWith("file:") || url.startsWith("about:") || url.startsWith("blob:") || url.startsWith("data:")) return;
     event.preventDefault();
     openExternal(url);
   });
@@ -237,7 +238,7 @@ function createWindow() {
     mainWindow = null;
   });
 
-  mainWindow.loadURL(APP_URL);
+  mainWindow.loadFile(LOCAL_PANEL);
 }
 
 app.whenReady().then(() => {
