@@ -641,6 +641,14 @@
   <div id="uploadPanel" class="hide">
     <div class="card">
       <div class="step"><span class="num">☁️</span>Subir archivos a Roblox</div>
+      <div style="margin:0 0 14px">
+        <label class="lbl" for="robloxUploadAccount">Cuenta de Roblox que subirá el audio</label>
+        <select id="robloxUploadAccount" style="width:100%;margin-top:7px">
+          <option value="main">Cuenta 1 · Principal</option>
+          <option value="second">Cuenta 2 · Secundaria</option>
+        </select>
+        <p class="status">Cada cuenta usa su propia API Key y su propio creador. Las claves permanecen guardadas únicamente en Cloudflare.</p>
+      </div>
       <p class="tip">La subida automática por API puede encontrar temporalmente un límite 1015. Mientras tanto, puedes subir desde <a href="https://create.roblox.com/dashboard/creations" target="_blank" rel="noopener">Creator Dashboard</a> y pegar aquí el ID para consultar su moderación y dar permiso a La Chamba. Para la subida automática, configura <code>ROBLOX_AUDIO_API_KEY</code>, <code>asset:read</code>, <code>asset:write</code> y tu variable de creador personal o de grupo.</p>
       <div class="drop" id="robloxUploadDrop">
         <div style="font-size:34px">☁️🎵</div>
@@ -2411,7 +2419,7 @@
     try {
       if (!record.assetId) {
         if (!record.operationId) throw new Error("No hay Operation ID para consultar.");
-        const operation = await callAudioWorker("/audio/operation", { operationId: record.operationId }, false);
+        const operation = await callAudioWorker("/audio/operation", { operationId: record.operationId, account: record.account || "main" }, false);
         if (!operation.done) {
           record.state = "PROCESSING";
           record.updatedAt = new Date().toISOString();
@@ -2431,7 +2439,7 @@
       }
 
       if (record.assetId) {
-        const status = await callAudioWorker("/audio/status", { assetId: record.assetId }, false);
+        const status = await callAudioWorker("/audio/status", { assetId: record.assetId, account: record.account || "main" }, false);
         record.state = status.moderationState || "PENDING";
         record.rawModerationState = status.rawModerationState || "";
         record.displayName = status.displayName || record.displayName || "";
@@ -2509,12 +2517,15 @@
         if (duration !== null) form.append("durationSeconds", String(duration));
 
         $("robloxUploadStatus").textContent = "Subiendo " + fileItem.name + " a Roblox (" + (index + 1) + " de " + files.length + ")…";
+        const uploadAccount = $("robloxUploadAccount").value === "second" ? "second" : "main";
+        form.append("account", uploadAccount);
         const result = await callAudioWorker("/audio/upload", form, true);
         const record = {
           id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + index),
           name: displayName,
           fileName: fileItem.name,
           operationId: result.operationId,
+          account: uploadAccount,
           assetId: "",
           state: "PROCESSING",
           updatedAt: new Date().toISOString()
@@ -3882,7 +3893,7 @@
     button.disabled = true;
     $("manualRobloxAssetStatus").textContent = "Consultando el estado en Roblox…";
     try {
-      const status = await callAudioWorker("/audio/status", { assetId }, false);
+      const status = await callAudioWorker("/audio/status", { assetId, account: $("robloxUploadAccount").value === "second" ? "second" : "main" }, false);
       saveManualAssetToHistory(assetId, status);
       $("manualRobloxAssetStatus").textContent =
         "✅ " + (status.displayName || "Audio " + assetId) +
