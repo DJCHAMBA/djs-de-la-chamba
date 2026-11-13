@@ -3,18 +3,19 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:allowBackup="false"
+        android:hardwareAccelerated="true"
         android:label="Panel La Chamba"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@style/PanelTheme"
         android:supportsRtl="true">
-        <activity android:name=".RobloxToolsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".RobloxToolsActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".DesktopPanelActivity"
+            android:name=".PanelActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize">
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
